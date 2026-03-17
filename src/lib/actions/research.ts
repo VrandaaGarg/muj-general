@@ -199,6 +199,13 @@ export async function submitResearchSubmission(formData: FormData) {
     redirect("/editor?submission=missing-file");
   }
 
+  const submissionCover = formData.get("coverImage");
+  const hasCoverFile = submissionCover instanceof File && submissionCover.size > 0;
+
+  if (!hasCoverFile && !hasUploadedMeta(formData, "coverUploaded")) {
+    redirect("/editor?submission=missing-cover");
+  }
+
   const itemId = randomUUID();
   const versionId = randomUUID();
   const slug = createResearchItemSlug(parsed.data.title);

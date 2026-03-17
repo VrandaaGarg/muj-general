@@ -3,18 +3,20 @@
 import Link from "next/link";
 import { motion, type Variants } from "framer-motion";
 import {
-  ArrowLeft,
   Building2,
   CalendarDays,
+  ChevronRight,
   Download,
   ExternalLink,
   FileText,
   GraduationCap,
+  Home,
   LinkIcon,
   Scale,
   Users,
 } from "lucide-react";
 
+import { ResearchThumbnail } from "@/components/pdf-thumbnail-viewer";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
 import { getTypeLabel, getTypeColor } from "@/lib/research-types";
@@ -50,6 +52,7 @@ interface ResearchDetailHeroProps {
   fileUrl: string | null;
   fileOriginalName: string | null;
   fileSizeBytes: number | null;
+  coverImageUrl: string | null;
 }
 
 export function ResearchDetailHero({
@@ -69,162 +72,195 @@ export function ResearchDetailHero({
   fileUrl,
   fileOriginalName,
   fileSizeBytes,
+  coverImageUrl,
 }: ResearchDetailHeroProps) {
   return (
     <section className="relative">
       {/* Warm overlay gradient */}
-      <div className="pointer-events-none absolute inset-0 -top-20 bg-gradient-to-b from-amber-600/[0.03] via-transparent to-transparent" />
+      <div className="pointer-events-none absolute inset-0 -top-20 bg-linear-to-b from-amber-600/3 via-transparent to-transparent" />
 
       <div className="relative mx-auto max-w-4xl px-6 pt-4 pb-12 md:px-12">
         {/* Breadcrumb */}
-        <motion.div custom={0} variants={fadeUp} initial="hidden" animate="visible">
+        <motion.nav
+          custom={0}
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+          aria-label="Breadcrumb"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground"
+        >
           <Link
             href="/research"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium transition-colors hover:bg-muted hover:text-foreground"
           >
-            <ArrowLeft className="size-3" />
-            Back to repository
+            <Home className="size-3.5" />
+            <span className="sr-only sm:not-sr-only">Repository</span>
           </Link>
-        </motion.div>
+          <ChevronRight className="size-3 text-muted-foreground/50" />
+          <span className="max-w-70 truncate font-medium text-foreground sm:max-w-md">
+            {title}
+          </span>
+        </motion.nav>
 
-        {/* Type badge + year */}
-        <motion.div
-          custom={1}
-          variants={fadeUp}
-          initial="hidden"
-          animate="visible"
-          className="mt-6 flex flex-wrap items-center gap-2.5"
-        >
-          <span
-            className={cn(
-              "inline-flex rounded-md px-2.5 py-1 text-[11px] font-semibold leading-tight tracking-wide",
-              getTypeColor(itemType),
-            )}
-          >
-            {getTypeLabel(itemType)}
-          </span>
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <CalendarDays className="size-3" />
-            {publicationYear}
-          </span>
-          {departmentName && departmentSlug && (
-            <Link
-              href={`/departments/${departmentSlug}`}
-              className="flex items-center gap-1 rounded-md bg-muted/60 px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        {/* Two-column layout: metadata left, thumbnail right on lg+ */}
+        <div className="mt-6 flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
+          {/* Left column — metadata + actions */}
+          <div className="min-w-0 flex-1">
+            {/* Type badge + year */}
+            <motion.div
+              custom={1}
+              variants={fadeUp}
+              initial="hidden"
+              animate="visible"
+              className="flex flex-wrap items-center gap-2.5"
             >
-              <Building2 className="size-3" />
-              {departmentName}
-            </Link>
-          )}
-        </motion.div>
-
-        {/* Title */}
-        <motion.h1
-          custom={2}
-          variants={fadeUp}
-          initial="hidden"
-          animate="visible"
-          className="mt-5 font-serif text-3xl leading-[1.15] tracking-tight text-foreground sm:text-4xl md:text-[2.75rem]"
-        >
-          {title}
-        </motion.h1>
-
-        {/* Authors */}
-        {authors.length > 0 && (
-          <motion.div
-            custom={3}
-            variants={fadeUp}
-            initial="hidden"
-            animate="visible"
-            className="mt-4 flex items-start gap-2"
-          >
-            <Users className="mt-0.5 size-3.5 shrink-0 text-amber-600/70" />
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              {authors.map((a, i) => (
-                <span key={a.id}>
-                  {i > 0 && ", "}
-                  <Link
-                    href={`/authors/${a.id}`}
-                    className="underline decoration-border underline-offset-2 transition-colors hover:text-foreground hover:decoration-amber-600/40"
-                  >
-                    {a.name}
-                  </Link>
-                </span>
-              ))}
-            </p>
-          </motion.div>
-        )}
-
-        {/* Tags */}
-        {tags.length > 0 && (
-          <motion.div
-            custom={4}
-            variants={fadeUp}
-            initial="hidden"
-            animate="visible"
-            className="mt-4 flex flex-wrap gap-1.5"
-          >
-            {tags.map((tag) => (
-              <Link
-                key={tag.id}
-                href={`/research?tag=${tag.slug}`}
-                className="rounded-full border border-border/60 bg-muted/40 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:border-amber-600/30 hover:text-foreground"
+              <span
+                className={cn(
+                  "inline-flex rounded-md px-2.5 py-1 text-[11px] font-semibold leading-tight tracking-wide",
+                  getTypeColor(itemType),
+                )}
               >
-                {tag.name}
-              </Link>
-            ))}
-          </motion.div>
-        )}
-
-        {/* Action buttons */}
-        <motion.div
-          custom={5}
-          variants={fadeUp}
-          initial="hidden"
-          animate="visible"
-          className="mt-6 flex flex-wrap gap-2.5"
-        >
-          {fileUrl && (
-            <a
-              href={fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={buttonVariants({ size: "lg" })}
-            >
-              <Download className="size-4" />
-              {fileOriginalName
-                ? `Download PDF`
-                : "Open PDF"}
-              {fileSizeBytes && (
-                <span className="ml-1 text-[10px] opacity-70">
-                  ({(fileSizeBytes / (1024 * 1024)).toFixed(1)} MB)
-                </span>
+                {getTypeLabel(itemType)}
+              </span>
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <CalendarDays className="size-3" />
+                {publicationYear}
+              </span>
+              {departmentName && departmentSlug && (
+                <Link
+                  href={`/departments/${departmentSlug}`}
+                  className="flex items-center gap-1 rounded-md bg-muted/60 px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <Building2 className="size-3" />
+                  {departmentName}
+                </Link>
               )}
-            </a>
-          )}
-          {externalUrl && (
-            <a
-              href={externalUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={buttonVariants({ variant: "outline", size: "lg" })}
+            </motion.div>
+
+            {/* Title */}
+            <motion.h1
+              custom={2}
+              variants={fadeUp}
+              initial="hidden"
+              animate="visible"
+              className="mt-5 font-serif text-3xl leading-[1.15] tracking-tight text-foreground sm:text-4xl md:text-[2.75rem]"
             >
-              <ExternalLink className="size-3.5" />
-              External source
-            </a>
-          )}
-          {doi && (
-            <a
-              href={`https://doi.org/${doi}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={buttonVariants({ variant: "outline", size: "lg" })}
+              {title}
+            </motion.h1>
+
+            {/* Authors */}
+            {authors.length > 0 && (
+              <motion.div
+                custom={3}
+                variants={fadeUp}
+                initial="hidden"
+                animate="visible"
+                className="mt-4 flex items-start gap-2"
+              >
+                <Users className="mt-0.5 size-3.5 shrink-0 text-amber-600/70" />
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {authors.map((a, i) => (
+                    <span key={a.id}>
+                      {i > 0 && ", "}
+                      <Link
+                        href={`/authors/${a.id}`}
+                        className="underline decoration-border underline-offset-2 transition-colors hover:text-foreground hover:decoration-amber-600/40"
+                      >
+                        {a.name}
+                      </Link>
+                    </span>
+                  ))}
+                </p>
+              </motion.div>
+            )}
+
+            {/* Tags */}
+            {tags.length > 0 && (
+              <motion.div
+                custom={4}
+                variants={fadeUp}
+                initial="hidden"
+                animate="visible"
+                className="mt-4 flex flex-wrap gap-1.5"
+              >
+                {tags.map((tag) => (
+                  <Link
+                    key={tag.id}
+                    href={`/research?tag=${tag.slug}`}
+                    className="rounded-full border border-border/60 bg-muted/40 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:border-amber-600/30 hover:text-foreground"
+                  >
+                    {tag.name}
+                  </Link>
+                ))}
+              </motion.div>
+            )}
+
+            {/* Action buttons */}
+            <motion.div
+              custom={5}
+              variants={fadeUp}
+              initial="hidden"
+              animate="visible"
+              className="mt-6 flex flex-wrap gap-2.5"
             >
-              <LinkIcon className="size-3.5" />
-              DOI: {doi}
-            </a>
+              {fileUrl && (
+                <a
+                  href={fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={buttonVariants({ size: "lg" })}
+                >
+                  <Download className="size-4" />
+                  {fileOriginalName ? "Download PDF" : "Open PDF"}
+                  {fileSizeBytes && (
+                    <span className="ml-1 text-[10px] opacity-70">
+                      ({(fileSizeBytes / (1024 * 1024)).toFixed(1)} MB)
+                    </span>
+                  )}
+                </a>
+              )}
+              {externalUrl && (
+                <a
+                  href={externalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={buttonVariants({ variant: "outline", size: "lg" })}
+                >
+                  <ExternalLink className="size-3.5" />
+                  External source
+                </a>
+              )}
+              {doi && (
+                <a
+                  href={`https://doi.org/${doi}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={buttonVariants({ variant: "outline", size: "lg" })}
+                >
+                  <LinkIcon className="size-3.5" />
+                  DOI: {doi}
+                </a>
+              )}
+            </motion.div>
+          </div>
+
+          {/* Right column — PDF thumbnail / cover image */}
+          {fileUrl && coverImageUrl && (
+            <motion.div
+              custom={2}
+              variants={fadeUp}
+              initial="hidden"
+              animate="visible"
+              className="w-full shrink-0 sm:w-56 lg:w-52 xl:w-60"
+            >
+              <ResearchThumbnail
+                fileUrl={fileUrl}
+                coverImageUrl={coverImageUrl}
+                title={title}
+              />
+            </motion.div>
           )}
-        </motion.div>
+        </div>
 
         {/* Divider */}
         <motion.div

@@ -270,6 +270,11 @@ export function EditorRevisionForm({
   }
 
   async function handleSubmit(formData: FormData) {
+    if (!item.coverImageFile && !selectedCoverFile) {
+      toast.error("Cover image / poster is required.");
+      return;
+    }
+
     setIsSubmitting(true);
     formData.set("authors", JSON.stringify(authors));
 
@@ -677,10 +682,17 @@ export function EditorRevisionForm({
               <div className="space-y-2 rounded-xl border border-border/60 p-4">
                 <div>
                   <Label className="text-xs">
-                    Replace poster / thumbnail <span className="font-normal text-muted-foreground">(optional)</span>
+                    Poster / thumbnail image{" "}
+                    {item.coverImageFile ? (
+                      <span className="font-normal text-muted-foreground">(replace optional)</span>
+                    ) : (
+                      <span className="text-destructive">*</span>
+                    )}
                   </Label>
                   <p className="mt-1 text-[11px] text-muted-foreground">
-                    Leave empty to keep the current image.
+                    {item.coverImageFile
+                      ? "Leave empty to keep the current image."
+                      : "A cover image is required. JPG, PNG, or WEBP up to 5 MB."}
                   </p>
                 </div>
 

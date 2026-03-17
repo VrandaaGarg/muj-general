@@ -71,6 +71,10 @@ const SUBMISSION_MESSAGES: Record<
     text: "A PDF file is required for submission.",
     type: "error",
   },
+  "missing-cover": {
+    text: "A cover image / poster is required for submission.",
+    type: "error",
+  },
   "storage-not-configured": {
     text: "File storage is not configured. Contact your administrator.",
     type: "error",
@@ -196,6 +200,11 @@ export function EditorSubmissionForm({
   }
 
   async function handleSubmit(formData: FormData) {
+    if (!selectedCoverFile) {
+      toast.error("Cover image / poster is required.");
+      return;
+    }
+
     setIsSubmitting(true);
     formData.set("authors", JSON.stringify(authors));
 
@@ -584,9 +593,11 @@ export function EditorSubmissionForm({
 
               <div className="space-y-2 rounded-xl border border-border/60 p-4">
                 <div>
-                  <Label className="text-xs">Poster / thumbnail image</Label>
+                  <Label className="text-xs">
+                    Poster / thumbnail image <span className="text-destructive">*</span>
+                  </Label>
                   <p className="mt-1 text-[11px] text-muted-foreground">
-                    Optional JPG, PNG, or WEBP up to 5 MB.
+                    JPG, PNG, or WEBP up to 5 MB. This will be shown as the cover on the detail page.
                   </p>
                 </div>
 

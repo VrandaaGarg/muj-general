@@ -608,12 +608,28 @@ export async function getPublishedResearchItemBySlug(slug: string) {
     return null;
   }
 
+  const [coverImage] = await db
+    .select({
+      objectKey: files.objectKey,
+      originalName: files.originalName,
+    })
+    .from(files)
+    .where(
+      and(
+        eq(files.researchItemId, item.id),
+        eq(files.itemVersionId, item.currentVersionId!),
+        eq(files.fileKind, "cover_image"),
+      ),
+    )
+    .limit(1);
+
   const metaMap = await attachResearchMeta([{ id: item.id }]);
 
   return {
     ...item,
     authors: metaMap.get(item.id)?.authors ?? [],
     tags: metaMap.get(item.id)?.tags ?? [],
+    coverImageObjectKey: coverImage?.objectKey ?? null,
   };
 }
 

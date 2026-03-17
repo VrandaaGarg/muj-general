@@ -55,6 +55,10 @@ export default async function ResearchDetailPage({
     ? getPublicFileUrl(item.fileObjectKey)
     : null;
 
+  const coverImageUrl = item.coverImageObjectKey
+    ? getPublicFileUrl(item.coverImageObjectKey)
+    : null;
+
   return (
     <div className="relative min-h-screen bg-background">
       {/* Grid background */}
@@ -88,6 +92,7 @@ export default async function ResearchDetailPage({
           fileUrl={fileUrl}
           fileOriginalName={item.fileOriginalName}
           fileSizeBytes={item.fileSizeBytes}
+          coverImageUrl={coverImageUrl}
         />
 
         <ResearchRelated items={relatedItems} />
