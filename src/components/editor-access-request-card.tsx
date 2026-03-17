@@ -1,6 +1,7 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle2,
@@ -8,10 +9,9 @@ import {
   PenTool,
   Send,
   XCircle,
-  AlertCircle,
   Loader2,
 } from "lucide-react";
-import { useState, useRef } from "react";
+import { toast } from "sonner";
 
 import { submitEditorAccessRequest } from "@/lib/actions/editor-access";
 import {
@@ -62,9 +62,19 @@ export function EditorAccessRequestCard({
   reviewedAt,
   emailVerified,
 }: EditorAccessRequestCardProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const requestParam = searchParams.get("request");
-  const toast = requestParam ? TOAST_MESSAGES[requestParam] : null;
+
+  useEffect(() => {
+    if (!requestParam) return;
+    const msg = TOAST_MESSAGES[requestParam];
+    if (!msg) return;
+    if (msg.type === "success") toast.success(msg.text);
+    else if (msg.type === "error") toast.error(msg.text);
+    else toast.info(msg.text);
+    router.replace("/editor", { scroll: false });
+  }, [requestParam, router]);
 
   const [showForm, setShowForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -236,29 +246,6 @@ export function EditorAccessRequestCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium ${
-              toast.type === "success"
-                ? "bg-emerald-600/10 text-emerald-600"
-                : toast.type === "error"
-                  ? "bg-destructive/10 text-destructive"
-                  : "bg-amber-600/10 text-amber-600"
-            }`}
-          >
-            {toast.type === "success" ? (
-              <CheckCircle2 className="size-3.5" />
-            ) : toast.type === "error" ? (
-              <AlertCircle className="size-3.5" />
-            ) : (
-              <Clock className="size-3.5" />
-            )}
-            {toast.text}
-          </motion.div>
-        )}
-
         {!emailVerified ? (
           <div className="rounded-lg border border-amber-600/20 bg-amber-600/5 px-3 py-2">
             <p className="text-xs font-medium text-amber-600 mb-0.5">

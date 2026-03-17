@@ -1,6 +1,7 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   CheckCircle2,
@@ -9,10 +10,9 @@ import {
   Mail,
   User,
   XCircle,
-  AlertCircle,
   Loader2,
 } from "lucide-react";
-import { useState } from "react";
+import { toast } from "sonner";
 
 import { reviewEditorAccessRequestAction } from "@/lib/actions/editor-access";
 import {
@@ -58,9 +58,19 @@ function formatDate(date: Date) {
 }
 
 export function AdminPendingRequests({ requests }: AdminPendingRequestsProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const reviewParam = searchParams.get("review");
-  const toast = reviewParam ? TOAST_MESSAGES[reviewParam] : null;
+
+  useEffect(() => {
+    if (!reviewParam) return;
+    const msg = TOAST_MESSAGES[reviewParam];
+    if (!msg) return;
+    if (msg.type === "success") toast.success(msg.text);
+    else if (msg.type === "error") toast.error(msg.text);
+    else toast.info(msg.text);
+    router.replace("/admin", { scroll: false });
+  }, [reviewParam, router]);
 
   return (
     <div className="space-y-4">
@@ -75,29 +85,6 @@ export function AdminPendingRequests({ requests }: AdminPendingRequestsProps) {
           </span>
         )}
       </div>
-
-      {toast && (
-        <motion.div
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium ${
-            toast.type === "success"
-              ? "bg-emerald-600/10 text-emerald-600"
-              : toast.type === "error"
-                ? "bg-destructive/10 text-destructive"
-                : "bg-muted text-muted-foreground"
-          }`}
-        >
-          {toast.type === "success" ? (
-            <CheckCircle2 className="size-3.5" />
-          ) : toast.type === "error" ? (
-            <AlertCircle className="size-3.5" />
-          ) : (
-            <Clock className="size-3.5" />
-          )}
-          {toast.text}
-        </motion.div>
-      )}
 
       {requests.length === 0 ? (
         <Card className="border-border/60">

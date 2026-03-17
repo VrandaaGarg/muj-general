@@ -1,17 +1,16 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
-  AlertCircle,
   BookOpen,
   Building2,
-  CheckCircle2,
   Loader2,
   Plus,
   Users,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { createDepartmentAction } from "@/lib/actions/admin";
 import { Button } from "@/components/ui/button";
@@ -46,34 +45,24 @@ const CREATE_MESSAGES: Record<string, { text: string; type: "success" | "error" 
 };
 
 export function AdminDepartmentsList({ departments }: AdminDepartmentsListProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const createParam = searchParams.get("create");
-  const toast = createParam ? CREATE_MESSAGES[createParam] : null;
+
+  useEffect(() => {
+    if (!createParam) return;
+    const msg = CREATE_MESSAGES[createParam];
+    if (!msg) return;
+    if (msg.type === "success") toast.success(msg.text);
+    else toast.error(msg.text);
+    router.replace("/admin/departments", { scroll: false });
+  }, [createParam, router]);
 
   const totalUsers = departments.reduce((sum, d) => sum + d.userCount, 0);
   const totalResearch = departments.reduce((sum, d) => sum + d.researchCount, 0);
 
   return (
     <div className="space-y-6">
-      {toast && (
-        <motion.div
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-xs font-medium ${
-            toast.type === "success"
-              ? "bg-emerald-600/10 text-emerald-600"
-              : "bg-destructive/10 text-destructive"
-          }`}
-        >
-          {toast.type === "success" ? (
-            <CheckCircle2 className="size-3.5 shrink-0" />
-          ) : (
-            <AlertCircle className="size-3.5 shrink-0" />
-          )}
-          {toast.text}
-        </motion.div>
-      )}
-
       {/* Summary stats */}
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-lg border border-border/60 bg-card p-3 text-center">

@@ -1,11 +1,9 @@
 "use client";
 
-import { type ChangeEvent, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { type ChangeEvent, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
-  AlertCircle,
-  CheckCircle2,
   ChevronDown,
   ChevronUp,
   FileImage,
@@ -16,6 +14,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { submitResearchRevision } from "@/lib/actions/research";
 import { RESEARCH_TYPE_OPTIONS } from "@/lib/research-types";
@@ -158,15 +157,26 @@ export function EditorRevisionForm({
   departments,
   tags,
 }: EditorRevisionFormProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const revisionParam = searchParams.get("revision");
-  const toast = revisionParam ? REVISION_MESSAGES[revisionParam] : null;
+
+  useEffect(() => {
+    if (!revisionParam) return;
+    const msg = REVISION_MESSAGES[revisionParam];
+    if (!msg) return;
+    if (msg.type === "success") {
+      toast.success(msg.text);
+    } else {
+      toast.error(msg.text);
+    }
+    router.replace(`/editor/${item.slug}/revise`, { scroll: false });
+  }, [revisionParam, router, item.slug]);
 
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadPhase, setUploadPhase] = useState<"idle" | "uploading" | "saving">("idle");
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
   const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
   const [authors, setAuthors] = useState<AuthorDraft[]>(
@@ -239,17 +249,14 @@ export function EditorRevisionForm({
 
   function handlePdfChange(event: ChangeEvent<HTMLInputElement>) {
     setSelectedPdfFile(event.target.files?.[0] ?? null);
-    setUploadError(null);
   }
 
   function handleCoverChange(event: ChangeEvent<HTMLInputElement>) {
     setSelectedCoverFile(event.target.files?.[0] ?? null);
-    setUploadError(null);
   }
 
   function removeSelectedPdf() {
     setSelectedPdfFile(null);
-    setUploadError(null);
     if (pdfInputRef.current) {
       pdfInputRef.current.value = "";
     }
@@ -257,7 +264,6 @@ export function EditorRevisionForm({
 
   function removeSelectedCover() {
     setSelectedCoverFile(null);
-    setUploadError(null);
     if (coverInputRef.current) {
       coverInputRef.current.value = "";
     }
@@ -265,7 +271,6 @@ export function EditorRevisionForm({
 
   async function handleSubmit(formData: FormData) {
     setIsSubmitting(true);
-    setUploadError(null);
     formData.set("authors", JSON.stringify(authors));
 
     try {
@@ -288,9 +293,17 @@ export function EditorRevisionForm({
       setUploadPhase("saving");
       await submitResearchRevision(formData);
     } catch (error) {
-      setUploadError(
-        error instanceof Error ? error.message : "Upload failed. Please try again.",
-      );
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "digest" in error &&
+        String((error as { digest: unknown }).digest).startsWith("NEXT_REDIRECT")
+      ) {
+        throw error;
+      }
+      const message =
+        error instanceof Error ? error.message : "Upload failed. Please try again.";
+      toast.error(message);
       setIsSubmitting(false);
       setUploadPhase("idle");
     }
@@ -298,36 +311,6 @@ export function EditorRevisionForm({
 
   return (
     <div className="space-y-4">
-      {toast && (
-        <motion.div
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium ${
-            toast.type === "success"
-              ? "bg-emerald-600/10 text-emerald-600"
-              : "bg-destructive/10 text-destructive"
-          }`}
-        >
-          {toast.type === "success" ? (
-            <CheckCircle2 className="size-3.5 shrink-0" />
-          ) : (
-            <AlertCircle className="size-3.5 shrink-0" />
-          )}
-          {toast.text}
-        </motion.div>
-      )}
-
-      {uploadError && (
-        <motion.div
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive"
-        >
-          <AlertCircle className="size-3.5 shrink-0" />
-          {uploadError}
-        </motion.div>
-      )}
-
       <Card className="border-border/60">
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2.5">

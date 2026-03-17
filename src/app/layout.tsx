@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Sans, DM_Serif_Display, JetBrains_Mono } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 import { AuthUiStoreProvider } from "@/stores/auth-ui-store";
@@ -38,6 +39,7 @@ export default function RootLayout({
         className={`${dmSans.variable} ${dmSerif.variable} ${jetbrainsMono.variable} antialiased`}
       >
         <AuthUiStoreProvider>{children}</AuthUiStoreProvider>
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );

@@ -1,7 +1,7 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
@@ -16,6 +16,8 @@ import {
   User,
   X,
 } from "lucide-react";
+
+import { toast } from "sonner";
 
 import { updateUserAdminAction } from "@/lib/actions/admin";
 import { Button } from "@/components/ui/button";
@@ -72,31 +74,21 @@ function formatDate(date: Date) {
 }
 
 export function AdminUsersList({ users, departments }: AdminUsersListProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const updateParam = searchParams.get("update");
-  const toast = updateParam ? UPDATE_MESSAGES[updateParam] : null;
+
+  useEffect(() => {
+    if (!updateParam) return;
+    const msg = UPDATE_MESSAGES[updateParam];
+    if (!msg) return;
+    if (msg.type === "success") toast.success(msg.text);
+    else toast.error(msg.text);
+    router.replace("/admin/users", { scroll: false });
+  }, [updateParam, router]);
 
   return (
     <div className="space-y-4">
-      {toast && (
-        <motion.div
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-xs font-medium ${
-            toast.type === "success"
-              ? "bg-emerald-600/10 text-emerald-600"
-              : "bg-destructive/10 text-destructive"
-          }`}
-        >
-          {toast.type === "success" ? (
-            <CheckCircle2 className="size-3.5 shrink-0" />
-          ) : (
-            <AlertCircle className="size-3.5 shrink-0" />
-          )}
-          {toast.text}
-        </motion.div>
-      )}
-
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
           {users.length} {users.length === 1 ? "user" : "users"} total
