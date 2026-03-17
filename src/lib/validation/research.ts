@@ -1,5 +1,47 @@
 import { z } from "zod";
 
+function normalizeOptionalString(value: unknown) {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function optionalTrimmedString(maxLength: number) {
+  return z.preprocess(
+    normalizeOptionalString,
+    z.string().trim().max(maxLength).optional(),
+  );
+}
+
+function optionalDateString() {
+  return z.preprocess(
+    normalizeOptionalString,
+    z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+  );
+}
+
+function normalizeOptionalBoolean(value: unknown) {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    return value === "true" || value === "on" || value === "1";
+  }
+
+  return false;
+}
+
 export const researchItemTypeSchema = z.enum([
   "research_paper",
   "journal_article",
@@ -31,13 +73,34 @@ export const createResearchItemSchema = z.object({
   departmentId: z.string().uuid(),
 });
 
+export const authorSchema = z.object({
+  id: z.preprocess(normalizeOptionalString, z.string().uuid().optional()),
+  displayName: z.string().trim().min(2).max(160),
+  email: z.preprocess(
+    normalizeOptionalString,
+    z.string().email().max(255).optional(),
+  ),
+  affiliation: optionalTrimmedString(255),
+  orcid: optionalTrimmedString(50),
+  isCorresponding: z.preprocess(normalizeOptionalBoolean, z.boolean()),
+});
+
+export const tagIdSchema = z.string().uuid();
+
 export const createResearchSubmissionSchema = createResearchItemSchema.extend({
-  license: z.string().trim().max(160).optional().or(z.literal("")),
-  externalUrl: z.url().optional().or(z.literal("")),
-  doi: z.string().trim().max(255).optional().or(z.literal("")),
-  notesToAdmin: z.string().trim().max(1000).optional().or(z.literal("")),
-  supervisorName: z.string().trim().max(160).optional().or(z.literal("")),
-  programName: z.string().trim().max(160).optional().or(z.literal("")),
+  publicationDate: optionalDateString(),
+  changeSummary: optionalTrimmedString(1000),
+  license: optionalTrimmedString(160),
+  externalUrl: z.preprocess(
+    normalizeOptionalString,
+    z.string().url().max(2048).optional(),
+  ),
+  doi: optionalTrimmedString(255),
+  notesToAdmin: optionalTrimmedString(1000),
+  supervisorName: optionalTrimmedString(160),
+  programName: optionalTrimmedString(160),
+  authors: z.array(authorSchema).min(1).max(20),
+  tagIds: z.array(tagIdSchema).max(25),
 });
 
 export const reviewResearchSubmissionSchema = z.object({
@@ -53,6 +116,7 @@ export type CreateResearchItemInput = z.infer<typeof createResearchItemSchema>;
 export type CreateResearchSubmissionInput = z.infer<
   typeof createResearchSubmissionSchema
 >;
+export type ResearchAuthorInput = z.infer<typeof authorSchema>;
 export type ReviewResearchSubmissionInput = z.infer<
   typeof reviewResearchSubmissionSchema
 >;

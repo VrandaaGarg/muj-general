@@ -13,6 +13,20 @@ export const RESEARCH_TYPE_LABELS: Record<string, string> = {
   presentation: "Presentation",
 };
 
+export const RESEARCH_TYPE_OPTIONS = [
+  { value: "research_paper", label: "Research Paper" },
+  { value: "journal_article", label: "Journal Article" },
+  { value: "conference_paper", label: "Conference Paper" },
+  { value: "thesis", label: "Thesis" },
+  { value: "dissertation", label: "Dissertation" },
+  { value: "capstone_project", label: "Capstone Project" },
+  { value: "technical_report", label: "Technical Report" },
+  { value: "patent", label: "Patent" },
+  { value: "poster", label: "Poster" },
+  { value: "dataset", label: "Dataset" },
+  { value: "presentation", label: "Presentation" },
+] as const;
+
 /** Short color accent classes per item type for badges */
 export const RESEARCH_TYPE_COLORS: Record<string, string> = {
   research_paper: "bg-blue-600/10 text-blue-700",

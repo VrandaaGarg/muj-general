@@ -193,6 +193,17 @@ export async function listDepartments() {
     .orderBy(departments.name);
 }
 
+export async function listTags() {
+  return db
+    .select({
+      id: tags.id,
+      name: tags.name,
+      slug: tags.slug,
+    })
+    .from(tags)
+    .orderBy(asc(tags.name));
+}
+
 export async function getLatestEditorAccessRequestForUser(userId: string) {
   const [request] = await db
     .select({
@@ -758,24 +769,15 @@ export async function getOwnedResearchItemForRevision(params: {
       doi: researchItems.doi,
       currentVersionId: researchItems.currentVersionId,
       currentVersionNumber: itemVersions.versionNumber,
+      changeSummary: itemVersions.changeSummary,
       notesToAdmin: itemVersions.notesToAdmin,
       supervisorName: itemVersions.supervisorName,
       programName: itemVersions.programName,
-      fileObjectKey: files.objectKey,
-      fileOriginalName: files.originalName,
-      fileSizeBytes: files.sizeBytes,
+      publicationDate: itemVersions.publicationDate,
     })
     .from(researchItems)
     .leftJoin(departments, eq(departments.id, researchItems.departmentId))
     .leftJoin(itemVersions, eq(itemVersions.id, researchItems.currentVersionId))
-    .leftJoin(
-      files,
-      and(
-        eq(files.researchItemId, researchItems.id),
-        eq(files.itemVersionId, researchItems.currentVersionId),
-        eq(files.fileKind, "main_pdf"),
-      ),
-    )
     .where(
       and(
         eq(researchItems.slug, params.slug),
@@ -788,7 +790,7 @@ export async function getOwnedResearchItemForRevision(params: {
     return null;
   }
 
-  const [decisions, versions] = await Promise.all([
+  const [decisions, versions, authorRows, tagRows, currentFiles] = await Promise.all([
     db
       .select({
         id: moderationDecisions.id,
@@ -810,10 +812,73 @@ export async function getOwnedResearchItemForRevision(params: {
       .from(itemVersions)
       .where(eq(itemVersions.researchItemId, item.id))
       .orderBy(desc(itemVersions.versionNumber)),
+    db
+      .select({
+        id: authors.id,
+        displayName: authors.displayName,
+        email: authors.email,
+        affiliation: authors.affiliation,
+        orcid: authors.orcid,
+        authorOrder: researchItemAuthors.authorOrder,
+        isCorresponding: researchItemAuthors.isCorresponding,
+      })
+      .from(researchItemAuthors)
+      .innerJoin(authors, eq(authors.id, researchItemAuthors.authorId))
+      .where(eq(researchItemAuthors.researchItemId, item.id))
+      .orderBy(asc(researchItemAuthors.authorOrder)),
+    db
+      .select({
+        id: tags.id,
+        name: tags.name,
+        slug: tags.slug,
+      })
+      .from(researchItemTags)
+      .innerJoin(tags, eq(tags.id, researchItemTags.tagId))
+      .where(eq(researchItemTags.researchItemId, item.id))
+      .orderBy(asc(tags.name)),
+    item.currentVersionId
+      ? db
+          .select({
+            id: files.id,
+            fileKind: files.fileKind,
+            storageBucket: files.storageBucket,
+            objectKey: files.objectKey,
+            originalName: files.originalName,
+            mimeType: files.mimeType,
+            sizeBytes: files.sizeBytes,
+            checksum: files.checksum,
+          })
+          .from(files)
+          .where(
+            and(
+              eq(files.researchItemId, item.id),
+              eq(files.itemVersionId, item.currentVersionId),
+              inArray(files.fileKind, ["main_pdf", "cover_image"]),
+            ),
+          )
+      : Promise.resolve([]),
   ]);
+
+  const currentPdf =
+    currentFiles.find((file) => file.fileKind === "main_pdf") ?? null;
+  const currentCoverImage =
+    currentFiles.find((file) => file.fileKind === "cover_image") ?? null;
 
   return {
     ...item,
+    authors: authorRows.map((author) => ({
+      id: author.id,
+      displayName: author.displayName,
+      email: author.email,
+      affiliation: author.affiliation,
+      orcid: author.orcid,
+      isCorresponding: author.isCorresponding,
+      authorOrder: author.authorOrder,
+    })),
+    tags: tagRows,
+    tagIds: tagRows.map((tag) => tag.id),
+    pdfFile: currentPdf,
+    coverImageFile: currentCoverImage,
     decisions,
     versions,
   };

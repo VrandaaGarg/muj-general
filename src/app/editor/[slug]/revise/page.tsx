@@ -15,7 +15,9 @@ import { requireRole } from "@/lib/auth/session";
 import {
   getOwnedResearchItemForRevision,
   listDepartments,
+  listTags,
 } from "@/lib/db/queries";
+import { getTypeLabel } from "@/lib/research-types";
 import {
   Card,
   CardContent,
@@ -56,20 +58,6 @@ const DECISION_LABELS: Record<string, { label: string; className: string }> = {
   },
 };
 
-const TYPE_LABELS: Record<string, string> = {
-  research_paper: "Research Paper",
-  journal_article: "Journal Article",
-  conference_paper: "Conference Paper",
-  thesis: "Thesis",
-  dissertation: "Dissertation",
-  capstone_project: "Capstone Project",
-  technical_report: "Technical Report",
-  patent: "Patent",
-  poster: "Poster",
-  dataset: "Dataset",
-  presentation: "Presentation",
-};
-
 function formatDate(date: Date) {
   return new Date(date).toLocaleDateString("en-US", {
     month: "short",
@@ -88,6 +76,10 @@ function formatDateTime(date: Date) {
   });
 }
 
+function toDateInputValue(date: Date | null) {
+  return date ? new Date(date).toISOString().slice(0, 10) : "";
+}
+
 interface RevisePageProps {
   params: Promise<{ slug: string }>;
 }
@@ -100,9 +92,10 @@ export default async function RevisePage({ params }: RevisePageProps) {
   });
   const { appUser } = session;
 
-  const [item, departments] = await Promise.all([
+  const [item, departments, tags] = await Promise.all([
     getOwnedResearchItemForRevision({ slug, userId: appUser.id }),
     listDepartments(),
+    listTags(),
   ]);
 
   if (!item) {
@@ -153,7 +146,7 @@ export default async function RevisePage({ params }: RevisePageProps) {
             {item.title}
           </h1>
           <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-muted-foreground">
-            <span>{TYPE_LABELS[item.itemType] ?? item.itemType}</span>
+            <span>{getTypeLabel(item.itemType)}</span>
             <span className="text-border">&middot;</span>
             <span>{item.publicationYear}</span>
             {item.departmentName && (
@@ -259,26 +252,45 @@ export default async function RevisePage({ params }: RevisePageProps) {
                   <FileText className="size-3.5 text-muted-foreground" />
                 </div>
                 <CardTitle className="text-xs font-semibold tracking-tight">
-                  Current file
+                  Current assets
                 </CardTitle>
               </div>
             </CardHeader>
             <CardContent>
-              {item.fileOriginalName ? (
-                <div className="space-y-1">
-                  <p className="truncate text-xs font-medium">
-                    {item.fileOriginalName}
-                  </p>
-                  {item.fileSizeBytes && (
-                    <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                      <Calendar className="size-3" />
-                      {(item.fileSizeBytes / (1024 * 1024)).toFixed(2)} MB
-                    </p>
+              {item.pdfFile || item.coverImageFile ? (
+                <div className="space-y-3">
+                  {item.pdfFile && (
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                        PDF
+                      </p>
+                      <p className="truncate text-xs font-medium">
+                        {item.pdfFile.originalName}
+                      </p>
+                      <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <Calendar className="size-3" />
+                        {(item.pdfFile.sizeBytes / (1024 * 1024)).toFixed(2)} MB
+                      </p>
+                    </div>
+                  )}
+                  {item.coverImageFile && (
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                        Poster / thumbnail
+                      </p>
+                      <p className="truncate text-xs font-medium">
+                        {item.coverImageFile.originalName}
+                      </p>
+                      <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <Calendar className="size-3" />
+                        {(item.coverImageFile.sizeBytes / (1024 * 1024)).toFixed(2)} MB
+                      </p>
+                    </div>
                   )}
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  No file attached to this version.
+                  No files attached to this version.
                 </p>
               )}
             </CardContent>
@@ -343,13 +355,18 @@ export default async function RevisePage({ params }: RevisePageProps) {
                 license: item.license,
                 externalUrl: item.externalUrl,
                 doi: item.doi,
+                publicationDate: toDateInputValue(item.publicationDate),
+                changeSummary: item.changeSummary,
                 notesToAdmin: item.notesToAdmin,
                 supervisorName: item.supervisorName,
                 programName: item.programName,
-                fileOriginalName: item.fileOriginalName,
-                fileSizeBytes: item.fileSizeBytes,
+                authors: item.authors,
+                tagIds: item.tagIds,
+                pdfFile: item.pdfFile,
+                coverImageFile: item.coverImageFile,
               }}
               departments={departments}
+              tags={tags}
             />
           </Suspense>
         ) : (

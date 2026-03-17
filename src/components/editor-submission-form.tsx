@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { type ChangeEvent, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -8,29 +8,26 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  FileImage,
   FileUp,
   Loader2,
+  Plus,
   Send,
   Upload,
   X,
 } from "lucide-react";
 
 import { submitResearchSubmission } from "@/lib/actions/research";
+import { RESEARCH_TYPE_OPTIONS } from "@/lib/research-types";
 import {
   appendUploadMeta,
   presignedUpload,
 } from "@/lib/uploads/presigned-upload";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 interface Department {
   id: string;
@@ -39,23 +36,25 @@ interface Department {
   description: string | null;
 }
 
-interface EditorSubmissionFormProps {
-  departments: Department[];
+interface TagOption {
+  id: string;
+  name: string;
+  slug: string;
 }
 
-const ITEM_TYPES = [
-  { value: "research_paper", label: "Research Paper" },
-  { value: "journal_article", label: "Journal Article" },
-  { value: "conference_paper", label: "Conference Paper" },
-  { value: "thesis", label: "Thesis" },
-  { value: "dissertation", label: "Dissertation" },
-  { value: "capstone_project", label: "Capstone Project" },
-  { value: "technical_report", label: "Technical Report" },
-  { value: "patent", label: "Patent" },
-  { value: "poster", label: "Poster" },
-  { value: "dataset", label: "Dataset" },
-  { value: "presentation", label: "Presentation" },
-] as const;
+interface AuthorDraft {
+  id?: string;
+  displayName: string;
+  email: string;
+  affiliation: string;
+  orcid: string;
+  isCorresponding: boolean;
+}
+
+interface EditorSubmissionFormProps {
+  departments: Department[];
+  tags: TagOption[];
+}
 
 const SUBMISSION_MESSAGES: Record<
   string,
@@ -83,55 +82,141 @@ const SUBMISSION_MESSAGES: Record<
   },
 };
 
+function createEmptyAuthor(isCorresponding = false): AuthorDraft {
+  return {
+    displayName: "",
+    email: "",
+    affiliation: "",
+    orcid: "",
+    isCorresponding,
+  };
+}
+
+function formatFileSize(sizeBytes: number) {
+  return `${(sizeBytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
 export function EditorSubmissionForm({
   departments,
+  tags,
 }: EditorSubmissionFormProps) {
   const searchParams = useSearchParams();
   const submissionParam = searchParams.get("submission");
   const toast = submissionParam ? SUBMISSION_MESSAGES[submissionParam] : null;
 
-  const formRef = useRef<HTMLFormElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadPhase, setUploadPhase] = useState<
-    "idle" | "uploading" | "saving"
-  >("idle");
+  const [uploadPhase, setUploadPhase] = useState<"idle" | "uploading" | "saving">("idle");
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [showOptional, setShowOptional] = useState(false);
+  const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
+  const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
+  const [authors, setAuthors] = useState<AuthorDraft[]>([
+    createEmptyAuthor(true),
+  ]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [showAdditional, setShowAdditional] = useState(false);
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0] ?? null;
-    setSelectedFile(file);
+  function updateAuthor<K extends keyof AuthorDraft>(
+    index: number,
+    field: K,
+    value: AuthorDraft[K],
+  ) {
+    setAuthors((current) =>
+      current.map((author, authorIndex) =>
+        authorIndex === index ? { ...author, [field]: value } : author,
+      ),
+    );
+  }
+
+  function addAuthor() {
+    setAuthors((current) => [...current, createEmptyAuthor(false)]);
+  }
+
+  function removeAuthor(index: number) {
+    setAuthors((current) =>
+      current.length === 1
+        ? current
+        : current.filter((_, authorIndex) => authorIndex !== index),
+    );
+  }
+
+  function moveAuthor(index: number, direction: -1 | 1) {
+    setAuthors((current) => {
+      const nextIndex = index + direction;
+      if (nextIndex < 0 || nextIndex >= current.length) {
+        return current;
+      }
+
+      const nextAuthors = [...current];
+      const [movedAuthor] = nextAuthors.splice(index, 1);
+      nextAuthors.splice(nextIndex, 0, movedAuthor);
+      return nextAuthors;
+    });
+  }
+
+  function toggleTag(tagId: string) {
+    setSelectedTagIds((current) =>
+      current.includes(tagId)
+        ? current.filter((value) => value !== tagId)
+        : [...current, tagId],
+    );
+  }
+
+  function handlePdfChange(event: ChangeEvent<HTMLInputElement>) {
+    setSelectedPdfFile(event.target.files?.[0] ?? null);
     setUploadError(null);
   }
 
-  function handleRemoveFile() {
-    setSelectedFile(null);
+  function handleCoverChange(event: ChangeEvent<HTMLInputElement>) {
+    setSelectedCoverFile(event.target.files?.[0] ?? null);
     setUploadError(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+  }
+
+  function removeSelectedPdf() {
+    setSelectedPdfFile(null);
+    setUploadError(null);
+    if (pdfInputRef.current) {
+      pdfInputRef.current.value = "";
+    }
+  }
+
+  function removeSelectedCover() {
+    setSelectedCoverFile(null);
+    setUploadError(null);
+    if (coverInputRef.current) {
+      coverInputRef.current.value = "";
     }
   }
 
   async function handleSubmit(formData: FormData) {
     setIsSubmitting(true);
     setUploadError(null);
+    formData.set("authors", JSON.stringify(authors));
 
     try {
-      // Upload the PDF to R2 via presigned URL first
-      if (selectedFile) {
+      if (selectedPdfFile) {
         setUploadPhase("uploading");
-        const meta = await presignedUpload(selectedFile);
-        appendUploadMeta(formData, meta);
+        const pdfMeta = await presignedUpload(selectedPdfFile, {
+          kind: "main_pdf",
+        });
+        appendUploadMeta(formData, pdfMeta);
+      }
+
+      if (selectedCoverFile) {
+        setUploadPhase("uploading");
+        const coverMeta = await presignedUpload(selectedCoverFile, {
+          kind: "cover_image",
+        });
+        appendUploadMeta(formData, coverMeta, { prefix: "coverUploaded" });
       }
 
       setUploadPhase("saving");
       await submitResearchSubmission(formData);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Upload failed. Please try again.";
-      setUploadError(message);
+    } catch (error) {
+      setUploadError(
+        error instanceof Error ? error.message : "Upload failed. Please try again.",
+      );
       setIsSubmitting(false);
       setUploadPhase("idle");
     }
@@ -186,17 +271,21 @@ export function EditorSubmissionForm({
                 Submit research
               </CardTitle>
               <CardDescription>
-                Upload a PDF and fill in the metadata below.
+                Upload the main PDF, an optional poster/thumbnail, and the metadata needed for review.
               </CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <form ref={formRef} action={handleSubmit} className="space-y-5">
-            {/* Title */}
+          <form action={handleSubmit} className="space-y-6">
+            <input type="hidden" name="authors" value={JSON.stringify(authors)} readOnly />
+            {selectedTagIds.map((tagId) => (
+              <input key={tagId} type="hidden" name="tagIds" value={tagId} readOnly />
+            ))}
+
             <div className="space-y-1.5">
               <Label htmlFor="title" className="text-xs">
-                Title <span className="text-destructive font-normal">*</span>
+                Title <span className="font-normal text-destructive">*</span>
               </Label>
               <Input
                 id="title"
@@ -209,42 +298,38 @@ export function EditorSubmissionForm({
               />
             </div>
 
-            {/* Abstract */}
             <div className="space-y-1.5">
               <Label htmlFor="abstract" className="text-xs">
-                Abstract{" "}
-                <span className="text-destructive font-normal">*</span>
+                Abstract <span className="font-normal text-destructive">*</span>
               </Label>
               <Textarea
                 id="abstract"
                 name="abstract"
-                placeholder="Provide a concise summary of the research (minimum 50 characters)…"
+                placeholder="Provide a concise summary of the research (minimum 50 characters)."
                 required
                 minLength={50}
                 maxLength={5000}
-                rows={4}
+                rows={5}
                 disabled={isSubmitting}
               />
             </div>
 
-            {/* Type + Year row */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="itemType" className="text-xs">
-                  Item type{" "}
-                  <span className="text-destructive font-normal">*</span>
+                  Item type <span className="font-normal text-destructive">*</span>
                 </Label>
                 <select
                   id="itemType"
                   name="itemType"
                   required
                   disabled={isSubmitting}
-                  className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+                  className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
                 >
                   <option value="">Select type…</option>
-                  {ITEM_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
+                  {RESEARCH_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
                     </option>
                   ))}
                 </select>
@@ -252,8 +337,7 @@ export function EditorSubmissionForm({
 
               <div className="space-y-1.5">
                 <Label htmlFor="publicationYear" className="text-xs">
-                  Publication year{" "}
-                  <span className="text-destructive font-normal">*</span>
+                  Publication year <span className="font-normal text-destructive">*</span>
                 </Label>
                 <Input
                   id="publicationYear"
@@ -268,101 +352,359 @@ export function EditorSubmissionForm({
               </div>
             </div>
 
-            {/* Department */}
-            <div className="space-y-1.5">
-              <Label htmlFor="departmentId" className="text-xs">
-                Department{" "}
-                <span className="text-destructive font-normal">*</span>
-              </Label>
-              <select
-                id="departmentId"
-                name="departmentId"
-                required
-                disabled={isSubmitting}
-                className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
-              >
-                <option value="">Select department…</option>
-                {departments.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="departmentId" className="text-xs">
+                  Department <span className="font-normal text-destructive">*</span>
+                </Label>
+                <select
+                  id="departmentId"
+                  name="departmentId"
+                  required
+                  disabled={isSubmitting}
+                  className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+                >
+                  <option value="">Select department…</option>
+                  {departments.map((department) => (
+                    <option key={department.id} value={department.id}>
+                      {department.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="publicationDate" className="text-xs">
+                  Publication date
+                </Label>
+                <Input
+                  id="publicationDate"
+                  name="publicationDate"
+                  type="date"
+                  disabled={isSubmitting}
+                />
+              </div>
             </div>
 
-            {/* PDF upload */}
-            <div className="space-y-1.5">
-              <Label className="text-xs">
-                PDF file{" "}
-                <span className="text-destructive font-normal">*</span>
-              </Label>
-              {selectedFile ? (
-                <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-violet-600/10">
-                    <FileUp className="size-4 text-violet-600" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium">
-                      {selectedFile.name}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={handleRemoveFile}
-                    disabled={isSubmitting}
-                  >
-                    <X className="size-3" />
-                  </Button>
+            <div className="space-y-3 rounded-xl border border-border/60 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold tracking-tight">Authors</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Add authors in display order. At least one author is required.
+                  </p>
                 </div>
-              ) : (
-                <label
-                  htmlFor="pdf"
-                  className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-border/80 bg-muted/20 py-6 transition-colors hover:border-violet-600/40 hover:bg-violet-600/5"
-                >
-                  <div className="flex size-10 items-center justify-center rounded-full bg-muted">
-                    <Upload className="size-4 text-muted-foreground" />
+                <Button type="button" variant="outline" size="sm" onClick={addAuthor} disabled={isSubmitting}>
+                  <Plus className="size-3.5" />
+                  Add author
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {authors.map((author, index) => (
+                  <div key={`author-${index}`} className="space-y-3 rounded-lg border border-border/50 bg-muted/20 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-medium text-foreground">Author {index + 1}</p>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => moveAuthor(index, -1)}
+                          disabled={isSubmitting || index === 0}
+                        >
+                          <ChevronUp className="size-3" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => moveAuthor(index, 1)}
+                          disabled={isSubmitting || index === authors.length - 1}
+                        >
+                          <ChevronDown className="size-3" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => removeAuthor(index)}
+                          disabled={isSubmitting || authors.length === 1}
+                        >
+                          <X className="size-3" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5 sm:col-span-2">
+                        <Label htmlFor={`author-name-${index}`} className="text-xs">
+                          Display name <span className="font-normal text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id={`author-name-${index}`}
+                          value={author.displayName}
+                          onChange={(event) => updateAuthor(index, "displayName", event.target.value)}
+                          placeholder="Dr. Jane Smith"
+                          disabled={isSubmitting}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`author-affiliation-${index}`} className="text-xs">
+                          Affiliation
+                        </Label>
+                        <Input
+                          id={`author-affiliation-${index}`}
+                          value={author.affiliation}
+                          onChange={(event) => updateAuthor(index, "affiliation", event.target.value)}
+                          placeholder="Manipal University Jaipur"
+                          disabled={isSubmitting}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`author-email-${index}`} className="text-xs">
+                          Email
+                        </Label>
+                        <Input
+                          id={`author-email-${index}`}
+                          type="email"
+                          value={author.email}
+                          onChange={(event) => updateAuthor(index, "email", event.target.value)}
+                          placeholder="name@example.com"
+                          disabled={isSubmitting}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`author-orcid-${index}`} className="text-xs">
+                          ORCID
+                        </Label>
+                        <Input
+                          id={`author-orcid-${index}`}
+                          value={author.orcid}
+                          onChange={(event) => updateAuthor(index, "orcid", event.target.value)}
+                          placeholder="0000-0000-0000-0000"
+                          disabled={isSubmitting}
+                        />
+                      </div>
+
+                      <label className="flex items-center gap-2 rounded-md border border-border/50 px-3 py-2 text-xs font-medium text-foreground">
+                        <input
+                          type="checkbox"
+                          checked={author.isCorresponding}
+                          onChange={(event) => updateAuthor(index, "isCorresponding", event.target.checked)}
+                          disabled={isSubmitting}
+                        />
+                        Corresponding author
+                      </label>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-xs font-medium">Click to upload PDF</p>
-                     <p className="text-[10px] text-muted-foreground">
-                      PDF only, max 10 MB
-                     </p>
-                   </div>
-                 </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3 rounded-xl border border-border/60 p-4">
+              <div>
+                <h3 className="text-sm font-semibold tracking-tight">Tags</h3>
+                <p className="text-xs text-muted-foreground">
+                  Select the topics that best describe this item.
+                </p>
+              </div>
+
+              {tags.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-border/60 px-3 py-2 text-xs text-muted-foreground">
+                  No tags are available yet. An admin needs to create them first.
+                </p>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {tags.map((tag) => {
+                    const isSelected = selectedTagIds.includes(tag.id);
+
+                    return (
+                      <label
+                        key={tag.id}
+                        className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors ${
+                          isSelected
+                            ? "border-violet-600/40 bg-violet-600/5 text-foreground"
+                            : "border-border/60 bg-background text-muted-foreground"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleTag(tag.id)}
+                          disabled={isSubmitting}
+                        />
+                        <span className="font-medium">{tag.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               )}
-              <input
-                ref={fileInputRef}
-                id="pdf"
-                name="pdf"
-                type="file"
-                accept="application/pdf"
-                required
-                className="sr-only"
-                onChange={handleFileChange}
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="space-y-2 rounded-xl border border-border/60 p-4">
+                <div>
+                  <Label className="text-xs">
+                    Main PDF <span className="font-normal text-destructive">*</span>
+                  </Label>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    PDF only, up to 10 MB.
+                  </p>
+                </div>
+
+                {selectedPdfFile ? (
+                  <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-violet-600/10">
+                      <FileUp className="size-4 text-violet-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-medium">{selectedPdfFile.name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {formatFileSize(selectedPdfFile.size)}
+                      </p>
+                    </div>
+                    <Button type="button" variant="ghost" size="icon-xs" onClick={removeSelectedPdf} disabled={isSubmitting}>
+                      <X className="size-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <label
+                    htmlFor="pdf"
+                    className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-border/80 bg-muted/20 py-6 text-center transition-colors hover:border-violet-600/40 hover:bg-violet-600/5"
+                  >
+                    <div className="flex size-10 items-center justify-center rounded-full bg-muted">
+                      <Upload className="size-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium">Click to upload PDF</p>
+                      <p className="text-[10px] text-muted-foreground">The main full-text document for review.</p>
+                    </div>
+                  </label>
+                )}
+
+                <input
+                  ref={pdfInputRef}
+                  id="pdf"
+                  name="pdf"
+                  type="file"
+                  accept="application/pdf"
+                  required
+                  className="sr-only"
+                  onChange={handlePdfChange}
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="space-y-2 rounded-xl border border-border/60 p-4">
+                <div>
+                  <Label className="text-xs">Poster / thumbnail image</Label>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Optional JPG, PNG, or WEBP up to 5 MB.
+                  </p>
+                </div>
+
+                {selectedCoverFile ? (
+                  <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-violet-600/10">
+                      <FileImage className="size-4 text-violet-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-medium">{selectedCoverFile.name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {formatFileSize(selectedCoverFile.size)}
+                      </p>
+                    </div>
+                    <Button type="button" variant="ghost" size="icon-xs" onClick={removeSelectedCover} disabled={isSubmitting}>
+                      <X className="size-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <label
+                    htmlFor="cover-image"
+                    className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-border/80 bg-muted/20 py-6 text-center transition-colors hover:border-violet-600/40 hover:bg-violet-600/5"
+                  >
+                    <div className="flex size-10 items-center justify-center rounded-full bg-muted">
+                      <Upload className="size-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium">Click to upload poster / thumbnail</p>
+                      <p className="text-[10px] text-muted-foreground">Useful for posters, presentations, and visual previews.</p>
+                    </div>
+                  </label>
+                )}
+
+                <input
+                  ref={coverInputRef}
+                  id="cover-image"
+                  name="coverImage"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="sr-only"
+                  onChange={handleCoverChange}
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="externalUrl" className="text-xs">
+                  Reference / external URL
+                </Label>
+                <Input
+                  id="externalUrl"
+                  name="externalUrl"
+                  type="url"
+                  placeholder="https://example.com/paper"
+                  disabled={isSubmitting}
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Use this for a citation page, external repository, or publication landing page.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="doi" className="text-xs">
+                  DOI
+                </Label>
+                <Input
+                  id="doi"
+                  name="doi"
+                  placeholder="10.1000/xyz123"
+                  maxLength={255}
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="changeSummary" className="text-xs">
+                Change summary / version note
+              </Label>
+              <Textarea
+                id="changeSummary"
+                name="changeSummary"
+                placeholder="Summarize what this version contains or what makes it important."
+                maxLength={1000}
+                rows={3}
                 disabled={isSubmitting}
               />
             </div>
 
-            {/* Optional fields toggle */}
             <button
               type="button"
-              onClick={() => setShowOptional((prev) => !prev)}
+              onClick={() => setShowAdditional((current) => !current)}
               className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
-              {showOptional ? (
-                <ChevronUp className="size-3" />
-              ) : (
-                <ChevronDown className="size-3" />
-              )}
-              Optional metadata
+              {showAdditional ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+              Additional metadata
             </button>
 
-            {showOptional && (
+            {showAdditional && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
@@ -370,18 +712,6 @@ export function EditorSubmissionForm({
                 className="space-y-4 overflow-hidden"
               >
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="doi" className="text-xs">
-                      DOI
-                    </Label>
-                    <Input
-                      id="doi"
-                      name="doi"
-                      placeholder="10.1000/xyz123"
-                      maxLength={255}
-                      disabled={isSubmitting}
-                    />
-                  </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="license" className="text-xs">
                       License
@@ -394,22 +724,7 @@ export function EditorSubmissionForm({
                       disabled={isSubmitting}
                     />
                   </div>
-                </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="externalUrl" className="text-xs">
-                    External URL
-                  </Label>
-                  <Input
-                    id="externalUrl"
-                    name="externalUrl"
-                    type="url"
-                    placeholder="https://example.com/paper"
-                    disabled={isSubmitting}
-                  />
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label htmlFor="supervisorName" className="text-xs">
                       Supervisor name
@@ -422,6 +737,9 @@ export function EditorSubmissionForm({
                       disabled={isSubmitting}
                     />
                   </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label htmlFor="programName" className="text-xs">
                       Program name
@@ -434,37 +752,32 @@ export function EditorSubmissionForm({
                       disabled={isSubmitting}
                     />
                   </div>
-                </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="notesToAdmin" className="text-xs">
-                    Notes to admin
-                  </Label>
-                  <Textarea
-                    id="notesToAdmin"
-                    name="notesToAdmin"
-                    placeholder="Any additional context for the reviewer…"
-                    maxLength={1000}
-                    rows={2}
-                    disabled={isSubmitting}
-                  />
+                  <div className="space-y-1.5">
+                    <Label htmlFor="notesToAdmin" className="text-xs">
+                      Notes to admin
+                    </Label>
+                    <Textarea
+                      id="notesToAdmin"
+                      name="notesToAdmin"
+                      placeholder="Any additional context for the reviewer."
+                      maxLength={1000}
+                      rows={3}
+                      disabled={isSubmitting}
+                    />
+                  </div>
                 </div>
               </motion.div>
             )}
 
-            {/* Submit */}
             <Button
               type="submit"
               disabled={isSubmitting}
               className="w-full bg-violet-600 text-white hover:bg-violet-700"
             >
-              {isSubmitting ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Send className="size-3.5" />
-              )}
+              {isSubmitting ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
               {uploadPhase === "uploading"
-                ? "Uploading PDF…"
+                ? "Uploading files…"
                 : uploadPhase === "saving"
                   ? "Saving submission…"
                   : "Submit for review"}

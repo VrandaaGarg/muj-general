@@ -8,6 +8,7 @@ import {
 } from "@/lib/storage/research-files";
 
 type PresignBody = {
+  kind?: "main_pdf" | "cover_image";
   fileName?: string;
   contentType?: string;
   sizeBytes?: number;
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
   const body = (await request.json()) as PresignBody;
 
   if (
+    (body.kind !== "main_pdf" && body.kind !== "cover_image") ||
     !body.fileName ||
     !body.contentType ||
     typeof body.sizeBytes !== "number"
@@ -39,9 +41,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    const objectKey = createPresignedResearchUploadKey(session.user.id);
+    const objectKey = createPresignedResearchUploadKey(session.user.id, {
+      fileName: body.fileName,
+      contentType: body.contentType,
+    });
     const result = await createPresignedResearchUpload({
       key: objectKey,
+      kind: body.kind,
       contentType: body.contentType,
       sizeBytes: body.sizeBytes,
     });

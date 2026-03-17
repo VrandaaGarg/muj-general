@@ -1,5 +1,7 @@
 /** Client-side presigned upload helper for R2 (browser-only, no "server-only"). */
 
+export type ResearchUploadKind = "main_pdf" | "cover_image";
+
 export interface PresignedUploadMeta {
   objectKey: string;
   originalName: string;
@@ -24,12 +26,16 @@ interface PresignResponse {
  */
 export async function presignedUpload(
   file: File,
+  options?: { kind?: ResearchUploadKind },
 ): Promise<PresignedUploadMeta> {
+  const kind = options?.kind ?? "main_pdf";
+
   // Step 1 – get a presigned URL
   const presignRes = await fetch("/api/uploads/research/presign", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      kind,
       fileName: file.name,
       contentType: file.type,
       sizeBytes: file.size,
@@ -76,9 +82,12 @@ export async function presignedUpload(
 export function appendUploadMeta(
   formData: FormData,
   meta: PresignedUploadMeta,
+  options?: { prefix?: "uploaded" | "coverUploaded" },
 ) {
-  formData.set("uploadedObjectKey", meta.objectKey);
-  formData.set("uploadedOriginalName", meta.originalName);
-  formData.set("uploadedMimeType", meta.mimeType);
-  formData.set("uploadedSizeBytes", String(meta.sizeBytes));
+  const prefix = options?.prefix ?? "uploaded";
+
+  formData.set(`${prefix}ObjectKey`, meta.objectKey);
+  formData.set(`${prefix}OriginalName`, meta.originalName);
+  formData.set(`${prefix}MimeType`, meta.mimeType);
+  formData.set(`${prefix}SizeBytes`, String(meta.sizeBytes));
 }

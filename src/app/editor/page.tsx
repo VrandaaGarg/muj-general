@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/auth/session";
 import {
   listDepartments,
   listResearchItemsForEditor,
+  listTags,
 } from "@/lib/db/queries";
 import {
   Card,
@@ -23,8 +24,9 @@ export default async function EditorPage() {
   });
   const { appUser } = session;
 
-  const [departments, submittedItems] = await Promise.all([
+  const [departments, tags, submittedItems] = await Promise.all([
     listDepartments(),
+    listTags(),
     listResearchItemsForEditor(appUser.id),
   ]);
 
@@ -118,7 +120,7 @@ export default async function EditorPage() {
               <div className="h-64 animate-pulse rounded-xl border border-border/60 bg-muted/20" />
             }
           >
-            <EditorSubmissionForm departments={departments} />
+            <EditorSubmissionForm departments={departments} tags={tags} />
           </Suspense>
         </div>
 
