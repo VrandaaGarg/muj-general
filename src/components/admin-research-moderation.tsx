@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   BookCheck,
   Building2,
   CheckCircle2,
   Clock,
+  Eye,
   Loader2,
   Mail,
   MessageSquareWarning,
@@ -17,7 +19,7 @@ import {
 import { toast } from "sonner";
 
 import { reviewResearchSubmissionAction } from "@/lib/actions/research";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
@@ -233,6 +235,13 @@ function ModerationReviewCard({ item }: { item: PendingResearchItem }) {
 
         {/* Actions */}
         <div className="flex items-center gap-2 pt-1">
+          <Link
+            href={`/admin/review/${item.id}`}
+            className={buttonVariants({ variant: "secondary", size: "sm" })}
+          >
+            <Eye className="size-3.5" />
+            View Details
+          </Link>
           <Button
             size="sm"
             onClick={handlePublish}

@@ -410,6 +410,94 @@ export async function countPendingResearchModerationItems() {
   return Number(result?.count ?? 0);
 }
 
+export async function getResearchItemForAdminReview(researchItemId: string) {
+  const [item] = await db
+    .select({
+      id: researchItems.id,
+      slug: researchItems.slug,
+      title: researchItems.title,
+      abstract: researchItems.abstract,
+      itemType: researchItems.itemType,
+      publicationYear: researchItems.publicationYear,
+      status: researchItems.status,
+      license: researchItems.license,
+      externalUrl: researchItems.externalUrl,
+      doi: researchItems.doi,
+      createdAt: researchItems.createdAt,
+      updatedAt: researchItems.updatedAt,
+      departmentName: departments.name,
+      departmentSlug: departments.slug,
+      currentVersionId: researchItems.currentVersionId,
+      submittedByName: user.name,
+      submittedByEmail: user.email,
+      supervisorName: itemVersions.supervisorName,
+      programName: itemVersions.programName,
+      notesToAdmin: itemVersions.notesToAdmin,
+      changeSummary: itemVersions.changeSummary,
+      publicationDate: itemVersions.publicationDate,
+      versionNumber: itemVersions.versionNumber,
+    })
+    .from(researchItems)
+    .innerJoin(appUsers, eq(appUsers.id, researchItems.submittedByUserId))
+    .innerJoin(user, eq(user.id, appUsers.id))
+    .leftJoin(departments, eq(departments.id, researchItems.departmentId))
+    .leftJoin(itemVersions, eq(itemVersions.id, researchItems.currentVersionId))
+    .where(eq(researchItems.id, researchItemId))
+    .limit(1);
+
+  if (!item) return null;
+
+  const [authorRows, tagRows, currentFiles] = await Promise.all([
+    db
+      .select({
+        id: authors.id,
+        displayName: authors.displayName,
+        email: authors.email,
+        affiliation: authors.affiliation,
+        orcid: authors.orcid,
+        authorOrder: researchItemAuthors.authorOrder,
+        isCorresponding: researchItemAuthors.isCorresponding,
+      })
+      .from(researchItemAuthors)
+      .innerJoin(authors, eq(authors.id, researchItemAuthors.authorId))
+      .where(eq(researchItemAuthors.researchItemId, item.id))
+      .orderBy(asc(researchItemAuthors.authorOrder)),
+    db
+      .select({ id: tags.id, name: tags.name, slug: tags.slug })
+      .from(researchItemTags)
+      .innerJoin(tags, eq(tags.id, researchItemTags.tagId))
+      .where(eq(researchItemTags.researchItemId, item.id))
+      .orderBy(asc(tags.name)),
+    item.currentVersionId
+      ? db
+          .select({
+            id: files.id,
+            fileKind: files.fileKind,
+            objectKey: files.objectKey,
+            originalName: files.originalName,
+            mimeType: files.mimeType,
+            sizeBytes: files.sizeBytes,
+          })
+          .from(files)
+          .where(
+            and(
+              eq(files.researchItemId, item.id),
+              eq(files.itemVersionId, item.currentVersionId),
+              inArray(files.fileKind, ["main_pdf", "cover_image"]),
+            ),
+          )
+      : Promise.resolve([]),
+  ]);
+
+  return {
+    ...item,
+    authors: authorRows,
+    tags: tagRows,
+    pdfFile: currentFiles.find((f) => f.fileKind === "main_pdf") ?? null,
+    coverImageFile: currentFiles.find((f) => f.fileKind === "cover_image") ?? null,
+  };
+}
+
 export async function reviewResearchSubmission(params: {
   researchItemId: string;
   reviewerUserId: string;
