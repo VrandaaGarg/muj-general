@@ -43,7 +43,10 @@ export const createResearchSubmissionSchema = createResearchItemSchema.extend({
 export const reviewResearchSubmissionSchema = z.object({
   researchItemId: z.string().uuid(),
   decision: z.enum(["publish", "request_changes"]),
-  comment: z.string().trim().max(1000).optional().or(z.literal("")),
+  comment: z.preprocess(
+    (value) => (value === null ? undefined : value),
+    z.string().trim().max(1000).optional().or(z.literal("")),
+  ),
 });
 
 export type CreateResearchItemInput = z.infer<typeof createResearchItemSchema>;
