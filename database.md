@@ -89,28 +89,43 @@ Stores academic departments or schools used for filtering and ownership grouping
 | `created_at` | `timestamptz` | Default `now()` |
 | `updated_at` | `timestamptz` | Default `now()` |
 
-### `users`
+### `user`
 
-App-level user profile tied to Better Auth.
+Core Better Auth user table.
 
 | Column | Type | Notes |
 | --- | --- | --- |
-| `id` | `uuid` | Primary key |
-| `auth_user_id` | `text` | Unique id from Better Auth |
+| `id` | `text` | Primary key |
 | `email` | `text` | Unique |
 | `name` | `text` | Display name |
-| `role` | `user_role` | Default `reader` |
-| `department_id` | `uuid` | Nullable, FK to `departments.id` |
 | `email_verified` | `boolean` | Default `false` |
 | `email_verified_at` | `timestamptz` | Nullable |
+| `image` | `text` | Nullable |
 | `is_active` | `boolean` | Default `true` |
 | `created_at` | `timestamptz` | Default `now()` |
 | `updated_at` | `timestamptz` | Default `now()` |
 
 Notes:
 
-- Every new signup should default to `role = reader`
 - Every new signup should default to `email_verified = false`
+- This table should stay aligned with Better Auth core schema
+- Authentication identity and verification state should live here
+
+### `app_users`
+
+App-specific profile table linked 1:1 with Better Auth `user.id`.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `text` | Primary key and FK to `user.id` |
+| `role` | `user_role` | Default `reader` |
+| `department_id` | `uuid` | Nullable, FK to `departments.id` |
+| `created_at` | `timestamptz` | Default `now()` |
+| `updated_at` | `timestamptz` | Default `now()` |
+
+Notes:
+
+- Every new signup should default to `role = reader`
 - `department_id` is optional and should usually be `null` for normal users
 - `department_id` becomes useful for editors/admins and future reporting
 - Only verified users should be eligible for promotion to `editor` or `admin`
@@ -154,7 +169,7 @@ Main public-facing repository record.
 | `item_type` | `research_item_type` | Required |
 | `publication_year` | `int` | Indexed |
 | `department_id` | `uuid` | FK to `departments.id` |
-| `submitted_by_user_id` | `uuid` | FK to `users.id` |
+| `submitted_by_user_id` | `text` | FK to `app_users.id` |
 | `current_version_id` | `uuid` | Nullable, FK to `item_versions.id` |
 | `status` | `research_item_status` | Required |
 | `license` | `text` | Nullable |
@@ -188,7 +203,7 @@ Stores editable versions of a research item so draft changes and moderation do n
 | `supervisor_name` | `text` | Nullable |
 | `program_name` | `text` | Nullable |
 | `publication_date` | `date` | Nullable |
-| `created_by_user_id` | `uuid` | FK to `users.id` |
+| `created_by_user_id` | `text` | FK to `app_users.id` |
 | `created_at` | `timestamptz` | Default `now()` |
 
 Notes:
@@ -240,7 +255,7 @@ Stores uploaded file metadata and S3 references.
 | `mime_type` | `text` | Required |
 | `size_bytes` | `bigint` | Required |
 | `checksum` | `text` | Nullable but recommended |
-| `uploaded_by_user_id` | `uuid` | FK to `users.id` |
+| `uploaded_by_user_id` | `text` | FK to `app_users.id` |
 | `created_at` | `timestamptz` | Default `now()` |
 | `updated_at` | `timestamptz` | Default `now()` |
 
@@ -258,7 +273,7 @@ Stores admin moderation actions on submitted content.
 | `id` | `uuid` | Primary key |
 | `research_item_id` | `uuid` | FK to `research_items.id` |
 | `item_version_id` | `uuid` | FK to `item_versions.id` |
-| `reviewed_by_user_id` | `uuid` | FK to `users.id` |
+| `reviewed_by_user_id` | `text` | FK to `app_users.id` |
 | `decision` | `moderation_decision` | Required |
 | `comment` | `text` | Nullable |
 | `created_at` | `timestamptz` | Default `now()` |
@@ -275,7 +290,7 @@ Stores admin-auditable system actions.
 | Column | Type | Notes |
 | --- | --- | --- |
 | `id` | `uuid` | Primary key |
-| `actor_user_id` | `uuid` | Nullable FK to `users.id` |
+| `actor_user_id` | `text` | Nullable FK to `app_users.id` |
 | `target_type` | `text` | Example: `research_item`, `user`, `file` |
 | `target_id` | `uuid` | Target entity id |
 | `action` | `text` | Example: `created`, `submitted`, `published`, `role_changed` |
@@ -284,9 +299,10 @@ Stores admin-auditable system actions.
 
 ## Relationships
 
-- One `department` has many `users`
+- One `department` has many `app_users`
 - One `department` has many `research_items`
-- One `user` can submit many `research_items`
+- One `user` has one `app_user`
+- One `app_user` can submit many `research_items`
 - One `research_item` has many `item_versions`
 - One `research_item` has many `files`
 - One `research_item` has many `authors` through `research_item_authors`
@@ -370,9 +386,9 @@ Full-text search recommendation for MVP:
 
 ## Constraints and Rules
 
-- `users.auth_user_id` must be unique
-- `users.email` must be unique
-- `users.email_verified` should default to `false`
+- `user.email` must be unique
+- `user.email_verified` should default to `false`
+- `app_users.id` must match an existing `user.id`
 - `departments.slug` must be unique
 - `tags.slug` must be unique
 - `research_items.slug` must be unique
