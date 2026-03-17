@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "editor_access_requests_one_pending_per_user" ON "editor_access_requests" USING btree ("user_id") WHERE "editor_access_requests"."status" = 'pending';

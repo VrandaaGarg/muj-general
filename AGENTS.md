@@ -22,3 +22,11 @@ Use shadcn/ui as the component library for the muj-general frontend, alongside T
 <!-- Added: 2026-03-17 -->
 ## Authentication
 Use Better Auth built-in email/password credentials with email verification. Only verified users should be eligible for elevated roles such as `editor` and `admin`.
+
+<!-- Added: 2026-03-17 -->
+## Auth Protection
+For muj-general, use `proxy.ts` only for optimistic redirects on protected routes. Enforce real access control server-side with session helpers that combine Better Auth session data with the `app_users` role record.
+
+<!-- Added: 2026-03-17 -->
+## Editor Access Workflow
+For muj-general, verified readers request editor access through `editor_access_requests`. Keep at most one pending request per user, let admins approve or reject requests with review metadata, and promote approved users by updating `app_users.role` to `editor`.

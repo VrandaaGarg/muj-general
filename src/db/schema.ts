@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -52,6 +52,11 @@ export const moderationDecisionEnum = pgEnum("moderation_decision", [
   "changes_requested",
   "archived",
 ]);
+
+export const editorAccessRequestStatusEnum = pgEnum(
+  "editor_access_request_status",
+  ["pending", "approved", "rejected"],
+);
 
 const timestamps = {
   createdAt: timestamp("created_at", {
@@ -179,6 +184,37 @@ export const appUsers = pgTable(
   (table) => [
     index("app_users_role_idx").on(table.role),
     index("app_users_department_id_idx").on(table.departmentId),
+  ],
+);
+
+export const editorAccessRequests = pgTable(
+  "editor_access_requests",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => appUsers.id, { onDelete: "cascade" }),
+    status: editorAccessRequestStatusEnum("status")
+      .notNull()
+      .default("pending"),
+    message: text("message"),
+    reviewedByUserId: text("reviewed_by_user_id").references(() => appUsers.id, {
+      onDelete: "set null",
+    }),
+    reviewedAt: timestamp("reviewed_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    rejectionReason: text("rejection_reason"),
+    ...timestamps,
+  },
+  (table) => [
+    index("editor_access_requests_user_id_idx").on(table.userId),
+    index("editor_access_requests_status_idx").on(table.status),
+    index("editor_access_requests_reviewed_by_idx").on(table.reviewedByUserId),
+    uniqueIndex("editor_access_requests_one_pending_per_user")
+      .on(table.userId)
+      .where(sql`${table.status} = 'pending'`),
   ],
 );
 
@@ -438,7 +474,29 @@ export const appUsersRelations = relations(appUsers, ({ one, many }) => ({
   uploadedFiles: many(files),
   moderationDecisions: many(moderationDecisions),
   activityLogs: many(activityLogs),
+  editorAccessRequests: many(editorAccessRequests, {
+    relationName: "editorAccessRequestsRequestedByUser",
+  }),
+  reviewedEditorAccessRequests: many(editorAccessRequests, {
+    relationName: "editorAccessRequestsReviewedByUser",
+  }),
 }));
+
+export const editorAccessRequestsRelations = relations(
+  editorAccessRequests,
+  ({ one }) => ({
+    user: one(appUsers, {
+      fields: [editorAccessRequests.userId],
+      references: [appUsers.id],
+      relationName: "editorAccessRequestsRequestedByUser",
+    }),
+    reviewedByUser: one(appUsers, {
+      fields: [editorAccessRequests.reviewedByUserId],
+      references: [appUsers.id],
+      relationName: "editorAccessRequestsReviewedByUser",
+    }),
+  }),
+);
 
 export const departmentsRelations = relations(departments, ({ many }) => ({
   appUsers: many(appUsers),

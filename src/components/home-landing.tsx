@@ -4,14 +4,16 @@ import Link from "next/link";
 import { motion, type Variants } from "framer-motion";
 import {
   ArrowRight,
-  BookOpen,
   FileText,
   GraduationCap,
+  LayoutDashboard,
   Search,
   Users,
 } from "lucide-react";
 
-import { buttonVariants } from "@/components/ui/button";
+import { useSession } from "@/lib/auth-client";
+import { buttonVariants } from "@/components/ui/button-variants";
+import { SiteHeader } from "@/components/site-header";
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 24 },
@@ -48,6 +50,9 @@ const pillars = [
 ] as const;
 
 export function HomeLanding() {
+  const { data: session } = useSession();
+  const isSignedIn = Boolean(session?.user);
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
       <div
@@ -59,35 +64,7 @@ export function HomeLanding() {
         }}
       />
 
-      <div className="fixed top-0 right-0 left-0 z-50 h-[2px] bg-gradient-to-r from-amber-600/0 via-amber-600 to-amber-600/0" />
-
-      <motion.header
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
-        className="relative z-10 flex items-center justify-between px-6 py-5 md:px-12 lg:px-20"
-      >
-        <div className="flex items-center gap-2.5">
-          <div className="flex size-8 items-center justify-center rounded-md bg-foreground">
-            <BookOpen className="size-4 text-background" />
-          </div>
-          <span className="text-base font-semibold tracking-tight">
-            MUJ General
-          </span>
-        </div>
-        <nav className="flex items-center gap-2">
-          <Link
-            href="/sign-in"
-            className={buttonVariants({ variant: "ghost", size: "sm" })}
-          >
-            Sign in
-          </Link>
-          <Link href="/sign-up" className={buttonVariants({ size: "sm" })}>
-            Get started
-            <ArrowRight data-icon="inline-end" className="size-3.5" />
-          </Link>
-        </nav>
-      </motion.header>
+      <SiteHeader accentColor="amber" />
 
       <main className="relative z-10 mx-auto max-w-5xl px-6 pt-20 pb-32 md:px-12 md:pt-32 lg:pt-40">
         <div className="flex flex-col items-start">
@@ -136,16 +113,32 @@ export function HomeLanding() {
             animate="visible"
             className="mt-10 flex flex-wrap items-center gap-3"
           >
-            <Link href="/sign-up" className={buttonVariants({ size: "lg" })}>
-              Create your account
-              <ArrowRight data-icon="inline-end" className="size-4" />
-            </Link>
-            <Link
-              href="/sign-in"
-              className={buttonVariants({ variant: "outline", size: "lg" })}
-            >
-              Sign in to continue
-            </Link>
+            {isSignedIn ? (
+              <Link
+                href="/dashboard"
+                className={buttonVariants({ size: "lg" })}
+              >
+                <LayoutDashboard className="size-4" />
+                Go to dashboard
+                <ArrowRight data-icon="inline-end" className="size-4" />
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/sign-up"
+                  className={buttonVariants({ size: "lg" })}
+                >
+                  Create your account
+                  <ArrowRight data-icon="inline-end" className="size-4" />
+                </Link>
+                <Link
+                  href="/sign-in"
+                  className={buttonVariants({ variant: "outline", size: "lg" })}
+                >
+                  Sign in to continue
+                </Link>
+              </>
+            )}
           </motion.div>
         </div>
 

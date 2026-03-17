@@ -31,4 +31,25 @@ export const createResearchItemSchema = z.object({
   departmentId: z.string().uuid(),
 });
 
+export const createResearchSubmissionSchema = createResearchItemSchema.extend({
+  license: z.string().trim().max(160).optional().or(z.literal("")),
+  externalUrl: z.url().optional().or(z.literal("")),
+  doi: z.string().trim().max(255).optional().or(z.literal("")),
+  notesToAdmin: z.string().trim().max(1000).optional().or(z.literal("")),
+  supervisorName: z.string().trim().max(160).optional().or(z.literal("")),
+  programName: z.string().trim().max(160).optional().or(z.literal("")),
+});
+
+export const reviewResearchSubmissionSchema = z.object({
+  researchItemId: z.string().uuid(),
+  decision: z.enum(["publish", "request_changes"]),
+  comment: z.string().trim().max(1000).optional().or(z.literal("")),
+});
+
 export type CreateResearchItemInput = z.infer<typeof createResearchItemSchema>;
+export type CreateResearchSubmissionInput = z.infer<
+  typeof createResearchSubmissionSchema
+>;
+export type ReviewResearchSubmissionInput = z.infer<
+  typeof reviewResearchSubmissionSchema
+>;

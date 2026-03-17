@@ -44,7 +44,7 @@ export default function SignUpPage() {
       name: values.name,
       email: values.email,
       password: values.password,
-      callbackURL: "/verify-email",
+      callbackURL: "/sign-in?verified=true",
     });
 
     if (error) {

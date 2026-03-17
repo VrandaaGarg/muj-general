@@ -74,6 +74,12 @@ The system is designed like an institutional repository, not a full academic pub
 - `changes_requested`
 - `archived`
 
+### `editor_access_request_status`
+
+- `pending`
+- `approved`
+- `rejected`
+
 ## Tables
 
 ### `departments`
@@ -176,6 +182,29 @@ Notes:
 - `department_id` is optional and should usually be `null` for normal users
 - `department_id` becomes useful for editors/admins and future reporting
 - Only verified users should be eligible for promotion to `editor` or `admin`
+
+### `editor_access_requests`
+
+Tracks requests from verified readers who want editor access.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `uuid` | Primary key |
+| `user_id` | `text` | FK to `app_users.id` |
+| `status` | `editor_access_request_status` | Default `pending` |
+| `message` | `text` | Nullable note from the user |
+| `reviewed_by_user_id` | `text` | Nullable FK to `app_users.id` |
+| `reviewed_at` | `timestamptz` | Nullable |
+| `rejection_reason` | `text` | Nullable |
+| `created_at` | `timestamptz` | Default `now()` |
+| `updated_at` | `timestamptz` | Default `now()` |
+
+Notes:
+
+- Readers must be verified before requesting editor access
+- Only one pending editor access request should exist per user at a time
+- Admin reviews requests and promotes approved users to `editor`
+- Rejections should store a reason when possible for user feedback
 
 ### `authors`
 
@@ -350,6 +379,7 @@ Stores admin-auditable system actions.
 - One `department` has many `research_items`
 - One `user` has one `app_user`
 - One `app_user` can submit many `research_items`
+- One `app_user` can create many `editor_access_requests`
 - One `research_item` has many `item_versions`
 - One `research_item` has many `files`
 - One `research_item` has many `authors` through `research_item_authors`
@@ -365,6 +395,7 @@ Stores admin-auditable system actions.
 - View public metadata
 - Download published files allowed for public access
 - Signup with Better Auth credentials and verify email
+- Request editor access after email verification
 
 ### `editor`
 
@@ -392,16 +423,18 @@ Stores admin-auditable system actions.
 ### Submission lifecycle
 
 1. User signs up with Better Auth credentials and verifies email
-2. Admin may promote a verified `reader` to `editor`
-3. Editor creates a `research_item` in `draft`
-4. Editor adds metadata in `item_versions`
-5. Editor uploads file records in `files`
-6. Editor submits item, status becomes `submitted`
-7. Admin reviews and either:
+2. Verified `reader` may create an `editor_access_request`
+3. Admin approves or rejects the request
+4. On approval, the user role is updated to `editor`
+5. Editor creates a `research_item` in `draft` or directly submits their first version
+6. Editor adds metadata in `item_versions`
+7. Editor uploads file records in `files`
+8. Editor submits item, status becomes `submitted`
+9. Admin reviews and either:
    - marks `changes_requested`
    - marks `approved`
-8. On publish, status becomes `published` and `published_at` is set
-9. If removed from public visibility later, status becomes `archived`
+10. On publish, status becomes `published` and `published_at` is set
+11. If removed from public visibility later, status becomes `archived`
 
 ### Public visibility
 
@@ -436,6 +469,7 @@ Full-text search recommendation for MVP:
 - `user.email` must be unique
 - `user.email_verified` should default to `false`
 - `app_users.id` must match an existing `user.id`
+- only verified readers should be allowed to create editor access requests
 - `departments.slug` must be unique
 - `tags.slug` must be unique
 - `research_items.slug` must be unique

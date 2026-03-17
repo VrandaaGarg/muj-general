@@ -4,12 +4,18 @@ type VerifyEmailPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
+function getSearchParam(
+  value: string | string[] | undefined,
+): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export default async function VerifyEmailPage({
   searchParams,
 }: VerifyEmailPageProps) {
   const params = await searchParams;
-  const token = params.token;
-  const hasToken = Array.isArray(token) ? token.length > 0 : Boolean(token);
+  const token = getSearchParam(params.token);
+  const error = getSearchParam(params.error);
 
-  return <VerifyEmailContent hasToken={hasToken} />;
+  return <VerifyEmailContent token={token} error={error} />;
 }
