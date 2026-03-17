@@ -362,6 +362,10 @@ export default async function RevisePage({ params }: RevisePageProps) {
                 programName: item.programName,
                 authors: item.authors,
                 tagIds: item.tagIds,
+                references: item.references.map((r) => ({
+                  citationText: r.citationText,
+                  url: r.url ?? "",
+                })),
                 pdfFile: item.pdfFile,
                 coverImageFile: item.coverImageFile,
               }}

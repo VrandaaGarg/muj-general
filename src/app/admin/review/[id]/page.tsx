@@ -3,12 +3,14 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
+  BookOpen,
   Building2,
   Calendar,
   ExternalLink,
   FileText,
   Globe,
   GraduationCap,
+  LinkIcon,
   Mail,
   ScrollText,
   Tag,
@@ -238,6 +240,45 @@ export default async function AdminReviewPage({
             <div className="rounded-xl border border-amber-600/20 bg-amber-600/5 p-5">
               <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-amber-700">Notes from Editor</h3>
               <p className="text-sm leading-relaxed text-foreground/85">{item.notesToAdmin}</p>
+            </div>
+          )}
+
+          {/* References */}
+          {item.references.length > 0 && (
+            <div className="rounded-xl border border-border/60 bg-muted/20 p-5">
+              <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <BookOpen className="size-3.5" />
+                References ({item.references.length})
+              </h3>
+              <ol className="space-y-2">
+                {item.references.map((ref, index) => (
+                  <li
+                    key={index}
+                    className="flex items-baseline gap-2 text-sm leading-relaxed text-foreground/85"
+                  >
+                    <span className="shrink-0 text-xs font-medium text-muted-foreground">
+                      [{index + 1}]
+                    </span>
+                    <span>
+                      {ref.citationText}
+                      {ref.url && (
+                        <>
+                          {" "}
+                          <a
+                            href={ref.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-0.5 text-xs text-violet-600 underline decoration-violet-600/30 underline-offset-2 hover:text-violet-700"
+                          >
+                            <LinkIcon className="size-2.5" />
+                            Link
+                          </a>
+                        </>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ol>
             </div>
           )}
 

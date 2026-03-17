@@ -13,6 +13,7 @@ import {
   files,
   itemVersions,
   researchItemAuthors,
+  researchItemReferences,
   researchItemTags,
   researchItems,
   tags,
@@ -63,6 +64,17 @@ function parseSubmissionPayload(formData: FormData) {
     }
   }
 
+  const referencesValue = formData.get("references");
+  let parsedReferences: unknown = [];
+
+  if (typeof referencesValue === "string" && referencesValue.trim()) {
+    try {
+      parsedReferences = JSON.parse(referencesValue);
+    } catch {
+      parsedReferences = [];
+    }
+  }
+
   const tagIds = formData
     .getAll("tagIds")
     .filter((value): value is string => typeof value === "string");
@@ -83,6 +95,7 @@ function parseSubmissionPayload(formData: FormData) {
     programName: formData.get("programName"),
     authors: parsedAuthors,
     tagIds,
+    references: parsedReferences,
   });
 }
 
@@ -326,6 +339,17 @@ export async function submitResearchSubmission(formData: FormData) {
           uniqueTagIds.map((tagId) => ({
             researchItemId: itemId,
             tagId,
+          })),
+        );
+      }
+
+      if (parsed.data.references.length > 0) {
+        await tx.insert(researchItemReferences).values(
+          parsed.data.references.map((ref, idx) => ({
+            researchItemId: itemId,
+            citationText: ref.citationText,
+            url: ref.url || null,
+            referenceOrder: idx + 1,
           })),
         );
       }
@@ -652,6 +676,21 @@ export async function submitResearchRevision(formData: FormData) {
         );
       }
 
+      await tx
+        .delete(researchItemReferences)
+        .where(eq(researchItemReferences.researchItemId, existingItem.id));
+
+      if (parsed.data.references.length > 0) {
+        await tx.insert(researchItemReferences).values(
+          parsed.data.references.map((ref, idx) => ({
+            researchItemId: existingItem.id,
+            citationText: ref.citationText,
+            url: ref.url || null,
+            referenceOrder: idx + 1,
+          })),
+        );
+      }
+
       if (mainPdf.file) {
         await tx.insert(files).values({
           id: randomUUID(),
@@ -734,4 +773,10 @@ export async function submitResearchRevision(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath(`/research/${slug}`);
   redirect(`/editor/${slug}/revise?revision=submitted`);
+}
+
+
+export async function trackDownload(researchItemId: string) {
+  const { incrementDownloadCount } = await import("@/lib/db/queries");
+  await incrementDownloadCount(researchItemId);
 }

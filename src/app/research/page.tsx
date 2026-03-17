@@ -10,6 +10,7 @@ import {
   countPublishedResearchItems,
   listPublishedFilterOptions,
 } from "@/lib/db/queries";
+import { getPublicFileUrl } from "@/lib/storage/r2";
 
 export const metadata: Metadata = {
   title: "Research Repository — MUJ General",
@@ -92,7 +93,15 @@ export default async function ResearchPage({ searchParams }: ResearchPageProps) 
 
         {/* Results */}
         <div className="mt-8">
-          <ResearchResults items={items} totalCount={totalCount} />
+          <ResearchResults
+            items={items.map((item) => ({
+              ...item,
+              coverImageUrl: item.coverImageObjectKey
+                ? getPublicFileUrl(item.coverImageObjectKey)
+                : null,
+            }))}
+            totalCount={totalCount}
+          />
         </div>
 
         {/* Pagination */}

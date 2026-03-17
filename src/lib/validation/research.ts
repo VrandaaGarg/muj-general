@@ -87,6 +87,14 @@ export const authorSchema = z.object({
 
 export const tagIdSchema = z.string().uuid();
 
+export const referenceSchema = z.object({
+  citationText: z.string().trim().min(3).max(2000),
+  url: z.preprocess(
+    normalizeOptionalString,
+    z.string().url().max(2048).optional(),
+  ),
+});
+
 export const createResearchSubmissionSchema = createResearchItemSchema.extend({
   publicationDate: optionalDateString(),
   changeSummary: optionalTrimmedString(1000),
@@ -101,6 +109,7 @@ export const createResearchSubmissionSchema = createResearchItemSchema.extend({
   programName: optionalTrimmedString(160),
   authors: z.array(authorSchema).min(1).max(20),
   tagIds: z.array(tagIdSchema).max(25),
+  references: z.array(referenceSchema).max(100).default([]),
 });
 
 export const reviewResearchSubmissionSchema = z.object({
@@ -117,6 +126,7 @@ export type CreateResearchSubmissionInput = z.infer<
   typeof createResearchSubmissionSchema
 >;
 export type ResearchAuthorInput = z.infer<typeof authorSchema>;
+export type ResearchReferenceInput = z.infer<typeof referenceSchema>;
 export type ReviewResearchSubmissionInput = z.infer<
   typeof reviewResearchSubmissionSchema
 >;

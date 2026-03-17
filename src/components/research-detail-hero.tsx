@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { motion, type Variants } from "framer-motion";
 import {
+  BookOpen,
   Building2,
   CalendarDays,
   ChevronRight,
   Download,
+  Eye,
   ExternalLink,
   FileText,
   GraduationCap,
@@ -16,6 +18,7 @@ import {
   Users,
 } from "lucide-react";
 
+import { trackDownload } from "@/lib/actions/research";
 import { ResearchThumbnail } from "@/components/pdf-thumbnail-viewer";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
@@ -53,6 +56,10 @@ interface ResearchDetailHeroProps {
   fileOriginalName: string | null;
   fileSizeBytes: number | null;
   coverImageUrl: string | null;
+  researchItemId: string;
+  viewCount: number;
+  downloadCount: number;
+  references: Array<{ citationText: string; url: string | null }>;
 }
 
 export function ResearchDetailHero({
@@ -73,6 +80,10 @@ export function ResearchDetailHero({
   fileOriginalName,
   fileSizeBytes,
   coverImageUrl,
+  researchItemId,
+  viewCount,
+  downloadCount,
+  references,
 }: ResearchDetailHeroProps) {
   return (
     <section className="relative">
@@ -134,6 +145,23 @@ export function ResearchDetailHero({
                   <Building2 className="size-3" />
                   {departmentName}
                 </Link>
+              )}
+              {(viewCount > 0 || downloadCount > 0) && (
+                <>
+                  <span className="text-border">·</span>
+                  {viewCount > 0 && (
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Eye className="size-3" />
+                      {viewCount.toLocaleString()} {viewCount === 1 ? "view" : "views"}
+                    </span>
+                  )}
+                  {downloadCount > 0 && (
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Download className="size-3" />
+                      {downloadCount.toLocaleString()} {downloadCount === 1 ? "download" : "downloads"}
+                    </span>
+                  )}
+                </>
               )}
             </motion.div>
 
@@ -209,6 +237,7 @@ export function ResearchDetailHero({
                   target="_blank"
                   rel="noopener noreferrer"
                   className={buttonVariants({ size: "lg" })}
+                  onClick={() => trackDownload(researchItemId).catch(() => {})}
                 >
                   <Download className="size-4" />
                   {fileOriginalName ? "Download PDF" : "Open PDF"}
@@ -335,6 +364,51 @@ export function ResearchDetailHero({
                 </div>
               )}
             </div>
+          </motion.div>
+        )}
+
+        {/* References */}
+        {references.length > 0 && (
+          <motion.div
+            custom={9}
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+            className="mt-8"
+          >
+            <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <BookOpen className="size-3.5" />
+              References ({references.length})
+            </h2>
+            <ol className="space-y-2">
+              {references.map((ref, index) => (
+                <li
+                  key={index}
+                  className="flex items-baseline gap-2 text-sm leading-relaxed text-foreground/85"
+                >
+                  <span className="shrink-0 text-xs font-medium text-muted-foreground">
+                    [{index + 1}]
+                  </span>
+                  <span>
+                    {ref.citationText}
+                    {ref.url && (
+                      <>
+                        {" "}
+                        <a
+                          href={ref.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-0.5 text-xs text-amber-600 underline decoration-amber-600/30 underline-offset-2 transition-colors hover:text-amber-700"
+                        >
+                          <LinkIcon className="size-2.5" />
+                          Link
+                        </a>
+                      </>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ol>
           </motion.div>
         )}
       </div>

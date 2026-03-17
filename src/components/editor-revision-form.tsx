@@ -4,6 +4,7 @@ import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
+  BookOpen,
   ChevronDown,
   ChevronUp,
   FileImage,
@@ -87,8 +88,14 @@ interface RevisionItem {
     isCorresponding: boolean;
   }>;
   tagIds: string[];
+  references: Array<{ citationText: string; url: string }>;
   pdfFile: RevisionFile | null;
   coverImageFile: RevisionFile | null;
+}
+
+interface ReferenceDraft {
+  citationText: string;
+  url: string;
 }
 
 interface EditorRevisionFormProps {
@@ -185,6 +192,9 @@ export function EditorRevisionForm({
       : [createEmptyAuthor(true)],
   );
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(item.tagIds);
+  const [references, setReferences] = useState<ReferenceDraft[]>(
+    item.references.length > 0 ? item.references : [],
+  );
   const [showAdditional, setShowAdditional] = useState(
     Boolean(
       item.publicationDate ||
@@ -200,6 +210,24 @@ export function EditorRevisionForm({
 
   const isResubmitted = revisionParam === "submitted";
   const isDisabled = isSubmitting || isResubmitted;
+
+  function addReference() {
+    setReferences((current) => [...current, { citationText: "", url: "" }]);
+  }
+
+  function removeReference(index: number) {
+    setReferences((current) => current.filter((_, i) => i !== index));
+  }
+
+  function updateReference<K extends keyof ReferenceDraft>(
+    index: number,
+    field: K,
+    value: ReferenceDraft[K],
+  ) {
+    setReferences((current) =>
+      current.map((ref, i) => (i === index ? { ...ref, [field]: value } : ref)),
+    );
+  }
 
   function updateAuthor<K extends keyof AuthorDraft>(
     index: number,
@@ -277,6 +305,10 @@ export function EditorRevisionForm({
 
     setIsSubmitting(true);
     formData.set("authors", JSON.stringify(authors));
+    formData.set(
+      "references",
+      JSON.stringify(references.filter((r) => r.citationText.trim())),
+    );
 
     try {
       if (selectedPdfFile) {
@@ -883,6 +915,68 @@ export function EditorRevisionForm({
                 </div>
               </motion.div>
             )}
+
+            {/* References */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="size-3.5 text-muted-foreground" />
+                  <Label className="text-xs">References</Label>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addReference}
+                  disabled={isDisabled}
+                  className="h-7 gap-1 text-xs"
+                >
+                  <Plus className="size-3" />
+                  Add reference
+                </Button>
+              </div>
+
+              {references.map((ref, index) => (
+                <div
+                  key={index}
+                  className="flex items-start gap-2 rounded-lg border border-border/60 p-3"
+                >
+                  <span className="mt-1.5 text-xs font-medium text-muted-foreground">
+                    [{index + 1}]
+                  </span>
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      value={ref.citationText}
+                      onChange={(e) =>
+                        updateReference(index, "citationText", e.target.value)
+                      }
+                      placeholder="Author(s), Title, Journal/Conference, Year"
+                      disabled={isDisabled}
+                      className="text-xs"
+                    />
+                    <Input
+                      value={ref.url}
+                      onChange={(e) =>
+                        updateReference(index, "url", e.target.value)
+                      }
+                      placeholder="URL or DOI link (optional)"
+                      disabled={isDisabled}
+                      className="text-xs"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeReference(index)}
+                    disabled={isDisabled}
+                    className="mt-0.5 size-7 shrink-0 text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="size-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
 
             <Button
               type="submit"

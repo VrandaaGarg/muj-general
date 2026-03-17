@@ -11,6 +11,7 @@ import {
   itemVersions,
   moderationDecisions,
   researchItemAuthors,
+  researchItemReferences,
   researchItemTags,
   researchItems,
   authors,
@@ -44,6 +45,7 @@ type PublishedResearchListItem = {
   departmentSlug: string | null;
   authors: { id: string; name: string }[];
   tags: { id: string; name: string; slug: string }[];
+  coverImageObjectKey: string | null;
 };
 
 function buildPublishedResearchWhere(filters: PublishedResearchFilters) {
@@ -78,20 +80,23 @@ function buildPublishedResearchWhere(filters: PublishedResearchFilters) {
   return and(...conditions);
 }
 
+type ResearchMeta = {
+  authors: PublishedResearchListItem["authors"];
+  tags: PublishedResearchListItem["tags"];
+  coverImageObjectKey: string | null;
+};
+
 async function attachResearchMeta<T extends { id: string }>(
   items: T[],
-): Promise<Map<string, { authors: PublishedResearchListItem["authors"]; tags: PublishedResearchListItem["tags"] }>> {
+): Promise<Map<string, ResearchMeta>> {
   const itemIds = items.map((item) => item.id);
-  const metaMap = new Map<
-    string,
-    { authors: PublishedResearchListItem["authors"]; tags: PublishedResearchListItem["tags"] }
-  >();
+  const metaMap = new Map<string, ResearchMeta>();
 
   if (itemIds.length === 0) {
     return metaMap;
   }
 
-  const [authorRows, tagRows] = await Promise.all([
+  const [authorRows, tagRows, coverRows] = await Promise.all([
     db
       .select({
         researchItemId: researchItemAuthors.researchItemId,
@@ -114,10 +119,24 @@ async function attachResearchMeta<T extends { id: string }>(
       .innerJoin(tags, eq(tags.id, researchItemTags.tagId))
       .where(inArray(researchItemTags.researchItemId, itemIds))
       .orderBy(asc(tags.name)),
+    db
+      .select({
+        researchItemId: files.researchItemId,
+        objectKey: files.objectKey,
+      })
+      .from(files)
+      .innerJoin(researchItems, eq(researchItems.id, files.researchItemId))
+      .where(
+        and(
+          inArray(files.researchItemId, itemIds),
+          eq(files.fileKind, "cover_image"),
+          sql`${files.itemVersionId} = ${researchItems.currentVersionId}`,
+        ),
+      ),
   ]);
 
   for (const itemId of itemIds) {
-    metaMap.set(itemId, { authors: [], tags: [] });
+    metaMap.set(itemId, { authors: [], tags: [], coverImageObjectKey: null });
   }
 
   for (const row of authorRows) {
@@ -133,6 +152,13 @@ async function attachResearchMeta<T extends { id: string }>(
       name: row.tagName,
       slug: row.tagSlug,
     });
+  }
+
+  for (const row of coverRows) {
+    const meta = metaMap.get(row.researchItemId);
+    if (meta) {
+      meta.coverImageObjectKey = row.objectKey;
+    }
   }
 
   return metaMap;
@@ -447,7 +473,7 @@ export async function getResearchItemForAdminReview(researchItemId: string) {
 
   if (!item) return null;
 
-  const [authorRows, tagRows, currentFiles] = await Promise.all([
+  const [authorRows, tagRows, currentFiles, referenceRows] = await Promise.all([
     db
       .select({
         id: authors.id,
@@ -487,12 +513,21 @@ export async function getResearchItemForAdminReview(researchItemId: string) {
             ),
           )
       : Promise.resolve([]),
+    db
+      .select({
+        citationText: researchItemReferences.citationText,
+        url: researchItemReferences.url,
+      })
+      .from(researchItemReferences)
+      .where(eq(researchItemReferences.researchItemId, item.id))
+      .orderBy(asc(researchItemReferences.referenceOrder)),
   ]);
 
   return {
     ...item,
     authors: authorRows,
     tags: tagRows,
+    references: referenceRows,
     pdfFile: currentFiles.find((f) => f.fileKind === "main_pdf") ?? null,
     coverImageFile: currentFiles.find((f) => f.fileKind === "cover_image") ?? null,
   };
@@ -609,6 +644,7 @@ export async function listPublishedResearchItems(filters: PublishedResearchFilte
     ...row,
     authors: metaMap.get(row.id)?.authors ?? [],
     tags: metaMap.get(row.id)?.tags ?? [],
+    coverImageObjectKey: metaMap.get(row.id)?.coverImageObjectKey ?? null,
   })) satisfies PublishedResearchListItem[];
 }
 
@@ -666,6 +702,8 @@ export async function getPublishedResearchItemBySlug(slug: string) {
       license: researchItems.license,
       externalUrl: researchItems.externalUrl,
       doi: researchItems.doi,
+      viewCount: researchItems.viewCount,
+      downloadCount: researchItems.downloadCount,
       departmentName: departments.name,
       departmentSlug: departments.slug,
       currentVersionId: researchItems.currentVersionId,
@@ -711,12 +749,23 @@ export async function getPublishedResearchItemBySlug(slug: string) {
     )
     .limit(1);
 
-  const metaMap = await attachResearchMeta([{ id: item.id }]);
+  const [metaMap, referenceRows] = await Promise.all([
+    attachResearchMeta([{ id: item.id }]),
+    db
+      .select({
+        citationText: researchItemReferences.citationText,
+        url: researchItemReferences.url,
+      })
+      .from(researchItemReferences)
+      .where(eq(researchItemReferences.researchItemId, item.id))
+      .orderBy(asc(researchItemReferences.referenceOrder)),
+  ]);
 
   return {
     ...item,
     authors: metaMap.get(item.id)?.authors ?? [],
     tags: metaMap.get(item.id)?.tags ?? [],
+    references: referenceRows,
     coverImageObjectKey: coverImage?.objectKey ?? null,
   };
 }
@@ -750,34 +799,46 @@ export async function listRelatedPublishedResearchItems(params: {
     .orderBy(desc(researchItems.publishedAt), desc(researchItems.updatedAt))
     .limit(RELATED_LIMIT);
 
-  if (relatedRows.length >= RELATED_LIMIT) {
-    return { related: relatedRows, more: [] };
+  let moreRows: typeof relatedRows = [];
+
+  if (relatedRows.length < RELATED_LIMIT) {
+    const excludeIds = [params.researchItemId, ...relatedRows.map((r) => r.id)];
+
+    moreRows = await db
+      .select({
+        id: researchItems.id,
+        slug: researchItems.slug,
+        title: researchItems.title,
+        itemType: researchItems.itemType,
+        publicationYear: researchItems.publicationYear,
+        departmentName: departments.name,
+        departmentSlug: departments.slug,
+      })
+      .from(researchItems)
+      .leftJoin(departments, eq(departments.id, researchItems.departmentId))
+      .where(
+        and(
+          eq(researchItems.status, "published"),
+          sql`${researchItems.id} NOT IN (${sql.join(excludeIds.map((id) => sql`${id}`), sql`, `)})`,
+        ),
+      )
+      .orderBy(desc(researchItems.publishedAt), desc(researchItems.updatedAt))
+      .limit(RELATED_LIMIT - relatedRows.length);
   }
 
-  const excludeIds = [params.researchItemId, ...relatedRows.map((r) => r.id)];
+  const allItems = [...relatedRows, ...moreRows];
+  const metaMap = await attachResearchMeta(allItems);
 
-  const moreRows = await db
-    .select({
-      id: researchItems.id,
-      slug: researchItems.slug,
-      title: researchItems.title,
-      itemType: researchItems.itemType,
-      publicationYear: researchItems.publicationYear,
-      departmentName: departments.name,
-      departmentSlug: departments.slug,
-    })
-    .from(researchItems)
-    .leftJoin(departments, eq(departments.id, researchItems.departmentId))
-    .where(
-      and(
-        eq(researchItems.status, "published"),
-        sql`${researchItems.id} NOT IN (${sql.join(excludeIds.map((id) => sql`${id}`), sql`, `)})`,
-      ),
-    )
-    .orderBy(desc(researchItems.publishedAt), desc(researchItems.updatedAt))
-    .limit(RELATED_LIMIT - relatedRows.length);
+  const enrich = (row: (typeof relatedRows)[number]) => ({
+    ...row,
+    authors: metaMap.get(row.id)?.authors ?? [],
+    coverImageObjectKey: metaMap.get(row.id)?.coverImageObjectKey ?? null,
+  });
 
-  return { related: relatedRows, more: moreRows };
+  return {
+    related: relatedRows.map(enrich),
+    more: moreRows.map(enrich),
+  };
 }
 
 export async function getAuthorById(authorId: string) {
@@ -828,6 +889,7 @@ export async function getAuthorById(authorId: string) {
       ...item,
       authors: metaMap.get(item.id)?.authors ?? [],
       tags: metaMap.get(item.id)?.tags ?? [],
+      coverImageObjectKey: metaMap.get(item.id)?.coverImageObjectKey ?? null,
     })),
   };
 }
@@ -878,6 +940,7 @@ export async function getDepartmentBySlug(departmentSlug: string) {
       ...item,
       authors: metaMap.get(item.id)?.authors ?? [],
       tags: metaMap.get(item.id)?.tags ?? [],
+      coverImageObjectKey: metaMap.get(item.id)?.coverImageObjectKey ?? null,
     })),
   };
 }
@@ -923,7 +986,7 @@ export async function getOwnedResearchItemForRevision(params: {
     return null;
   }
 
-  const [decisions, versions, authorRows, tagRows, currentFiles] = await Promise.all([
+  const [decisions, versions, authorRows, tagRows, currentFiles, referenceRows] = await Promise.all([
     db
       .select({
         id: moderationDecisions.id,
@@ -990,6 +1053,14 @@ export async function getOwnedResearchItemForRevision(params: {
             ),
           )
       : Promise.resolve([]),
+    db
+      .select({
+        citationText: researchItemReferences.citationText,
+        url: researchItemReferences.url,
+      })
+      .from(researchItemReferences)
+      .where(eq(researchItemReferences.researchItemId, item.id))
+      .orderBy(asc(researchItemReferences.referenceOrder)),
   ]);
 
   const currentPdf =
@@ -1010,6 +1081,7 @@ export async function getOwnedResearchItemForRevision(params: {
     })),
     tags: tagRows,
     tagIds: tagRows.map((tag) => tag.id),
+    references: referenceRows,
     pdfFile: currentPdf,
     coverImageFile: currentCoverImage,
     decisions,
@@ -1099,4 +1171,19 @@ export async function listModerationHistory() {
     .innerJoin(user, eq(user.id, appUsers.id))
     .leftJoin(departments, eq(departments.id, researchItems.departmentId))
     .orderBy(desc(moderationDecisions.createdAt));
+}
+
+
+export async function incrementViewCount(researchItemId: string) {
+  await db
+    .update(researchItems)
+    .set({ viewCount: sql`${researchItems.viewCount} + 1` })
+    .where(eq(researchItems.id, researchItemId));
+}
+
+export async function incrementDownloadCount(researchItemId: string) {
+  await db
+    .update(researchItems)
+    .set({ downloadCount: sql`${researchItems.downloadCount} + 1` })
+    .where(eq(researchItems.id, researchItemId));
 }

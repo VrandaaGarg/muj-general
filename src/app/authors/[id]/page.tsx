@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { AuthorProfile } from "@/components/author-profile";
 import { getAuthorById } from "@/lib/db/queries";
+import { getPublicFileUrl } from "@/lib/storage/r2";
 
 interface AuthorPageProps {
   params: Promise<{ id: string }>;
@@ -50,7 +51,17 @@ export default async function AuthorPage({ params }: AuthorPageProps) {
       <SiteHeader accentColor="amber" />
 
       <main className="relative z-10 pt-4 md:pt-8">
-        <AuthorProfile author={author} />
+        <AuthorProfile
+          author={{
+            ...author,
+            items: author.items.map((item) => ({
+              ...item,
+              coverImageUrl: item.coverImageObjectKey
+                ? getPublicFileUrl(item.coverImageObjectKey)
+                : null,
+            })),
+          }}
+        />
       </main>
 
       <footer className="relative z-10 border-t px-6 py-6 md:px-12 lg:px-20">

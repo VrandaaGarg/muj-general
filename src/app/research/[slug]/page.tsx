@@ -6,6 +6,7 @@ import { ResearchDetailHero } from "@/components/research-detail-hero";
 import { ResearchRelated } from "@/components/research-related";
 import {
   getPublishedResearchItemBySlug,
+  incrementViewCount,
   listRelatedPublishedResearchItems,
 } from "@/lib/db/queries";
 import { getPublicFileUrl } from "@/lib/storage/r2";
@@ -45,11 +46,25 @@ export default async function ResearchDetailPage({
     notFound();
   }
 
+  // Fire-and-forget view count increment
+  incrementViewCount(item.id).catch(() => {});
+
   const { related, more } = await listRelatedPublishedResearchItems({
     researchItemId: item.id,
     departmentSlug: item.departmentSlug,
     itemType: item.itemType,
   });
+
+  const resolveUrls = (items: typeof related) =>
+    items.map((i) => ({
+      ...i,
+      coverImageUrl: i.coverImageObjectKey
+        ? getPublicFileUrl(i.coverImageObjectKey)
+        : null,
+    }));
+
+  const relatedWithUrls = resolveUrls(related);
+  const moreWithUrls = resolveUrls(more);
 
   const fileUrl = item.fileObjectKey
     ? getPublicFileUrl(item.fileObjectKey)
@@ -93,9 +108,13 @@ export default async function ResearchDetailPage({
           fileOriginalName={item.fileOriginalName}
           fileSizeBytes={item.fileSizeBytes}
           coverImageUrl={coverImageUrl}
+          researchItemId={item.id}
+          viewCount={item.viewCount ?? 0}
+          downloadCount={item.downloadCount ?? 0}
+          references={item.references}
         />
 
-        <ResearchRelated related={related} more={more} />
+        <ResearchRelated related={relatedWithUrls} more={moreWithUrls} />
       </main>
 
       {/* Footer */}

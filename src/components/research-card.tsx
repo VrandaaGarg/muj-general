@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { CalendarDays, Building2, Users } from "lucide-react";
@@ -17,6 +18,7 @@ interface ResearchCardItem {
   departmentSlug?: string | null;
   authors: { id: string; name: string }[];
   tags: { id: string; name: string; slug: string }[];
+  coverImageUrl: string | null;
 }
 
 interface ResearchCardProps {
@@ -26,8 +28,8 @@ interface ResearchCardProps {
 
 export function ResearchCard({ item, index }: ResearchCardProps) {
   const snippet =
-    item.abstract.length > 180
-      ? item.abstract.slice(0, 180).trimEnd() + "…"
+    item.abstract.length > 200
+      ? item.abstract.slice(0, 200).trimEnd() + "…"
       : item.abstract;
 
   const visibleAuthors = item.authors.slice(0, 3);
@@ -45,73 +47,89 @@ export function ResearchCard({ item, index }: ResearchCardProps) {
     >
       <Link
         href={`/research/${item.slug}`}
-        className="group flex h-full flex-col rounded-xl border border-border/60 bg-card/50 p-5 transition-all hover:border-amber-600/25 hover:bg-amber-600/[0.02] hover:shadow-sm"
+        className="group flex flex-row items-stretch rounded-xl border border-border/60 bg-card/50 transition-all hover:border-amber-600/25 hover:bg-amber-600/2 hover:shadow-sm"
       >
-        {/* Header: type badge + year */}
-        <div className="mb-3 flex items-center gap-2">
-          <span
-            className={cn(
-              "inline-flex rounded-md px-2 py-0.5 text-[11px] font-semibold leading-tight tracking-wide",
-              getTypeColor(item.itemType),
-            )}
-          >
-            {getTypeLabel(item.itemType)}
-          </span>
-          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-            <CalendarDays className="size-3" />
-            {item.publicationYear}
-          </span>
-        </div>
-
-        {/* Title */}
-        <h3 className="font-serif text-lg leading-snug tracking-tight text-foreground transition-colors group-hover:text-amber-700 sm:text-xl">
-          {item.title}
-        </h3>
-
-        {/* Abstract snippet */}
-        <p className="mt-2 flex-1 text-[13px] leading-relaxed text-muted-foreground">
-          {snippet}
-        </p>
-
-        {/* Meta footer */}
-        <div className="mt-4 flex flex-col gap-2 border-t border-border/40 pt-3">
-          {visibleAuthors.length > 0 && (
-            <div className="flex items-start gap-1.5">
-              <Users className="mt-0.5 size-3 shrink-0 text-muted-foreground/60" />
-              <span className="text-xs leading-snug text-muted-foreground">
-                {visibleAuthors.map((a) => a.name).join(", ")}
-                {extraAuthors > 0 && ` +${extraAuthors}`}
-              </span>
-            </div>
-          )}
-
-          {item.departmentName && (
-            <div className="flex items-center gap-1.5">
-              <Building2 className="size-3 shrink-0 text-muted-foreground/60" />
-              <span className="text-xs text-muted-foreground">
-                {item.departmentName}
-              </span>
-            </div>
-          )}
-
-          {item.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 pt-1">
-              {item.tags.slice(0, 4).map((tag) => (
-                <span
-                  key={tag.id}
-                  className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
-                >
-                  {tag.name}
-                </span>
-              ))}
-              {item.tags.length > 4 && (
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                  +{item.tags.length - 4}
-                </span>
+        {/* Left: content */}
+        <div className="flex min-w-0 flex-1 flex-col p-5">
+          {/* Header: type badge + year */}
+          <div className="mb-3 flex items-center gap-2">
+            <span
+              className={cn(
+                "inline-flex rounded-md px-2 py-0.5 text-[11px] font-semibold leading-tight tracking-wide",
+                getTypeColor(item.itemType),
               )}
-            </div>
-          )}
+            >
+              {getTypeLabel(item.itemType)}
+            </span>
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <CalendarDays className="size-3" />
+              {item.publicationYear}
+            </span>
+          </div>
+
+          {/* Title */}
+          <h3 className="line-clamp-2 font-serif text-lg leading-snug tracking-tight text-foreground transition-colors group-hover:text-amber-700 sm:text-xl">
+            {item.title}
+          </h3>
+
+          {/* Abstract snippet */}
+          <p className="mt-2 flex-1 text-[13px] leading-relaxed text-muted-foreground">
+            {snippet}
+          </p>
+
+          {/* Meta footer */}
+          <div className="mt-4 flex flex-col gap-2 border-t border-border/40 pt-3">
+            {visibleAuthors.length > 0 && (
+              <div className="flex items-start gap-1.5">
+                <Users className="mt-0.5 size-3 shrink-0 text-muted-foreground/60" />
+                <span className="text-xs leading-snug text-muted-foreground">
+                  {visibleAuthors.map((a) => a.name).join(", ")}
+                  {extraAuthors > 0 && ` +${extraAuthors}`}
+                </span>
+              </div>
+            )}
+
+            {item.departmentName && (
+              <div className="flex items-center gap-1.5">
+                <Building2 className="size-3 shrink-0 text-muted-foreground/60" />
+                <span className="text-xs text-muted-foreground">
+                  {item.departmentName}
+                </span>
+              </div>
+            )}
+
+            {item.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 pt-1">
+                {item.tags.slice(0, 4).map((tag) => (
+                  <span
+                    key={tag.id}
+                    className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+                  >
+                    {tag.name}
+                  </span>
+                ))}
+                {item.tags.length > 4 && (
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    +{item.tags.length - 4}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Right: thumbnail */}
+        {item.coverImageUrl && (
+          <div className="relative hidden w-44 shrink-0 overflow-hidden rounded-r-xl border-l border-border/40 sm:block lg:w-52">
+            <Image
+              src={item.coverImageUrl}
+              alt={item.title}
+              fill
+              sizes="(min-width: 1024px) 208px, 176px"
+              className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            />
+          </div>
+        )}
       </Link>
     </motion.div>
   );

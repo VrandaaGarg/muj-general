@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { DepartmentProfile } from "@/components/department-profile";
 import { getDepartmentBySlug } from "@/lib/db/queries";
+import { getPublicFileUrl } from "@/lib/storage/r2";
 
 interface DepartmentPageProps {
   params: Promise<{ slug: string }>;
@@ -52,7 +53,17 @@ export default async function DepartmentPage({ params }: DepartmentPageProps) {
       <SiteHeader accentColor="amber" />
 
       <main className="relative z-10 pt-4 md:pt-8">
-        <DepartmentProfile department={department} />
+        <DepartmentProfile
+          department={{
+            ...department,
+            items: department.items.map((item) => ({
+              ...item,
+              coverImageUrl: item.coverImageObjectKey
+                ? getPublicFileUrl(item.coverImageObjectKey)
+                : null,
+            })),
+          }}
+        />
       </main>
 
       <footer className="relative z-10 border-t px-6 py-6 md:px-12 lg:px-20">
