@@ -1,8 +1,12 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import {
+  ArrowRight,
   Building2,
+  Clock,
   Settings,
   Shield,
+  Tag,
   Users,
 } from "lucide-react";
 
@@ -105,38 +109,91 @@ export default async function AdminPage() {
         </div>
 
         {/* Admin section cards */}
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Card className="border-border/60">
-            <CardHeader className="pb-2">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-muted">
-                <Users className="size-4 text-muted-foreground" />
-              </div>
-              <CardTitle className="text-sm font-semibold tracking-tight">
-                Users
-              </CardTitle>
-              <CardDescription>Manage accounts and roles</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground">Coming soon</p>
-            </CardContent>
-          </Card>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Link href="/admin/users" className="group">
+            <Card className="border-border/60 transition-colors group-hover:border-rose-600/30 group-hover:bg-rose-600/[0.02]">
+              <CardHeader className="pb-2">
+                <div className="flex size-9 items-center justify-center rounded-lg bg-rose-600/10 transition-colors group-hover:bg-rose-600/15">
+                  <Users className="size-4 text-rose-600" />
+                </div>
+                <CardTitle className="text-sm font-semibold tracking-tight">
+                  Users
+                </CardTitle>
+                <CardDescription>Manage accounts and roles</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 opacity-0 transition-opacity group-hover:opacity-100">
+                  Manage
+                  <ArrowRight className="size-3" />
+                </span>
+              </CardContent>
+            </Card>
+          </Link>
 
-          <Card className="border-border/60">
-            <CardHeader className="pb-2">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-muted">
-                <Building2 className="size-4 text-muted-foreground" />
-              </div>
-              <CardTitle className="text-sm font-semibold tracking-tight">
-                Departments
-              </CardTitle>
-              <CardDescription>Organize academic units</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground">Coming soon</p>
-            </CardContent>
-          </Card>
+          <Link href="/admin/departments" className="group">
+            <Card className="border-border/60 transition-colors group-hover:border-rose-600/30 group-hover:bg-rose-600/[0.02]">
+              <CardHeader className="pb-2">
+                <div className="flex size-9 items-center justify-center rounded-lg bg-rose-600/10 transition-colors group-hover:bg-rose-600/15">
+                  <Building2 className="size-4 text-rose-600" />
+                </div>
+                <CardTitle className="text-sm font-semibold tracking-tight">
+                  Departments
+                </CardTitle>
+                <CardDescription>Organize academic units</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 opacity-0 transition-opacity group-hover:opacity-100">
+                  Manage
+                  <ArrowRight className="size-3" />
+                </span>
+              </CardContent>
+            </Card>
+          </Link>
 
-          <Card className="border-border/60">
+          <Link href="/admin/tags" className="group">
+            <Card className="border-border/60 transition-colors group-hover:border-rose-600/30 group-hover:bg-rose-600/[0.02]">
+              <CardHeader className="pb-2">
+                <div className="flex size-9 items-center justify-center rounded-lg bg-rose-600/10 transition-colors group-hover:bg-rose-600/15">
+                  <Tag className="size-4 text-rose-600" />
+                </div>
+                <CardTitle className="text-sm font-semibold tracking-tight">
+                  Tags
+                </CardTitle>
+                <CardDescription>Categorize research items</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 opacity-0 transition-opacity group-hover:opacity-100">
+                  Manage
+                  <ArrowRight className="size-3" />
+                </span>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/admin/history" className="group">
+            <Card className="border-border/60 transition-colors group-hover:border-rose-600/30 group-hover:bg-rose-600/[0.02]">
+              <CardHeader className="pb-2">
+                <div className="flex size-9 items-center justify-center rounded-lg bg-rose-600/10 transition-colors group-hover:bg-rose-600/15">
+                  <Clock className="size-4 text-rose-600" />
+                </div>
+                <CardTitle className="text-sm font-semibold tracking-tight">
+                  Moderation History
+                </CardTitle>
+                <CardDescription>Audit trail of decisions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 opacity-0 transition-opacity group-hover:opacity-100">
+                  View
+                  <ArrowRight className="size-3" />
+                </span>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+
+        {/* Upcoming */}
+        <div className="mt-4">
+          <Card className="border-border/60 opacity-60">
             <CardHeader className="pb-2">
               <div className="flex size-9 items-center justify-center rounded-lg bg-muted">
                 <Settings className="size-4 text-muted-foreground" />
@@ -151,10 +208,6 @@ export default async function AdminPage() {
             </CardContent>
           </Card>
         </div>
-
-        <p className="mt-8 text-center text-sm text-muted-foreground">
-          Admin tools are being built. Check back as the platform grows.
-        </p>
       </main>
     </div>
   );

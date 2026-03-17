@@ -32,3 +32,15 @@ export function getR2BucketName() {
 
   return env.R2_BUCKET_NAME;
 }
+
+export function getPublicFileUrl(objectKey: string) {
+  if (env.R2_PUBLIC_BASE_URL) {
+    return `${env.R2_PUBLIC_BASE_URL.replace(/\/$/, "")}/${objectKey}`;
+  }
+
+  if (!env.CLOUDFLARE_ACCOUNT_ID || !env.R2_BUCKET_NAME) {
+    return null;
+  }
+
+  return `https://pub-${env.CLOUDFLARE_ACCOUNT_ID}.r2.dev/${objectKey}`;
+}

@@ -1,12 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
+  ArrowRight,
   BookCheck,
   Clock,
+  Eye,
   FileText,
   MessageSquareWarning,
   Pencil,
+  RefreshCw,
   Send,
 } from "lucide-react";
 
@@ -122,6 +126,9 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
         <div className="space-y-2">
           {items.map((item, idx) => {
             const status = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.draft;
+            const needsRevision = item.status === "changes_requested";
+            const isPublished = item.status === "published";
+
             return (
               <motion.div
                 key={item.id}
@@ -129,7 +136,13 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.04, duration: 0.25 }}
               >
-                <Card className="border-border/60">
+                <Card
+                  className={`border-border/60 transition-colors ${
+                    needsRevision
+                      ? "border-orange-600/20 bg-orange-600/[0.02]"
+                      : ""
+                  }`}
+                >
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
@@ -140,11 +153,11 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
                           <span>
                             {TYPE_LABELS[item.itemType] ?? item.itemType}
                           </span>
-                          <span className="text-border">·</span>
+                          <span className="text-border">&middot;</span>
                           <span>{item.publicationYear}</span>
                           {item.departmentName && (
                             <>
-                              <span className="text-border">·</span>
+                              <span className="text-border">&middot;</span>
                               <span>{item.departmentName}</span>
                             </>
                           )}
@@ -159,11 +172,45 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <p className="text-[10px] text-muted-foreground">
-                      Submitted {formatDate(item.createdAt)}
-                      {item.updatedAt > item.createdAt &&
-                        ` · Updated ${formatDate(item.updatedAt)}`}
-                    </p>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[10px] text-muted-foreground">
+                        Submitted {formatDate(item.createdAt)}
+                        {item.updatedAt > item.createdAt &&
+                          ` · Updated ${formatDate(item.updatedAt)}`}
+                      </p>
+
+                      {/* Action links */}
+                      <div className="flex shrink-0 items-center gap-2">
+                        {needsRevision && (
+                          <Link
+                            href={`/editor/${item.slug}/revise`}
+                            className="inline-flex items-center gap-1 rounded-md bg-orange-600 px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm transition-colors hover:bg-orange-700"
+                          >
+                            <RefreshCw className="size-3" />
+                            Revise
+                            <ArrowRight className="size-2.5" />
+                          </Link>
+                        )}
+                        {isPublished && (
+                          <Link
+                            href={`/research/${item.slug}`}
+                            className="inline-flex items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                          >
+                            <Eye className="size-3" />
+                            View
+                          </Link>
+                        )}
+                        {!needsRevision && !isPublished && (
+                          <Link
+                            href={`/editor/${item.slug}/revise`}
+                            className="inline-flex items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                          >
+                            <Eye className="size-3" />
+                            Details
+                          </Link>
+                        )}
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </motion.div>

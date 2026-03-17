@@ -1,0 +1,292 @@
+"use client";
+
+import { useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { motion } from "framer-motion";
+import {
+  AlertCircle,
+  BookOpen,
+  CheckCircle2,
+  Loader2,
+  Plus,
+  Tag,
+} from "lucide-react";
+
+import { createTagAction } from "@/lib/actions/admin";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+interface TagStat {
+  id: string;
+  name: string;
+  slug: string;
+  createdAt: Date;
+  researchCount: number;
+}
+
+interface AdminTagsListProps {
+  tags: TagStat[];
+}
+
+const CREATE_MESSAGES: Record<
+  string,
+  { text: string; type: "success" | "error" }
+> = {
+  success: { text: "Tag created successfully.", type: "success" },
+  invalid: {
+    text: "Invalid data — name and slug are required.",
+    type: "error",
+  },
+};
+
+export function AdminTagsList({ tags }: AdminTagsListProps) {
+  const searchParams = useSearchParams();
+  const createParam = searchParams.get("create");
+  const toast = createParam ? CREATE_MESSAGES[createParam] : null;
+
+  const totalResearch = tags.reduce((sum, t) => sum + t.researchCount, 0);
+
+  return (
+    <div className="space-y-6">
+      {toast && (
+        <motion.div
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-xs font-medium ${
+            toast.type === "success"
+              ? "bg-emerald-600/10 text-emerald-600"
+              : "bg-destructive/10 text-destructive"
+          }`}
+        >
+          {toast.type === "success" ? (
+            <CheckCircle2 className="size-3.5 shrink-0" />
+          ) : (
+            <AlertCircle className="size-3.5 shrink-0" />
+          )}
+          {toast.text}
+        </motion.div>
+      )}
+
+      {/* Summary stats */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-lg border border-border/60 bg-card p-3 text-center">
+          <p className="text-lg font-semibold tracking-tight">{tags.length}</p>
+          <p className="text-[10px] font-medium text-muted-foreground">Tags</p>
+        </div>
+        <div className="rounded-lg border border-border/60 bg-card p-3 text-center">
+          <p className="text-lg font-semibold tracking-tight">
+            {totalResearch}
+          </p>
+          <p className="text-[10px] font-medium text-muted-foreground">
+            Tagged items
+          </p>
+        </div>
+      </div>
+
+      {/* Create form */}
+      <CreateTagForm />
+
+      {/* Tag list */}
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
+          All tags
+        </h2>
+        {tags.length === 0 ? (
+          <Card className="border-border/60">
+            <CardContent className="py-8 text-center">
+              <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-muted">
+                <Tag className="size-5 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium">No tags yet</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Create the first tag using the form above.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          tags.map((tag, idx) => (
+            <motion.div
+              key={tag.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.04, duration: 0.3 }}
+            >
+              <TagCard tag={tag} />
+            </motion.div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TagCard({ tag }: { tag: TagStat }) {
+  return (
+    <Card className="border-border/60">
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-rose-600/10">
+              <Tag className="size-4 text-rose-600" />
+            </div>
+            <div className="min-w-0">
+              <CardTitle className="truncate text-sm font-semibold tracking-tight">
+                {tag.name}
+              </CardTitle>
+              <CardDescription className="truncate font-mono text-[10px]">
+                /{tag.slug}
+              </CardDescription>
+            </div>
+          </div>
+
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+            <BookOpen className="size-3" />
+            {tag.researchCount}
+          </span>
+        </div>
+      </CardHeader>
+    </Card>
+  );
+}
+
+function CreateTagForm() {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [autoSlug, setAutoSlug] = useState(true);
+
+  function handleNameChange(value: string) {
+    setName(value);
+    if (autoSlug) {
+      setSlug(
+        value
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9\s-]/g, "")
+          .replace(/\s+/g, "-")
+          .replace(/-+/g, "-"),
+      );
+    }
+  }
+
+  function handleSlugChange(value: string) {
+    setAutoSlug(false);
+    setSlug(value);
+  }
+
+  async function handleSubmit(formData: FormData) {
+    setSaving(true);
+    try {
+      await createTagAction(formData);
+    } catch {
+      setSaving(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setOpen(true)}
+        className="w-full border-dashed"
+      >
+        <Plus className="size-3.5" />
+        Create tag
+      </Button>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+    >
+      <Card className="border-border/60">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold tracking-tight">
+            New tag
+          </CardTitle>
+          <CardDescription>
+            Add a tag to organize and categorize research items.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={handleSubmit} className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="tag-name" className="text-xs">
+                  Name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="tag-name"
+                  name="name"
+                  value={name}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  placeholder="Machine Learning"
+                  required
+                  minLength={2}
+                  maxLength={120}
+                  disabled={saving}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="tag-slug" className="text-xs">
+                  Slug <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="tag-slug"
+                  name="slug"
+                  value={slug}
+                  onChange={(e) => handleSlugChange(e.target.value)}
+                  placeholder="machine-learning"
+                  required
+                  minLength={2}
+                  maxLength={140}
+                  pattern="^[a-z0-9-]+$"
+                  title="Lowercase letters, numbers, and hyphens only"
+                  disabled={saving}
+                  className="font-mono text-xs"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                type="submit"
+                size="sm"
+                disabled={saving || !name.trim() || !slug.trim()}
+                className="bg-rose-600 text-white hover:bg-rose-700"
+              >
+                {saving ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Plus className="size-3.5" />
+                )}
+                {saving ? "Creating..." : "Create tag"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setOpen(false)}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}

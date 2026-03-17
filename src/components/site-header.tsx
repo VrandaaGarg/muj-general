@@ -8,6 +8,7 @@ import {
   BookOpen,
   ChevronDown,
   LayoutDashboard,
+  Library,
   LogOut,
   PenTool,
   Shield,
@@ -88,6 +89,13 @@ export function SiteHeader({
         </Link>
 
         <nav className="flex items-center gap-2">
+          <Link
+            href="/research"
+            className="hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:flex"
+          >
+            <Library className="size-3.5" />
+            Research
+          </Link>
           {isPending ? (
             <div className="h-7 w-20 animate-pulse rounded-lg bg-muted" />
           ) : session?.user ? (

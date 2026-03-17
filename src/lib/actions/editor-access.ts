@@ -7,9 +7,11 @@ import { requireAppSession, requireRole } from "@/lib/auth/session";
 import {
   createEditorAccessRequest,
   getLatestEditorAccessRequestForUser,
+  getAppUserById,
   hasPendingEditorAccessRequest,
   reviewEditorAccessRequest,
 } from "@/lib/db/queries";
+import { sendEditorAccessDecisionEmail } from "@/lib/notifications";
 import {
   createEditorAccessRequestSchema,
   reviewEditorAccessRequestSchema,
@@ -60,10 +62,15 @@ export async function reviewEditorAccessRequestAction(formData: FormData) {
     unauthorizedRedirectTo: "/dashboard",
   });
 
+  const rejectionReasonEntry = formData.get("rejectionReason");
+
   const parsed = reviewEditorAccessRequestSchema.safeParse({
     requestId: formData.get("requestId"),
     decision: formData.get("decision"),
-    rejectionReason: formData.get("rejectionReason"),
+    rejectionReason:
+      typeof rejectionReasonEntry === "string"
+        ? rejectionReasonEntry
+        : undefined,
   });
 
   if (!parsed.success) {
@@ -76,12 +83,27 @@ export async function reviewEditorAccessRequestAction(formData: FormData) {
     redirect(`/admin?review=missing-reason&requestId=${requestId}`);
   }
 
-  await reviewEditorAccessRequest({
+  const reviewedRequest = await reviewEditorAccessRequest({
     requestId,
     reviewerUserId: session.appUser.id,
     status: decision,
     rejectionReason,
   });
+
+  const targetUser = await getAppUserById(reviewedRequest.userId);
+
+  if (targetUser) {
+    try {
+      await sendEditorAccessDecisionEmail({
+        to: targetUser.email,
+        name: targetUser.name,
+        decision,
+        rejectionReason,
+      });
+    } catch (error) {
+      console.error("Failed to send editor access review email", error);
+    }
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/admin");

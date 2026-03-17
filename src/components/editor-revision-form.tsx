@@ -10,12 +10,12 @@ import {
   ChevronUp,
   FileUp,
   Loader2,
-  Send,
+  RefreshCw,
   Upload,
   X,
 } from "lucide-react";
 
-import { submitResearchSubmission } from "@/lib/actions/research";
+import { submitResearchRevision } from "@/lib/actions/research";
 import {
   appendUploadMeta,
   presignedUpload,
@@ -39,7 +39,25 @@ interface Department {
   description: string | null;
 }
 
-interface EditorSubmissionFormProps {
+interface RevisionItem {
+  slug: string;
+  title: string;
+  abstract: string;
+  itemType: string;
+  publicationYear: number;
+  departmentId: string;
+  license: string | null;
+  externalUrl: string | null;
+  doi: string | null;
+  notesToAdmin: string | null;
+  supervisorName: string | null;
+  programName: string | null;
+  fileOriginalName: string | null;
+  fileSizeBytes: number | null;
+}
+
+interface EditorRevisionFormProps {
+  item: RevisionItem;
   departments: Department[];
 }
 
@@ -57,38 +75,39 @@ const ITEM_TYPES = [
   { value: "presentation", label: "Presentation" },
 ] as const;
 
-const SUBMISSION_MESSAGES: Record<
+const REVISION_MESSAGES: Record<
   string,
   { text: string; type: "success" | "error" }
 > = {
   submitted: {
-    text: "Your submission has been received and is awaiting admin review.",
+    text: "Your revision has been resubmitted for review. You'll be notified when it's reviewed.",
     type: "success",
   },
   invalid: {
     text: "Some fields are invalid. Please check and try again.",
     type: "error",
   },
-  "missing-file": {
-    text: "A PDF file is required for submission.",
-    type: "error",
-  },
   "storage-not-configured": {
     text: "File storage is not configured. Contact your administrator.",
     type: "error",
   },
+  "not-found": {
+    text: "This research item was not found or you don't have permission to revise it.",
+    type: "error",
+  },
   failed: {
-    text: "Something went wrong while submitting. Please try again.",
+    text: "Something went wrong while resubmitting. Please try again.",
     type: "error",
   },
 };
 
-export function EditorSubmissionForm({
+export function EditorRevisionForm({
+  item,
   departments,
-}: EditorSubmissionFormProps) {
+}: EditorRevisionFormProps) {
   const searchParams = useSearchParams();
-  const submissionParam = searchParams.get("submission");
-  const toast = submissionParam ? SUBMISSION_MESSAGES[submissionParam] : null;
+  const revisionParam = searchParams.get("revision");
+  const toast = revisionParam ? REVISION_MESSAGES[revisionParam] : null;
 
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -98,7 +117,15 @@ export function EditorSubmissionForm({
   >("idle");
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [showOptional, setShowOptional] = useState(false);
+  const [showOptional, setShowOptional] = useState(
+    Boolean(
+      item.doi ||
+        item.license ||
+        item.externalUrl ||
+        item.supervisorName ||
+        item.programName,
+    ),
+  );
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null;
@@ -119,7 +146,7 @@ export function EditorSubmissionForm({
     setUploadError(null);
 
     try {
-      // Upload the PDF to R2 via presigned URL first
+      // Upload replacement PDF to R2 via presigned URL if a new file was picked
       if (selectedFile) {
         setUploadPhase("uploading");
         const meta = await presignedUpload(selectedFile);
@@ -127,7 +154,7 @@ export function EditorSubmissionForm({
       }
 
       setUploadPhase("saving");
-      await submitResearchSubmission(formData);
+      await submitResearchRevision(formData);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Upload failed. Please try again.";
@@ -137,14 +164,10 @@ export function EditorSubmissionForm({
     }
   }
 
+  const isResubmitted = revisionParam === "submitted";
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
-          New submission
-        </h2>
-      </div>
-
       {toast && (
         <motion.div
           initial={{ opacity: 0, y: -4 }}
@@ -178,34 +201,36 @@ export function EditorSubmissionForm({
       <Card className="border-border/60">
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-violet-600/10">
-              <Send className="size-4 text-violet-600" />
+            <div className="flex size-9 items-center justify-center rounded-lg bg-orange-600/10">
+              <RefreshCw className="size-4 text-orange-600" />
             </div>
             <div>
               <CardTitle className="text-sm font-semibold tracking-tight">
-                Submit research
+                Revise &amp; resubmit
               </CardTitle>
               <CardDescription>
-                Upload a PDF and fill in the metadata below.
+                Update your submission and optionally upload a new PDF.
               </CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <form ref={formRef} action={handleSubmit} className="space-y-5">
+            <input type="hidden" name="slug" value={item.slug} />
+
             {/* Title */}
             <div className="space-y-1.5">
               <Label htmlFor="title" className="text-xs">
-                Title <span className="text-destructive font-normal">*</span>
+                Title <span className="font-normal text-destructive">*</span>
               </Label>
               <Input
                 id="title"
                 name="title"
-                placeholder="e.g. Machine Learning in Healthcare: A Systematic Review"
+                defaultValue={item.title}
                 required
                 minLength={5}
                 maxLength={300}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isResubmitted}
               />
             </div>
 
@@ -213,35 +238,36 @@ export function EditorSubmissionForm({
             <div className="space-y-1.5">
               <Label htmlFor="abstract" className="text-xs">
                 Abstract{" "}
-                <span className="text-destructive font-normal">*</span>
+                <span className="font-normal text-destructive">*</span>
               </Label>
               <Textarea
                 id="abstract"
                 name="abstract"
-                placeholder="Provide a concise summary of the research (minimum 50 characters)…"
+                defaultValue={item.abstract}
                 required
                 minLength={50}
                 maxLength={5000}
                 rows={4}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isResubmitted}
               />
             </div>
 
-            {/* Type + Year row */}
+            {/* Type + Year */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="itemType" className="text-xs">
                   Item type{" "}
-                  <span className="text-destructive font-normal">*</span>
+                  <span className="font-normal text-destructive">*</span>
                 </Label>
                 <select
                   id="itemType"
                   name="itemType"
                   required
-                  disabled={isSubmitting}
+                  defaultValue={item.itemType}
+                  disabled={isSubmitting || isResubmitted}
                   className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
                 >
-                  <option value="">Select type…</option>
+                  <option value="">Select type...</option>
                   {ITEM_TYPES.map((t) => (
                     <option key={t.value} value={t.value}>
                       {t.label}
@@ -253,17 +279,17 @@ export function EditorSubmissionForm({
               <div className="space-y-1.5">
                 <Label htmlFor="publicationYear" className="text-xs">
                   Publication year{" "}
-                  <span className="text-destructive font-normal">*</span>
+                  <span className="font-normal text-destructive">*</span>
                 </Label>
                 <Input
                   id="publicationYear"
                   name="publicationYear"
                   type="number"
-                  placeholder={new Date().getFullYear().toString()}
+                  defaultValue={item.publicationYear}
                   required
                   min={1900}
                   max={2100}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isResubmitted}
                 />
               </div>
             </div>
@@ -272,16 +298,17 @@ export function EditorSubmissionForm({
             <div className="space-y-1.5">
               <Label htmlFor="departmentId" className="text-xs">
                 Department{" "}
-                <span className="text-destructive font-normal">*</span>
+                <span className="font-normal text-destructive">*</span>
               </Label>
               <select
                 id="departmentId"
                 name="departmentId"
                 required
-                disabled={isSubmitting}
+                defaultValue={item.departmentId}
+                disabled={isSubmitting || isResubmitted}
                 className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
               >
-                <option value="">Select department…</option>
+                <option value="">Select department...</option>
                 {departments.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.name}
@@ -290,16 +317,41 @@ export function EditorSubmissionForm({
               </select>
             </div>
 
-            {/* PDF upload */}
+            {/* PDF upload (optional replacement) */}
             <div className="space-y-1.5">
               <Label className="text-xs">
-                PDF file{" "}
-                <span className="text-destructive font-normal">*</span>
+                Replacement PDF{" "}
+                <span className="font-normal text-muted-foreground">
+                  (optional)
+                </span>
               </Label>
+
+              {/* Existing file indicator */}
+              {item.fileOriginalName && !selectedFile && (
+                <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2">
+                  <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted">
+                    <FileUp className="size-3.5 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs text-muted-foreground">
+                      Current:{" "}
+                      <span className="font-medium text-foreground">
+                        {item.fileOriginalName}
+                      </span>
+                    </p>
+                    {item.fileSizeBytes && (
+                      <p className="text-[10px] text-muted-foreground">
+                        {(item.fileSizeBytes / (1024 * 1024)).toFixed(2)} MB
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {selectedFile ? (
-                <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-violet-600/10">
-                    <FileUp className="size-4 text-violet-600" />
+                <div className="flex items-center gap-3 rounded-lg border border-orange-600/30 bg-orange-600/5 px-3 py-2.5">
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-orange-600/10">
+                    <FileUp className="size-4 text-orange-600" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-medium">
@@ -307,6 +359,7 @@ export function EditorSubmissionForm({
                     </p>
                     <p className="text-[10px] text-muted-foreground">
                       {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                      &middot; will replace current PDF
                     </p>
                   </div>
                   <Button
@@ -314,37 +367,40 @@ export function EditorSubmissionForm({
                     variant="ghost"
                     size="icon-xs"
                     onClick={handleRemoveFile}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isResubmitted}
                   >
                     <X className="size-3" />
                   </Button>
                 </div>
               ) : (
-                <label
-                  htmlFor="pdf"
-                  className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-border/80 bg-muted/20 py-6 transition-colors hover:border-violet-600/40 hover:bg-violet-600/5"
-                >
-                  <div className="flex size-10 items-center justify-center rounded-full bg-muted">
-                    <Upload className="size-4 text-muted-foreground" />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs font-medium">Click to upload PDF</p>
-                     <p className="text-[10px] text-muted-foreground">
-                      PDF only, max 10 MB
-                     </p>
-                   </div>
-                 </label>
+                !isResubmitted && (
+                  <label
+                    htmlFor="revision-pdf"
+                    className="flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border border-dashed border-border/80 bg-muted/20 py-4 transition-colors hover:border-orange-600/40 hover:bg-orange-600/5"
+                  >
+                    <div className="flex size-8 items-center justify-center rounded-full bg-muted">
+                      <Upload className="size-3.5 text-muted-foreground" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs font-medium">
+                        Click to upload a new PDF
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        Leave empty to keep the current file
+                      </p>
+                    </div>
+                  </label>
+                )
               )}
               <input
                 ref={fileInputRef}
-                id="pdf"
+                id="revision-pdf"
                 name="pdf"
                 type="file"
                 accept="application/pdf"
-                required
                 className="sr-only"
                 onChange={handleFileChange}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isResubmitted}
               />
             </div>
 
@@ -378,8 +434,9 @@ export function EditorSubmissionForm({
                       id="doi"
                       name="doi"
                       placeholder="10.1000/xyz123"
+                      defaultValue={item.doi ?? ""}
                       maxLength={255}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || isResubmitted}
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -390,8 +447,9 @@ export function EditorSubmissionForm({
                       id="license"
                       name="license"
                       placeholder="e.g. CC BY 4.0"
+                      defaultValue={item.license ?? ""}
                       maxLength={160}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || isResubmitted}
                     />
                   </div>
                 </div>
@@ -405,7 +463,8 @@ export function EditorSubmissionForm({
                     name="externalUrl"
                     type="url"
                     placeholder="https://example.com/paper"
-                    disabled={isSubmitting}
+                    defaultValue={item.externalUrl ?? ""}
+                    disabled={isSubmitting || isResubmitted}
                   />
                 </div>
 
@@ -418,8 +477,9 @@ export function EditorSubmissionForm({
                       id="supervisorName"
                       name="supervisorName"
                       placeholder="Dr. Jane Smith"
+                      defaultValue={item.supervisorName ?? ""}
                       maxLength={160}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || isResubmitted}
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -430,8 +490,9 @@ export function EditorSubmissionForm({
                       id="programName"
                       name="programName"
                       placeholder="M.Tech Computer Science"
+                      defaultValue={item.programName ?? ""}
                       maxLength={160}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || isResubmitted}
                     />
                   </div>
                 </div>
@@ -443,10 +504,11 @@ export function EditorSubmissionForm({
                   <Textarea
                     id="notesToAdmin"
                     name="notesToAdmin"
-                    placeholder="Any additional context for the reviewer…"
+                    placeholder="Describe what you changed in this revision..."
+                    defaultValue={item.notesToAdmin ?? ""}
                     maxLength={1000}
                     rows={2}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isResubmitted}
                   />
                 </div>
               </motion.div>
@@ -455,19 +517,19 @@ export function EditorSubmissionForm({
             {/* Submit */}
             <Button
               type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-violet-600 text-white hover:bg-violet-700"
+              disabled={isSubmitting || isResubmitted}
+              className="w-full bg-orange-600 text-white hover:bg-orange-700"
             >
               {isSubmitting ? (
                 <Loader2 className="size-3.5 animate-spin" />
               ) : (
-                <Send className="size-3.5" />
+                <RefreshCw className="size-3.5" />
               )}
               {uploadPhase === "uploading"
-                ? "Uploading PDF…"
+                ? "Uploading PDF..."
                 : uploadPhase === "saving"
-                  ? "Saving submission…"
-                  : "Submit for review"}
+                  ? "Saving revision..."
+                  : "Resubmit for review"}
             </Button>
           </form>
         </CardContent>

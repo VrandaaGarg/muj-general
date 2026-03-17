@@ -131,26 +131,11 @@ export function AdminPendingRequests({ requests }: AdminPendingRequestsProps) {
 
 function RequestReviewCard({ request }: { request: PendingRequest }) {
   const [showReject, setShowReject] = useState(false);
-  const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
-  const isBusy = isApproving || isRejecting;
-
-  async function handleApprove() {
-    setIsApproving(true);
-    const formData = new FormData();
-    formData.set("requestId", request.id);
-    formData.set("decision", "approved");
-    try {
-      await reviewEditorAccessRequestAction(formData);
-    } catch {
-      setIsApproving(false);
-    }
-  }
+  const isBusy = isRejecting;
 
   async function handleReject(formData: FormData) {
     setIsRejecting(true);
-    formData.set("requestId", request.id);
-    formData.set("decision", "rejected");
     try {
       await reviewEditorAccessRequestAction(formData);
     } catch {
@@ -199,19 +184,19 @@ function RequestReviewCard({ request }: { request: PendingRequest }) {
         )}
 
         <div className="flex items-center gap-2 pt-1">
-          <Button
-            size="sm"
-            onClick={handleApprove}
-            disabled={isBusy}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white"
-          >
-            {isApproving ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
+          <form action={reviewEditorAccessRequestAction}>
+            <input type="hidden" name="requestId" value={request.id} />
+            <input type="hidden" name="decision" value="approved" />
+            <Button
+              size="sm"
+              type="submit"
+              disabled={isBusy}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
               <CheckCircle2 className="size-3.5" />
-            )}
-            {isApproving ? "Approving…" : "Approve"}
-          </Button>
+              Approve
+            </Button>
+          </form>
           {!showReject ? (
             <Button
               variant="destructive"
@@ -242,6 +227,8 @@ function RequestReviewCard({ request }: { request: PendingRequest }) {
             className="overflow-hidden"
           >
             <form action={handleReject} className="space-y-2 pt-1">
+              <input type="hidden" name="requestId" value={request.id} />
+              <input type="hidden" name="decision" value="rejected" />
               <div className="space-y-1.5">
                 <Label htmlFor={`rejection-${request.id}`} className="text-xs">
                   Reason for rejection{" "}

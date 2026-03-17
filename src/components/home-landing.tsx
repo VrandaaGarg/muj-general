@@ -113,31 +113,29 @@ export function HomeLanding() {
             animate="visible"
             className="mt-10 flex flex-wrap items-center gap-3"
           >
+            <Link
+              href="/research"
+              className={buttonVariants({ size: "lg" })}
+            >
+              <Search className="size-4" />
+              Browse research
+              <ArrowRight data-icon="inline-end" className="size-4" />
+            </Link>
             {isSignedIn ? (
               <Link
                 href="/dashboard"
-                className={buttonVariants({ size: "lg" })}
+                className={buttonVariants({ variant: "outline", size: "lg" })}
               >
                 <LayoutDashboard className="size-4" />
-                Go to dashboard
-                <ArrowRight data-icon="inline-end" className="size-4" />
+                Dashboard
               </Link>
             ) : (
-              <>
-                <Link
-                  href="/sign-up"
-                  className={buttonVariants({ size: "lg" })}
-                >
-                  Create your account
-                  <ArrowRight data-icon="inline-end" className="size-4" />
-                </Link>
-                <Link
-                  href="/sign-in"
-                  className={buttonVariants({ variant: "outline", size: "lg" })}
-                >
-                  Sign in to continue
-                </Link>
-              </>
+              <Link
+                href="/sign-up"
+                className={buttonVariants({ variant: "outline", size: "lg" })}
+              >
+                Create your account
+              </Link>
             )}
           </motion.div>
         </div>
