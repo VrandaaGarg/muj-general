@@ -99,9 +99,7 @@ Core Better Auth user table.
 | `email` | `text` | Unique |
 | `name` | `text` | Display name |
 | `email_verified` | `boolean` | Default `false` |
-| `email_verified_at` | `timestamptz` | Nullable |
 | `image` | `text` | Nullable |
-| `is_active` | `boolean` | Default `true` |
 | `created_at` | `timestamptz` | Default `now()` |
 | `updated_at` | `timestamptz` | Default `now()` |
 
@@ -110,6 +108,55 @@ Notes:
 - Every new signup should default to `email_verified = false`
 - This table should stay aligned with Better Auth core schema
 - Authentication identity and verification state should live here
+- Better Auth owns the `user`, `session`, `account`, and `verification` tables
+
+### `session`
+
+Core Better Auth session table.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `text` | Primary key |
+| `user_id` | `text` | FK to `user.id` |
+| `token` | `text` | Unique session token |
+| `expires_at` | `timestamptz` | Required |
+| `ip_address` | `text` | Nullable |
+| `user_agent` | `text` | Nullable |
+| `created_at` | `timestamptz` | Default `now()` |
+| `updated_at` | `timestamptz` | Default `now()` |
+
+### `account`
+
+Core Better Auth account table.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `text` | Primary key |
+| `user_id` | `text` | FK to `user.id` |
+| `account_id` | `text` | Provider account id |
+| `provider_id` | `text` | Provider key |
+| `access_token` | `text` | Nullable |
+| `refresh_token` | `text` | Nullable |
+| `id_token` | `text` | Nullable |
+| `access_token_expires_at` | `timestamptz` | Nullable |
+| `refresh_token_expires_at` | `timestamptz` | Nullable |
+| `scope` | `text` | Nullable |
+| `password` | `text` | Nullable, used for credentials auth |
+| `created_at` | `timestamptz` | Default `now()` |
+| `updated_at` | `timestamptz` | Default `now()` |
+
+### `verification`
+
+Core Better Auth verification table.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `text` | Primary key |
+| `identifier` | `text` | Email or verification subject |
+| `value` | `text` | Token value or verification payload |
+| `expires_at` | `timestamptz` | Required |
+| `created_at` | `timestamptz` | Default `now()` |
+| `updated_at` | `timestamptz` | Default `now()` |
 
 ### `app_users`
 
