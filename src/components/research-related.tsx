@@ -18,22 +18,55 @@ interface RelatedItem {
 }
 
 interface ResearchRelatedProps {
-  items: RelatedItem[];
+  related: RelatedItem[];
+  more: RelatedItem[];
 }
 
-export function ResearchRelated({ items }: ResearchRelatedProps) {
-  if (items.length === 0) return null;
+export function ResearchRelated({ related, more }: ResearchRelatedProps) {
+  const hasRelated = related.length > 0;
+  const hasMore = more.length > 0;
 
+  if (!hasRelated && !hasMore) return null;
+
+  return (
+    <div className="mx-auto max-w-4xl space-y-10 px-6 pb-16 md:px-12">
+      {hasRelated && (
+        <ItemGrid
+          title="Related research"
+          items={related}
+          delayBase={0.6}
+        />
+      )}
+
+      {hasMore && (
+        <ItemGrid
+          title="More from the repository"
+          items={more}
+          delayBase={hasRelated ? 0.9 : 0.6}
+        />
+      )}
+    </div>
+  );
+}
+
+function ItemGrid({
+  title,
+  items,
+  delayBase,
+}: {
+  title: string;
+  items: RelatedItem[];
+  delayBase: number;
+}) {
   return (
     <motion.section
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, delay: 0.6 }}
-      className="mx-auto max-w-4xl px-6 pb-16 md:px-12"
+      transition={{ duration: 0.45, delay: delayBase }}
     >
       <div className="mb-5 flex items-center justify-between">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Related research
+          {title}
         </h2>
         <Link
           href="/research"
@@ -44,7 +77,7 @@ export function ResearchRelated({ items }: ResearchRelatedProps) {
         </Link>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((item, index) => (
           <motion.div
             key={item.id}
@@ -52,12 +85,12 @@ export function ResearchRelated({ items }: ResearchRelatedProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{
               duration: 0.35,
-              delay: 0.7 + index * 0.08,
+              delay: delayBase + 0.1 + index * 0.08,
             }}
           >
             <Link
               href={`/research/${item.slug}`}
-              className="group flex h-full flex-col rounded-xl border border-border/60 bg-card/50 p-4 transition-all hover:border-amber-600/25 hover:bg-amber-600/[0.02] hover:shadow-sm"
+              className="group flex h-full flex-col rounded-xl border border-border/60 bg-card/50 p-4 transition-all hover:border-amber-600/25 hover:bg-amber-600/2 hover:shadow-sm"
             >
               <div className="mb-2 flex items-center gap-2">
                 <span

@@ -721,12 +721,14 @@ export async function getPublishedResearchItemBySlug(slug: string) {
   };
 }
 
+const RELATED_LIMIT = 4;
+
 export async function listRelatedPublishedResearchItems(params: {
   researchItemId: string;
   departmentSlug?: string | null;
   itemType?: string;
 }) {
-  const rows = await db
+  const relatedRows = await db
     .select({
       id: researchItems.id,
       slug: researchItems.slug,
@@ -746,9 +748,36 @@ export async function listRelatedPublishedResearchItems(params: {
       ),
     )
     .orderBy(desc(researchItems.publishedAt), desc(researchItems.updatedAt))
-    .limit(3);
+    .limit(RELATED_LIMIT);
 
-  return rows;
+  if (relatedRows.length >= RELATED_LIMIT) {
+    return { related: relatedRows, more: [] };
+  }
+
+  const excludeIds = [params.researchItemId, ...relatedRows.map((r) => r.id)];
+
+  const moreRows = await db
+    .select({
+      id: researchItems.id,
+      slug: researchItems.slug,
+      title: researchItems.title,
+      itemType: researchItems.itemType,
+      publicationYear: researchItems.publicationYear,
+      departmentName: departments.name,
+      departmentSlug: departments.slug,
+    })
+    .from(researchItems)
+    .leftJoin(departments, eq(departments.id, researchItems.departmentId))
+    .where(
+      and(
+        eq(researchItems.status, "published"),
+        sql`${researchItems.id} NOT IN (${sql.join(excludeIds.map((id) => sql`${id}`), sql`, `)})`,
+      ),
+    )
+    .orderBy(desc(researchItems.publishedAt), desc(researchItems.updatedAt))
+    .limit(RELATED_LIMIT - relatedRows.length);
+
+  return { related: relatedRows, more: moreRows };
 }
 
 export async function getAuthorById(authorId: string) {

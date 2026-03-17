@@ -45,7 +45,7 @@ export default async function ResearchDetailPage({
     notFound();
   }
 
-  const relatedItems = await listRelatedPublishedResearchItems({
+  const { related, more } = await listRelatedPublishedResearchItems({
     researchItemId: item.id,
     departmentSlug: item.departmentSlug,
     itemType: item.itemType,
@@ -95,7 +95,7 @@ export default async function ResearchDetailPage({
           coverImageUrl={coverImageUrl}
         />
 
-        <ResearchRelated items={relatedItems} />
+        <ResearchRelated related={related} more={more} />
       </main>
 
       {/* Footer */}
