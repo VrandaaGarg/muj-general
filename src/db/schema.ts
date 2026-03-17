@@ -276,6 +276,8 @@ export const researchItems = pgTable(
       withTimezone: true,
       mode: "date",
     }),
+    viewCount: integer("view_count").notNull().default(0),
+    downloadCount: integer("download_count").notNull().default(0),
     ...timestamps,
   },
   (table) => [
@@ -437,6 +439,23 @@ export const researchItemTags = pgTable(
   ],
 );
 
+export const researchItemReferences = pgTable(
+  "research_item_references",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    researchItemId: uuid("research_item_id")
+      .notNull()
+      .references(() => researchItems.id, { onDelete: "cascade" }),
+    citationText: text("citation_text").notNull(),
+    url: text("url"),
+    referenceOrder: integer("reference_order").notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    index("research_item_references_item_id_idx").on(table.researchItemId),
+  ],
+);
+
 export const userRelations = relations(user, ({ many, one }) => ({
   sessions: many(session),
   accounts: many(account),
@@ -529,6 +548,7 @@ export const researchItemsRelations = relations(researchItems, ({ one, many }) =
   moderationDecisions: many(moderationDecisions),
   researchItemAuthors: many(researchItemAuthors),
   researchItemTags: many(researchItemTags),
+  researchItemReferences: many(researchItemReferences),
 }));
 
 export const itemVersionsRelations = relations(itemVersions, ({ one, many }) => ({
@@ -608,3 +628,13 @@ export const researchItemTagsRelations = relations(researchItemTags, ({ one }) =
     references: [tags.id],
   }),
 }));
+
+export const researchItemReferencesRelations = relations(
+  researchItemReferences,
+  ({ one }) => ({
+    researchItem: one(researchItems, {
+      fields: [researchItemReferences.researchItemId],
+      references: [researchItems.id],
+    }),
+  }),
+);
