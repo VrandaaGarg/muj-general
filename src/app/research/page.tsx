@@ -65,7 +65,7 @@ export default async function ResearchPage({ searchParams }: ResearchPageProps) 
         }}
       />
 
-      <SiteHeader accentColor="amber" />
+      <SiteHeader />
 
       <main className="relative z-10 mx-auto max-w-6xl px-6 pt-8 pb-20 md:px-12 md:pt-12">
         {/* Hero area */}
@@ -73,7 +73,7 @@ export default async function ResearchPage({ searchParams }: ResearchPageProps) 
           <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-amber-600">
             Research Repository
           </p>
-          <h1 className="font-serif text-3xl leading-tight tracking-tight text-foreground sm:text-4xl">
+          <h1 className="font-sans text-3xl leading-tight tracking-tight text-foreground sm:text-4xl">
             Explore MUJ research
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">

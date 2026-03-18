@@ -50,7 +50,7 @@ export default async function AdminJournalsPage() {
               Journals
             </span>
           </div>
-          <h1 className="font-serif text-3xl tracking-tight md:text-4xl">Journals</h1>
+          <h1 className="font-sans text-3xl tracking-tight md:text-4xl">Journals</h1>
           <p className="mt-2 text-base text-muted-foreground">
             Manage journals, volumes, and issues for online-first and issue-based publication flows.
           </p>

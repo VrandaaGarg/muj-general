@@ -22,7 +22,7 @@ export function AuthShell({ children }: AuthShellProps) {
       />
 
       {/* Top accent line */}
-      <div className="fixed top-0 right-0 left-0 z-50 h-[2px] bg-gradient-to-r from-amber-600/0 via-amber-600 to-amber-600/0" />
+      <div className="fixed top-0 right-0 left-0 z-50 h-[2px] bg-gradient-to-r from-primary/0 via-primary to-primary/0" />
 
       {/* Logo */}
       <motion.div

@@ -48,7 +48,7 @@ export default async function AuthorPage({ params }: AuthorPageProps) {
         }}
       />
 
-      <SiteHeader accentColor="amber" />
+      <SiteHeader />
 
       <main className="relative z-10 pt-4 md:pt-8">
         <AuthorProfile

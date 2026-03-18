@@ -91,7 +91,7 @@ export function AuthorProfile({ author }: AuthorProfileProps) {
         >
           {/* Avatar */}
           <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl border border-amber-600/20 bg-amber-600/[0.06] sm:size-20">
-            <span className="font-serif text-xl font-semibold text-amber-700 sm:text-2xl">
+            <span className="font-sans text-xl font-semibold text-amber-700 sm:text-2xl">
               {initials}
             </span>
           </div>
@@ -100,7 +100,7 @@ export function AuthorProfile({ author }: AuthorProfileProps) {
             <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-amber-600">
               Author
             </p>
-            <h1 className="font-serif text-2xl leading-tight tracking-tight text-foreground sm:text-3xl md:text-4xl">
+            <h1 className="font-sans text-2xl leading-tight tracking-tight text-foreground sm:text-3xl md:text-4xl">
               {author.name}
             </h1>
 
@@ -182,7 +182,7 @@ export function AuthorProfile({ author }: AuthorProfileProps) {
 
           {author.items.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-card/30 py-16 text-center">
-              <p className="font-serif text-lg text-foreground">
+              <p className="font-sans text-lg text-foreground">
                 No publications yet
               </p>
               <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">

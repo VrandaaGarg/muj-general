@@ -1,20 +1,14 @@
 import type { Metadata } from "next";
-import { DM_Sans, DM_Serif_Display, JetBrains_Mono } from "next/font/google";
+import { Roboto, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 
 import { AuthUiStoreProvider } from "@/stores/auth-ui-store";
 
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
+const roboto = Roboto({
+  variable: "--font-roboto",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
-
-const dmSerif = DM_Serif_Display({
-  variable: "--font-dm-serif",
-  subsets: ["latin"],
-  weight: "400",
+  weight: ["300", "400", "500", "700"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -36,7 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${dmSans.variable} ${dmSerif.variable} ${jetbrainsMono.variable} antialiased`}
+        className={`${roboto.variable} ${jetbrainsMono.variable} antialiased`}
       >
         <AuthUiStoreProvider>{children}</AuthUiStoreProvider>
         <Toaster richColors position="top-right" />

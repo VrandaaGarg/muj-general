@@ -23,20 +23,20 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface SiteHeaderProps {
-  accentColor?: "amber" | "violet" | "rose";
+  accentColor?: "primary" | "violet" | "rose";
   role?: "reader" | "editor" | "admin";
 }
 
 const accentLine: Record<string, string> = {
-  amber:
-    "bg-gradient-to-r from-amber-600/0 via-amber-600 to-amber-600/0",
+  primary:
+    "bg-gradient-to-r from-primary/0 via-primary to-primary/0",
   violet:
     "bg-gradient-to-r from-violet-600/0 via-violet-600 to-violet-600/0",
   rose: "bg-gradient-to-r from-rose-600/0 via-rose-600 to-rose-600/0",
 };
 
 export function SiteHeader({
-  accentColor = "amber",
+  accentColor = "primary",
   role,
 }: SiteHeaderProps) {
   const { data: session, isPending } = useSession();
@@ -84,7 +84,7 @@ export function SiteHeader({
           <div className="flex size-8 items-center justify-center rounded-md bg-foreground">
             <BookOpen className="size-4 text-background" />
           </div>
-          <span className="text-base font-semibold tracking-tight">
+          <span className="text-lg font-semibold tracking-tight">
             MUJ General
           </span>
         </Link>
@@ -92,16 +92,16 @@ export function SiteHeader({
         <nav className="flex items-center gap-2">
           <Link
             href="/research"
-            className="hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:flex"
+            className="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:flex"
           >
-            <Library className="size-3.5" />
+            <Library className="size-4" />
             Research
           </Link>
           <Link
             href="/journals"
-            className="hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:flex"
+            className="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:flex"
           >
-            <ScrollText className="size-3.5" />
+            <ScrollText className="size-4" />
             Journals
           </Link>
           {isPending ? (
@@ -114,8 +114,8 @@ export function SiteHeader({
                 onClick={() => setMenuOpen((prev) => !prev)}
                 className="gap-1.5"
               >
-                <div className="flex size-5 items-center justify-center rounded-full bg-amber-600/10">
-                  <User className="size-3 text-amber-600" />
+                <div className="flex size-5 items-center justify-center rounded-full bg-primary/10">
+                  <User className="size-3 text-primary" />
                 </div>
                 <span className="max-w-[120px] truncate text-xs">
                   {session.user.name}

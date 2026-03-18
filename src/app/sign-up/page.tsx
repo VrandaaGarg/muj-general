@@ -70,7 +70,7 @@ export default function SignUpPage() {
                 <div className="mb-2 flex size-12 items-center justify-center rounded-full bg-amber-600/10">
                   <MailCheck className="size-5 text-amber-600" />
                 </div>
-                <CardTitle className="font-serif text-xl tracking-tight">
+                <CardTitle className="font-sans text-xl tracking-tight">
                   Check your inbox
                 </CardTitle>
                 <CardDescription className="max-w-[280px]">
@@ -106,7 +106,7 @@ export default function SignUpPage() {
           >
             <Card>
               <CardHeader>
-                <CardTitle className="font-serif text-xl tracking-tight">
+                <CardTitle className="font-sans text-xl tracking-tight">
                   Create your account
                 </CardTitle>
                 <CardDescription>

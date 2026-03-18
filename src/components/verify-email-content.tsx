@@ -74,7 +74,7 @@ export function VerifyEmailContent({ token, error }: VerifyEmailContentProps) {
               <MailCheck className="size-5 text-amber-600" />
             )}
           </div>
-          <CardTitle className="font-serif text-xl tracking-tight">
+          <CardTitle className="font-sans text-xl tracking-tight">
             {isVerifying ? "Verifying your email" : "Check your email"}
           </CardTitle>
           <CardDescription className="max-w-[280px]">

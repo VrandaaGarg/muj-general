@@ -247,7 +247,7 @@ export function JournalDetailClient({ journal }: { journal: JournalData }) {
                 Journal
               </span>
             </div>
-            <h1 className="font-serif text-2xl leading-tight tracking-tight text-foreground md:text-3xl">
+            <h1 className="font-sans text-2xl leading-tight tracking-tight text-foreground md:text-3xl">
               {journal.name}
             </h1>
             {journal.topics && (
@@ -262,7 +262,7 @@ export function JournalDetailClient({ journal }: { journal: JournalData }) {
         <div className="flex flex-col justify-center space-y-4 rounded-2xl border border-border/60 bg-card/50 p-6">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Journal Title</p>
-            <h2 className="mt-1 font-serif text-xl tracking-tight md:text-2xl">{journal.name}</h2>
+            <h2 className="mt-1 font-sans text-xl tracking-tight md:text-2xl">{journal.name}</h2>
           </div>
           <div className="h-px bg-border/60" />
           <div className="grid gap-3 sm:grid-cols-2">
@@ -437,7 +437,7 @@ export function JournalDetailClient({ journal }: { journal: JournalData }) {
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                           Volume {issue.volumeNumber} ({issue.volumeYear})
                         </p>
-                        <h3 className="mt-1 font-serif text-xl tracking-tight text-foreground">
+                        <h3 className="mt-1 font-sans text-xl tracking-tight text-foreground">
                           Issue {issue.issueNumber}
                           {issue.title ? ` \u2014 ${issue.title}` : ""}
                         </h3>

@@ -98,7 +98,7 @@ export default async function ResearchDetailPage({
         }}
       />
 
-      <SiteHeader accentColor="amber" />
+      <SiteHeader />
 
       <main className="relative z-10 pt-4 md:pt-8">
         <ResearchDetailHero

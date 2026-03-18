@@ -82,7 +82,7 @@ function SignInForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-serif text-xl tracking-tight">
+        <CardTitle className="font-sans text-xl tracking-tight">
           Welcome back
         </CardTitle>
         <CardDescription>

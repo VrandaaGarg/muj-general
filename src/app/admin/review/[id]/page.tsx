@@ -97,7 +97,7 @@ export default async function AdminReviewPage({
         </div>
 
         {/* Title */}
-        <h1 className="mb-2 font-serif text-2xl leading-tight tracking-tight text-foreground sm:text-3xl">
+        <h1 className="mb-2 font-sans text-2xl leading-tight tracking-tight text-foreground sm:text-3xl">
           {item.title}
         </h1>
 

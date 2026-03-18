@@ -10,7 +10,7 @@ export default async function JournalsPage() {
 
   return (
     <div className="relative min-h-screen bg-background">
-      <SiteHeader accentColor="amber" />
+      <SiteHeader />
 
       <main className="relative z-10 mx-auto max-w-5xl px-6 pb-20 pt-8 md:px-12">
         <div className="mb-10">
@@ -22,7 +22,7 @@ export default async function JournalsPage() {
               Journal Collection
             </span>
           </div>
-          <h1 className="font-serif text-3xl tracking-tight md:text-4xl">Journals</h1>
+          <h1 className="font-sans text-3xl tracking-tight md:text-4xl">Journals</h1>
           <p className="mt-2 max-w-3xl text-base text-muted-foreground">
             Browse journals, online-first publications, and issue-based article collections published through MUJ General.
           </p>
@@ -36,7 +36,7 @@ export default async function JournalsPage() {
                   <div className="flex size-10 items-center justify-center rounded-lg bg-amber-600/10">
                     <ScrollText className="size-4 text-amber-700" />
                   </div>
-                  <CardTitle className="font-serif text-xl tracking-tight">{journal.name}</CardTitle>
+                  <CardTitle className="font-sans text-xl tracking-tight">{journal.name}</CardTitle>
                   <CardDescription className="font-mono text-[11px]">/{journal.slug}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">

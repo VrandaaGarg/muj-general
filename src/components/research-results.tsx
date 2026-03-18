@@ -37,7 +37,7 @@ export function ResearchResults({ items, totalCount }: ResearchResultsProps) {
         <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-muted">
           <BookX className="size-6 text-muted-foreground" />
         </div>
-        <h3 className="font-serif text-lg text-foreground">
+        <h3 className="font-sans text-lg text-foreground">
           No results found
         </h3>
         <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">

@@ -68,7 +68,7 @@ export function ResearchCard({ item, index }: ResearchCardProps) {
           </div>
 
           {/* Title */}
-          <h3 className="line-clamp-2 font-serif text-lg leading-snug tracking-tight text-foreground transition-colors group-hover:text-amber-700 sm:text-xl">
+          <h3 className="line-clamp-2 font-sans text-lg leading-snug tracking-tight text-foreground transition-colors group-hover:text-amber-700 sm:text-xl">
             {item.title}
           </h3>
 

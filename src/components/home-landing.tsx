@@ -64,7 +64,7 @@ export function HomeLanding() {
         }}
       />
 
-      <SiteHeader accentColor="amber" />
+      <SiteHeader />
 
       <main className="relative z-10 mx-auto max-w-5xl px-6 pt-20 pb-32 md:px-12 md:pt-32 lg:pt-40">
         <div className="flex flex-col items-start">
@@ -73,10 +73,10 @@ export function HomeLanding() {
             variants={fadeUp}
             initial="hidden"
             animate="visible"
-            className="mb-6 flex items-center gap-2 rounded-full border border-amber-600/20 bg-amber-600/5 px-3 py-1"
+            className="mb-6 flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1"
           >
-            <GraduationCap className="size-3.5 text-amber-600" />
-            <span className="text-xs font-medium text-amber-600">
+            <GraduationCap className="size-3.5 text-primary" />
+            <span className="text-xs font-medium text-primary">
               Manipal University Jaipur
             </span>
           </motion.div>
@@ -86,7 +86,7 @@ export function HomeLanding() {
             variants={fadeUp}
             initial="hidden"
             animate="visible"
-            className="max-w-3xl font-serif text-4xl leading-[1.1] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl"
+            className="max-w-3xl font-sans text-4xl leading-[1.1] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl"
           >
             The research repository
             <br />
@@ -100,7 +100,7 @@ export function HomeLanding() {
             variants={fadeUp}
             initial="hidden"
             animate="visible"
-            className="mt-6 max-w-lg text-base leading-relaxed text-muted-foreground md:text-lg"
+            className="mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground md:text-xl"
           >
             A unified platform for MUJ&apos;s academic community to publish,
             discover, and collaborate on research across every department.
@@ -148,15 +148,15 @@ export function HomeLanding() {
               variants={fadeUp}
               initial="hidden"
               animate="visible"
-              className="group rounded-xl border border-border/60 bg-card/50 p-5 transition-colors hover:border-amber-600/20 hover:bg-amber-600/[0.02]"
+               className="group rounded-xl border border-border/60 bg-card/50 p-6 transition-colors hover:border-primary/20 hover:bg-primary/[0.02]"
             >
-              <div className="mb-3 flex size-9 items-center justify-center rounded-lg bg-muted transition-colors group-hover:bg-amber-600/10">
-                <pillar.icon className="size-4 text-muted-foreground transition-colors group-hover:text-amber-600" />
+              <div className="mb-3 flex size-10 items-center justify-center rounded-lg bg-muted transition-colors group-hover:bg-primary/10">
+                <pillar.icon className="size-4.5 text-muted-foreground transition-colors group-hover:text-primary" />
               </div>
-              <h3 className="text-sm font-semibold tracking-tight">
+              <h3 className="text-base font-semibold tracking-tight">
                 {pillar.title}
               </h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+              <p className="mt-1.5 text-[15px] leading-relaxed text-muted-foreground">
                 {pillar.description}
               </p>
             </motion.div>
@@ -170,9 +170,9 @@ export function HomeLanding() {
         transition={{ delay: 1, duration: 0.5 }}
         className="relative z-10 border-t px-6 py-6 md:px-12 lg:px-20"
       >
-        <div className="flex flex-col items-center justify-between gap-3 text-xs text-muted-foreground sm:flex-row">
+        <div className="flex flex-col items-center justify-between gap-3 text-sm text-muted-foreground sm:flex-row">
           <span>MUJ General — Manipal University Jaipur</span>
-          <span className="font-mono text-[10px] tracking-wider uppercase opacity-60">
+          <span className="font-mono text-xs tracking-wider uppercase opacity-60">
             Research Repository
           </span>
         </div>

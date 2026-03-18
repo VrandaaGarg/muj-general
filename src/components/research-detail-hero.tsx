@@ -171,7 +171,7 @@ export function ResearchDetailHero({
               variants={fadeUp}
               initial="hidden"
               animate="visible"
-              className="mt-5 font-serif text-3xl leading-[1.15] tracking-tight text-foreground sm:text-4xl md:text-[2.75rem]"
+              className="mt-5 font-sans text-3xl leading-[1.15] tracking-tight text-foreground sm:text-4xl md:text-[2.75rem]"
             >
               {title}
             </motion.h1>

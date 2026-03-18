@@ -68,7 +68,7 @@ export default async function JournalDetailPage({ params }: { params: Promise<{ 
         }}
       />
 
-      <SiteHeader accentColor="amber" />
+      <SiteHeader />
 
       <main className="relative z-10 mx-auto max-w-5xl px-6 pb-20 pt-6 md:px-12">
         <JournalDetailClient journal={clientData} />

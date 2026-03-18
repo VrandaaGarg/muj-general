@@ -79,7 +79,7 @@ export function DepartmentProfile({ department }: DepartmentProfileProps) {
             <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-amber-600">
               Department
             </p>
-            <h1 className="font-serif text-2xl leading-tight tracking-tight text-foreground sm:text-3xl md:text-4xl">
+            <h1 className="font-sans text-2xl leading-tight tracking-tight text-foreground sm:text-3xl md:text-4xl">
               {department.name}
             </h1>
           </div>
@@ -129,7 +129,7 @@ export function DepartmentProfile({ department }: DepartmentProfileProps) {
 
           {department.items.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-card/30 py-16 text-center">
-              <p className="font-serif text-lg text-foreground">
+              <p className="font-sans text-lg text-foreground">
                 No publications yet
               </p>
               <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">

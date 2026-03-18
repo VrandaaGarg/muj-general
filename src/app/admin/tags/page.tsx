@@ -49,7 +49,7 @@ export default async function AdminTagsPage() {
               Admin Panel
             </span>
           </div>
-          <h1 className="font-serif text-3xl tracking-tight md:text-4xl">
+          <h1 className="font-sans text-3xl tracking-tight md:text-4xl">
             Tags
           </h1>
           <p className="mt-2 text-base text-muted-foreground">

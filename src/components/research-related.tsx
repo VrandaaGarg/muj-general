@@ -145,7 +145,7 @@ function ItemGrid({
                     </span>
                   </div>
 
-                  <h3 className="line-clamp-2 flex-1 font-serif text-sm leading-snug tracking-tight text-foreground transition-colors group-hover:text-amber-700">
+                  <h3 className="line-clamp-2 flex-1 font-sans text-sm leading-snug tracking-tight text-foreground transition-colors group-hover:text-amber-700">
                     {item.title}
                   </h3>
 

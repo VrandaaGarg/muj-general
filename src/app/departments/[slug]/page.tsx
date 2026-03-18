@@ -50,7 +50,7 @@ export default async function DepartmentPage({ params }: DepartmentPageProps) {
         }}
       />
 
-      <SiteHeader accentColor="amber" />
+      <SiteHeader />
 
       <main className="relative z-10 pt-4 md:pt-8">
         <DepartmentProfile

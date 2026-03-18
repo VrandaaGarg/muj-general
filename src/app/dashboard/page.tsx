@@ -99,7 +99,7 @@ export default async function DashboardPage() {
         }}
       />
 
-      <SiteHeader accentColor="amber" role={appUser.role} />
+      <SiteHeader role={appUser.role} />
 
       {/* Main content */}
       <main className="relative z-10 mx-auto max-w-3xl px-6 pt-12 pb-24 md:px-12 md:pt-16">
@@ -117,7 +117,7 @@ export default async function DashboardPage() {
               {roleMeta.label}
             </span>
           </div>
-          <h1 className="font-serif text-3xl tracking-tight md:text-4xl">
+          <h1 className="font-sans text-3xl tracking-tight md:text-4xl">
             Welcome back, {firstName}
           </h1>
           <p className="mt-2 text-base text-muted-foreground">

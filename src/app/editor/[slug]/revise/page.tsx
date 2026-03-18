@@ -147,7 +147,7 @@ export default async function RevisePage({ params }: RevisePageProps) {
               {statusConfig.label}
             </span>
           </div>
-          <h1 className="font-serif text-2xl tracking-tight md:text-3xl">
+          <h1 className="font-sans text-2xl tracking-tight md:text-3xl">
             {item.title}
           </h1>
           <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-muted-foreground">
