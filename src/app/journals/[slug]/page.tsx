@@ -70,7 +70,7 @@ export default async function JournalDetailPage({ params }: { params: Promise<{ 
 
       <SiteHeader />
 
-      <main className="relative z-10 mx-auto max-w-5xl px-6 pb-20 pt-6 md:px-12">
+      <main className="relative z-10 mx-auto pb-20 pt-4 ">
         <JournalDetailClient journal={clientData} />
       </main>
 

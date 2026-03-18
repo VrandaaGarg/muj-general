@@ -20,6 +20,9 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "MUJ General",
   description: "Research repository and academic discovery platform for MUJ.",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({

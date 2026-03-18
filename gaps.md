@@ -47,6 +47,15 @@
 - No citation export actions such as BibTeX, RIS, or CSL-JSON.
 - Related items are basic and do not use a richer recommendation strategy.
 - Open Graph and structured data are partial — `generateMetadata` sets title and description but there are no `og:image`, `twitter:card`, or JSON-LD markup on any page.
+- **Research item journal details**: Research items that belong to a journal should display the journal name, volume, and issue on their detail page (`/research/[slug]`), with a link back to the journal. Currently no journal metadata is shown on the research detail page even when `journalId` and `journalIssueId` are set.
+
+## P1 — UI/UX Consistency Gaps
+
+- **Theme consistency**: ~100 hardcoded `amber-600/700`, `rose-600/700`, `violet-600/700` references remain across 24 files. These need replacing with the `primary` CSS variable. Highest-impact files: `admin-version-diff.tsx`, `admin-journals-list.tsx`, `journal-detail-client.tsx`, `journals/page.tsx`, `editor-access-request-card.tsx`, `verify-email-content.tsx`, `admin-pending-requests.tsx`, `admin-users-list.tsx`, `admin-tags-list.tsx`, `admin-departments-list.tsx`, `admin-moderation-history.tsx`, `admin-research-moderation.tsx`, `admin-research-moderation-full.tsx`, `editor-submissions-list.tsx`, `sign-in/page.tsx`, `sign-up/page.tsx`, `admin/page.tsx`, `admin/review/[id]/page.tsx`, `admin/history/page.tsx`, `admin/users/page.tsx`, `admin/journals/page.tsx`, `admin/tags/page.tsx`, `admin/departments/page.tsx`, `ui/confirm-dialog.tsx`.
+- **Admin subpage breadcrumbs + width**: 6 admin sub-routes still use `ArrowLeft` back-links instead of full `Home > Admin > Page` breadcrumbs, and narrower containers (`max-w-3xl`/`max-w-4xl`) instead of `max-w-6xl` with `lg:px-20`. Affected: `/admin/users`, `/admin/history`, `/admin/departments`, `/admin/tags`, `/admin/journals`, `/admin/review/[id]`.
+- **Native selects → AnimatedSelect**: 2 remaining native `<select>` elements in `admin-journals-list.tsx` (journal status + volume selection) need replacing with `AnimatedSelect`.
+- **Section heading hierarchy**: Inconsistent heading sizes across admin/editor/journal pages. Standardize to `text-lg font-semibold tracking-tight text-foreground` for primary section titles. Key files: `author-profile.tsx`, `admin/review/[id]/page.tsx`, `research-filters.tsx`, `admin-review-actions.tsx`, `journal-detail-client.tsx`, `editor-submissions-list.tsx`, `admin-pending-requests.tsx`, `admin-research-moderation.tsx`, `admin-research-moderation-full.tsx`.
+- **Editor form localStorage persistence**: `editor-submission-form.tsx` and `editor-revision-form.tsx` lose all filled data on page reload. Add debounced localStorage draft persistence (save on change, restore on mount, clear on successful submission).
 
 ## P2 — UX and Robustness Gaps
 
