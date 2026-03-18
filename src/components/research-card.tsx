@@ -3,10 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { CalendarDays, Building2, Users } from "lucide-react";
+import { FileText } from "lucide-react";
 
-import { getTypeLabel, getTypeColor } from "@/lib/research-types";
-import { cn } from "@/lib/utils";
+import { getTypeLabel } from "@/lib/research-types";
 
 interface ResearchCardItem {
   slug: string;
@@ -14,10 +13,11 @@ interface ResearchCardItem {
   abstract: string;
   itemType: string;
   publicationYear: number;
+  publishedAt?: Date | null;
   departmentName: string | null;
   departmentSlug?: string | null;
-  authors: { id: string; name: string }[];
-  tags: { id: string; name: string; slug: string }[];
+  authors: { id?: string; name: string }[];
+  tags: { id?: string; name: string; slug?: string }[];
   coverImageUrl: string | null;
 }
 
@@ -26,108 +26,83 @@ interface ResearchCardProps {
   index: number;
 }
 
+function formatDate(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 export function ResearchCard({ item, index }: ResearchCardProps) {
   const snippet =
-    item.abstract.length > 200
-      ? item.abstract.slice(0, 200).trimEnd() + "…"
+    item.abstract.length > 180
+      ? item.abstract.slice(0, 180).trimEnd() + "..."
       : item.abstract;
-
-  const visibleAuthors = item.authors.slice(0, 3);
-  const extraAuthors = item.authors.length > 3 ? item.authors.length - 3 : 0;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{
-        duration: 0.4,
-        delay: Math.min(index * 0.06, 0.5),
+        duration: 0.35,
+        delay: Math.min(index * 0.05, 0.4),
         ease: [0.25, 0.46, 0.45, 0.94],
       }}
     >
       <Link
         href={`/research/${item.slug}`}
-        className="group flex flex-row items-stretch rounded-xl border border-border/60 bg-card/50 transition-all hover:border-amber-600/25 hover:bg-amber-600/2 hover:shadow-sm"
+        className="group flex items-start gap-6 border-b-2 border-border py-6 transition-colors first:pt-0"
       >
         {/* Left: content */}
-        <div className="flex min-w-0 flex-1 flex-col p-5">
-          {/* Header: type badge + year */}
-          <div className="mb-3 flex items-center gap-2">
-            <span
-              className={cn(
-                "inline-flex rounded-md px-2 py-0.5 text-[11px] font-semibold leading-tight tracking-wide",
-                getTypeColor(item.itemType),
-              )}
-            >
-              {getTypeLabel(item.itemType)}
-            </span>
-            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-              <CalendarDays className="size-3" />
-              {item.publicationYear}
-            </span>
-          </div>
+        <div className="min-w-0 flex-1">
+          {/* Type label */}
+          <p className="mb-2 text-md font-semibold text-foreground">
+            {getTypeLabel(item.itemType)}
+          </p>
 
-          {/* Title */}
-          <h3 className="line-clamp-2 font-sans text-lg leading-snug tracking-tight text-foreground transition-colors group-hover:text-amber-700 sm:text-xl">
+          {/* Title — full, no truncation */}
+          <h3 className="mb-2 text-2xl font-bold leading-snug tracking-tight text-foreground transition-colors group-hover:text-primary group-hover:underline">
             {item.title}
           </h3>
 
           {/* Abstract snippet */}
-          <p className="mt-2 flex-1 text-[13px] leading-relaxed text-muted-foreground">
-            {snippet}
-          </p>
+          {item.abstract && (
+            <p className="mb-3 text-md leading-relaxed text-muted-foreground">
+              {snippet}
+            </p>
+          )}
 
-          {/* Meta footer */}
-          <div className="mt-4 flex flex-col gap-2 border-t border-border/40 pt-3">
-            {visibleAuthors.length > 0 && (
-              <div className="flex items-start gap-1.5">
-                <Users className="mt-0.5 size-3 shrink-0 text-muted-foreground/60" />
-                <span className="text-xs leading-snug text-muted-foreground">
-                  {visibleAuthors.map((a) => a.name).join(", ")}
-                  {extraAuthors > 0 && ` +${extraAuthors}`}
-                </span>
-              </div>
-            )}
+          {/* Authors */}
+          {item.authors.length > 0 && (
+            <p className="mb-1 text-sm text-muted-foreground">
+              {item.authors.map((a) => a.name).join(", ")}
+            </p>
+          )}
 
-            {item.departmentName && (
-              <div className="flex items-center gap-1.5">
-                <Building2 className="size-3 shrink-0 text-muted-foreground/60" />
-                <span className="text-xs text-muted-foreground">
-                  {item.departmentName}
-                </span>
-              </div>
-            )}
-
-            {item.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1 pt-1">
-                {item.tags.slice(0, 4).map((tag) => (
-                  <span
-                    key={tag.id}
-                    className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
-                  >
-                    {tag.name}
-                  </span>
-                ))}
-                {item.tags.length > 4 && (
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                    +{item.tags.length - 4}
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
+          {/* Published date */}
+          {item.publishedAt && (
+            <p className="text-sm font-medium text-foreground">
+              {formatDate(item.publishedAt)}
+            </p>
+          )}
         </div>
 
         {/* Right: thumbnail */}
-        {item.coverImageUrl && (
-          <div className="relative hidden w-44 shrink-0 overflow-hidden rounded-r-xl border-l border-border/40 sm:block lg:w-52">
+        {item.coverImageUrl ? (
+          <div className="relative hidden size-40 shrink-0 overflow-hidden rounded-lg sm:block lg:size-44">
             <Image
               src={item.coverImageUrl}
               alt={item.title}
               fill
-              sizes="(min-width: 1024px) 208px, 176px"
-              className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+              sizes="160px"
+              className="object-cover"
             />
+          </div>
+        ) : (
+          <div className="hidden size-40 shrink-0 items-center justify-center rounded-lg bg-muted/50 sm:flex lg:size-44">
+            <FileText className="size-8 text-muted-foreground/25" />
           </div>
         )}
       </Link>

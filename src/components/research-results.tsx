@@ -23,9 +23,11 @@ interface ResearchListItem {
 interface ResearchResultsProps {
   items: ResearchListItem[];
   totalCount: number;
+  currentPage?: number;
+  pageSize?: number;
 }
 
-export function ResearchResults({ items, totalCount }: ResearchResultsProps) {
+export function ResearchResults({ items, totalCount, currentPage = 1, pageSize = 9 }: ResearchResultsProps) {
   if (items.length === 0) {
     return (
       <motion.div
@@ -55,9 +57,9 @@ export function ResearchResults({ items, totalCount }: ResearchResultsProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="mb-4 text-xs font-medium text-muted-foreground"
+        className="mb-4 font-semibold text-sm text-primary"
       >
-        {totalCount} {totalCount === 1 ? "result" : "results"} found
+        Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, totalCount)} of {totalCount} results
       </motion.p>
 
       {/* List */}

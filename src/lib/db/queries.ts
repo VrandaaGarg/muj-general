@@ -63,22 +63,39 @@ function buildPublishedResearchWhere(filters: PublishedResearchFilters) {
   }
 
   if (filters.department) {
-    conditions.push(eq(departments.slug, filters.department));
+    const slugs = filters.department.split(",").filter(Boolean);
+    if (slugs.length === 1) {
+      conditions.push(eq(departments.slug, slugs[0]));
+    } else if (slugs.length > 1) {
+      conditions.push(inArray(departments.slug, slugs));
+    }
   }
 
   if (filters.type) {
-    conditions.push(eq(researchItems.itemType, filters.type as never));
+    const types = filters.type.split(",").filter(Boolean);
+    if (types.length === 1) {
+      conditions.push(eq(researchItems.itemType, types[0] as never));
+    } else if (types.length > 1) {
+      conditions.push(inArray(researchItems.itemType, types as never));
+    }
   }
 
   if (filters.year) {
-    const year = Number(filters.year);
-    if (!Number.isNaN(year)) {
-      conditions.push(eq(researchItems.publicationYear, year));
+    const years = filters.year.split(",").map(Number).filter((n) => !Number.isNaN(n));
+    if (years.length === 1) {
+      conditions.push(eq(researchItems.publicationYear, years[0]));
+    } else if (years.length > 1) {
+      conditions.push(inArray(researchItems.publicationYear, years));
     }
   }
 
   if (filters.tag) {
-    conditions.push(eq(tags.slug, filters.tag));
+    const tagSlugs = filters.tag.split(",").filter(Boolean);
+    if (tagSlugs.length === 1) {
+      conditions.push(eq(tags.slug, tagSlugs[0]));
+    } else if (tagSlugs.length > 1) {
+      conditions.push(inArray(tags.slug, tagSlugs));
+    }
   }
 
   return and(...conditions);
