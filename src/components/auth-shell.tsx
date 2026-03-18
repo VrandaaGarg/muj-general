@@ -1,8 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { BookOpen } from "lucide-react";
 
 interface AuthShellProps {
   children: React.ReactNode;
@@ -31,13 +31,15 @@ export function AuthShell({ children }: AuthShellProps) {
         transition={{ duration: 0.4 }}
         className="relative z-10 mb-8"
       >
-        <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-70">
-          <div className="flex size-8 items-center justify-center rounded-md bg-foreground">
-            <BookOpen className="size-4 text-background" />
-          </div>
-          <span className="text-base font-semibold tracking-tight">
-            MUJ General
-          </span>
+        <Link href="/" className="transition-opacity hover:opacity-70">
+          <Image
+            src="/manipal-university-jaipur-logo-01.svg"
+            alt="Manipal University Jaipur"
+            width={200}
+            height={40}
+            className="h-10 w-auto"
+            priority
+          />
         </Link>
       </motion.div>
 
@@ -46,7 +48,7 @@ export function AuthShell({ children }: AuthShellProps) {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, delay: 0.05 }}
-        className="relative z-10 w-full max-w-sm"
+        className="relative z-10 w-full max-w-md [&_[data-slot=card]]:py-6 [&_[data-slot=card]]:has-data-[slot=card-footer]:pb-6 [&_[data-slot=card-header]]:px-6 [&_[data-slot=card-content]]:px-6 [&_[data-slot=card-footer]]:border-0 [&_[data-slot=card-footer]]:bg-transparent [&_[data-slot=card-footer]]:px-6 [&_[data-slot=card-footer]]:pt-2 [&_[data-slot=card-footer]]:pb-0"
       >
         {children}
       </motion.div>

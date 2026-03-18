@@ -129,4 +129,13 @@
     font-family: var(--font-roboto), "Roboto", ui-sans-serif, system-ui, sans-serif;
     @apply text-base md:text-[17px];
   }
+  button,
+  [role="button"],
+  a,
+  label[for],
+  select,
+  [type="checkbox"],
+  [type="radio"] {
+    cursor: pointer;
+  }
 }

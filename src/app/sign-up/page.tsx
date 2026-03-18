@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, AlertCircle, ArrowRight, MailCheck } from "lucide-react";
+import { Loader2, AlertCircle, ArrowRight, MailCheck, Eye, EyeOff } from "lucide-react";
 
 import { signUp } from "@/lib/auth-client";
 import { signUpSchema, type SignUpInput } from "@/lib/validation/auth";
@@ -28,6 +28,7 @@ export default function SignUpPage() {
   const [verificationEmail, setVerificationEmail] = useState<string | null>(
     null
   );
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -164,14 +165,25 @@ export default function SignUpPage() {
 
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="password">Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      autoComplete="new-password"
-                      aria-invalid={!!errors.password}
-                      {...register("password")}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        autoComplete="new-password"
+                        aria-invalid={!!errors.password}
+                        className="pr-10"
+                        {...register("password")}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      </button>
+                    </div>
                     {errors.password && (
                       <p className="text-xs text-destructive">
                         {errors.password.message}

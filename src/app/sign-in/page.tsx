@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, AlertCircle, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Loader2, AlertCircle, ArrowRight, CheckCircle2, Eye, EyeOff } from "lucide-react";
 
 import { signIn } from "@/lib/auth-client";
 import { signInSchema, type SignInInput } from "@/lib/validation/auth";
@@ -46,6 +46,7 @@ function SignInForm() {
   const verified = searchParams.get("verified") === "true";
   const verifyError = searchParams.get("error");
   const [serverError, setServerError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -142,14 +143,25 @@ function SignInForm() {
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              autoComplete="current-password"
-              aria-invalid={!!errors.password}
-              {...register("password")}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                autoComplete="current-password"
+                aria-invalid={!!errors.password}
+                className="pr-10"
+                {...register("password")}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </div>
             {errors.password && (
               <p className="text-xs text-destructive">
                 {errors.password.message}
