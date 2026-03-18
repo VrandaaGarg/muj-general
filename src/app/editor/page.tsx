@@ -1,0 +1,163 @@
+import { Suspense } from "react";
+import Link from "next/link";
+import { BookCheck, ChevronRight, ClipboardList, PenTool } from "lucide-react";
+
+import { requireRole } from "@/lib/auth/session";
+import {
+  listDepartments,
+  listJournalIssueOptions,
+  listJournalOptions,
+  listResearchItemsForEditor,
+  listTags,
+} from "@/lib/db/queries";
+import { getPublicFileUrl } from "@/lib/storage/r2";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import { SiteHeader } from "@/components/site-header";
+import { EditorSubmissionForm } from "@/components/editor-submission-form";
+import { EditorSubmissionsList } from "@/components/editor-submissions-list";
+
+export default async function EditorPage() {
+  const session = await requireRole(["editor", "admin"], {
+    returnTo: "/editor",
+  });
+  const { appUser } = session;
+
+  const [departments, tags, submittedItems, journals, journalIssues] = await Promise.all([
+    listDepartments(),
+    listTags(),
+    listResearchItemsForEditor(appUser.id),
+    listJournalOptions(),
+    listJournalIssueOptions(),
+  ]);
+
+  const pendingCount = submittedItems.filter(
+    (i) => i.status === "submitted",
+  ).length;
+  const publishedCount = submittedItems.filter(
+    (i) => i.status === "published",
+  ).length;
+
+  return (
+    <div className="relative min-h-screen bg-background">
+      {/* Subtle dot pattern */}
+      <div
+        className="pointer-events-none fixed inset-0 opacity-[0.025]"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle, currentColor 0.8px, transparent 0.8px)",
+          backgroundSize: "24px 24px",
+        }}
+      />
+
+      <SiteHeader role={appUser.role} />
+
+      <main className="relative z-10 mx-auto max-w-6xl px-6 pt-8 pb-24 md:px-12 md:pt-12 lg:px-20">
+        {/* Breadcrumb */}
+        <nav className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Link href="/" className="font-medium text-primary underline-offset-2 transition-colors hover:underline hover:text-primary/80">
+            Home
+          </Link>
+          <ChevronRight className="size-3.5 text-muted-foreground/50" />
+          <span className="font-medium text-foreground">Editor</span>
+        </nav>
+
+        {/* Title section */}
+        <div className="mb-10">
+          {/* <div className="mb-4 flex items-center gap-2">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+              <PenTool className="size-4 text-primary" />
+            </div>
+            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+              Editor Panel
+            </span>
+          </div> */}
+          <h1 className="font-sans text-3xl tracking-tight md:text-4xl">
+            Editor workspace
+          </h1>
+          <p className="mt-2 text-base text-muted-foreground">
+            Submit research, track review status, and manage your items.
+          </p>
+        </div>
+
+        {/* Stats cards */}
+        <div className="mb-8 grid gap-4 sm:grid-cols-2">
+          <Card className="border-border/60">
+            <CardHeader className="pb-2">
+              <div className="flex size-9 items-center justify-center rounded-lg bg-muted">
+                <ClipboardList className="size-4 text-muted-foreground" />
+              </div>
+              <CardTitle className="text-sm font-semibold tracking-tight">
+                Pending Reviews
+              </CardTitle>
+              <CardDescription>
+                Submissions awaiting admin review
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-semibold tracking-tight text-foreground">
+                {pendingCount}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/60">
+            <CardHeader className="pb-2">
+              <div className="flex size-9 items-center justify-center rounded-lg bg-muted">
+                <BookCheck className="size-4 text-muted-foreground" />
+              </div>
+              <CardTitle className="text-sm font-semibold tracking-tight">
+                Published Items
+              </CardTitle>
+              <CardDescription>
+                Approved and publicly visible research
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-semibold tracking-tight text-foreground">
+                {publishedCount}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Submission form */}
+        <div className="mb-10">
+          <Suspense
+            fallback={
+              <div className="h-64 animate-pulse rounded-xl border border-border/60 bg-muted/20" />
+            }
+          >
+            <EditorSubmissionForm
+              departments={departments}
+              tags={tags}
+              journals={journals}
+              journalIssues={journalIssues}
+            />
+          </Suspense>
+        </div>
+
+        {/* Submissions list */}
+        <Suspense
+          fallback={
+            <div className="h-32 animate-pulse rounded-xl border border-border/60 bg-muted/20" />
+          }
+        >
+          <EditorSubmissionsList
+            items={submittedItems.map((item) => ({
+              ...item,
+              coverImageUrl: item.coverImageObjectKey
+                ? getPublicFileUrl(item.coverImageObjectKey)
+                : null,
+            }))}
+          />
+        </Suspense>
+      </main>
+    </div>
+  );
+}

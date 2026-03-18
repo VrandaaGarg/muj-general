@@ -1,0 +1,63 @@
+import Link from "next/link";
+import { ArrowRight, Library, ScrollText } from "lucide-react";
+
+import { listPublicJournals } from "@/lib/db/queries";
+import { SiteHeader } from "@/components/site-header";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+export default async function JournalsPage() {
+  const journals = await listPublicJournals();
+
+  return (
+    <div className="relative min-h-screen bg-background">
+      <SiteHeader />
+
+      <main className="relative z-10 mx-auto max-w-5xl px-6 pb-20 pt-8 md:px-12">
+        <div className="mb-10">
+          <div className="mb-4 flex items-center gap-2">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-amber-600/10">
+              <Library className="size-4 text-amber-600" />
+            </div>
+            <span className="rounded-full bg-amber-600/10 px-2.5 py-0.5 text-xs font-medium text-amber-700">
+              Journal Collection
+            </span>
+          </div>
+          <h1 className="font-sans text-3xl tracking-tight md:text-4xl">Journals</h1>
+          <p className="mt-2 max-w-3xl text-base text-muted-foreground">
+            Browse journals, online-first publications, and issue-based article collections published through MUJ General.
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {journals.map((journal) => (
+            <Link key={journal.id} href={`/journals/${journal.slug}`} className="group">
+              <Card className="h-full border-border/60 transition-colors group-hover:border-amber-600/30 group-hover:bg-amber-600/[0.02]">
+                <CardHeader>
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-amber-600/10">
+                    <ScrollText className="size-4 text-amber-700" />
+                  </div>
+                  <CardTitle className="font-sans text-xl tracking-tight">{journal.name}</CardTitle>
+                  <CardDescription className="font-mono text-[11px]">/{journal.slug}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {journal.description && (
+                    <p className="line-clamp-4 text-sm leading-relaxed text-muted-foreground">{journal.description}</p>
+                  )}
+                  <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                    {journal.issn && <span className="rounded-full bg-muted px-2 py-0.5">ISSN {journal.issn}</span>}
+                    {journal.eissn && <span className="rounded-full bg-muted px-2 py-0.5">E-ISSN {journal.eissn}</span>}
+                    <span className="rounded-full bg-amber-600/10 px-2 py-0.5 text-amber-700">{journal.itemCount} items</span>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700">
+                    Open journal
+                    <ArrowRight className="size-3" />
+                  </span>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}
