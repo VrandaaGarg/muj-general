@@ -50,7 +50,7 @@ export function SiteHeader({ role }: SiteHeaderProps) {
   }
 
   return (
-    <header className="relative z-50 border-b border-border/60 bg-background/95 backdrop-blur-sm">
+    <header className="relative z-50 border-b border-border/60 bg-white backdrop-blur-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3 md:px-12 lg:px-20">
         <Link
           href="/"

@@ -55,7 +55,7 @@ export function ResearchRelated({
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-10 px-6 pb-16 md:px-12">
+    <div className="mt-10 space-y-10">
       {sections.map((section, sectionIndex) => (
         <ItemGrid
           key={section.key}
@@ -84,19 +84,19 @@ function ItemGrid({
       transition={{ duration: 0.45, delay: delayBase }}
     >
       <div className="mb-5 flex items-center justify-between">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           {title}
         </h2>
         <Link
           href="/research"
-          className="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          className="flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           Browse all
           <ArrowRight className="size-3" />
         </Link>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((item, index) => {
           const visibleAuthors = item.authors.slice(0, 2);
           const extraAuthors =
@@ -114,7 +114,7 @@ function ItemGrid({
             >
               <Link
                 href={`/research/${item.slug}`}
-                className="group flex h-full flex-col overflow-hidden rounded-xl border border-border/60 bg-card/50 transition-all hover:border-amber-600/25 hover:bg-amber-600/2 hover:shadow-sm"
+                className="group flex h-full flex-col overflow-hidden rounded-xl border border-border/60 bg-card/50 transition-all hover:border-primary/25 hover:bg-primary/[0.02] hover:shadow-sm"
               >
                 {/* Thumbnail */}
                 {item.coverImageUrl && (
@@ -133,25 +133,25 @@ function ItemGrid({
                   <div className="mb-2 flex items-center gap-2">
                     <span
                       className={cn(
-                        "inline-flex rounded-md px-1.5 py-0.5 text-[10px] font-semibold leading-tight tracking-wide",
+                        "inline-flex rounded-md px-2 py-0.5 text-xs font-semibold leading-tight tracking-wide",
                         getTypeColor(item.itemType),
                       )}
                     >
                       {getTypeLabel(item.itemType)}
                     </span>
-                    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                      <CalendarDays className="size-2.5" />
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <CalendarDays className="size-3" />
                       {item.publicationYear}
                     </span>
                   </div>
 
-                  <h3 className="line-clamp-2 flex-1 font-sans text-sm leading-snug tracking-tight text-foreground transition-colors group-hover:text-amber-700">
+                  <h3 className="line-clamp-2 flex-1 text-base font-semibold leading-snug tracking-tight text-foreground transition-colors group-hover:text-primary">
                     {item.title}
                   </h3>
 
                   {visibleAuthors.length > 0 && (
-                    <div className="mt-2 flex items-start gap-1 text-[10px] text-muted-foreground">
-                      <Users className="mt-0.5 size-2.5 shrink-0" />
+                    <div className="mt-2 flex items-start gap-1.5 text-sm text-muted-foreground">
+                      <Users className="mt-0.5 size-3 shrink-0" />
                       <span className="line-clamp-1">
                         {visibleAuthors.map((a) => a.name).join(", ")}
                         {extraAuthors > 0 && ` +${extraAuthors}`}

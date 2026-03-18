@@ -124,20 +124,20 @@ export default async function ResearchDetailPage({
           viewCount={item.viewCount ?? 0}
           downloadCount={item.downloadCount ?? 0}
           references={item.references}
-        />
-
-        <ResearchRelated
-          related={relatedWithUrls}
-          more={moreWithUrls}
-          sameAuthors={sameAuthorWithUrls}
-        />
+        >
+          <ResearchRelated
+            related={relatedWithUrls}
+            more={moreWithUrls}
+            sameAuthors={sameAuthorWithUrls}
+          />
+        </ResearchDetailHero>
       </main>
 
       {/* Footer */}
       <footer className="relative z-10 border-t px-6 py-6 md:px-12 lg:px-20">
-        <div className="flex flex-col items-center justify-between gap-3 text-xs text-muted-foreground sm:flex-row">
+        <div className="flex flex-col items-center justify-between gap-3 text-sm text-muted-foreground sm:flex-row">
           <span>MUJ General — Manipal University Jaipur</span>
-          <span className="font-mono text-[10px] tracking-wider uppercase opacity-60">
+          <span className="text-xs tracking-wider uppercase opacity-60">
             Research Repository
           </span>
         </div>

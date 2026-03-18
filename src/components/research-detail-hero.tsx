@@ -1,28 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { motion, type Variants } from "framer-motion";
 import {
-  BookOpen,
-  Building2,
-  CalendarDays,
   ChevronRight,
   Download,
   Eye,
   ExternalLink,
-  FileText,
-  GraduationCap,
-  Home,
   LinkIcon,
-  Scale,
-  Users,
 } from "lucide-react";
 
 import { trackDownload } from "@/lib/actions/research";
 import { ResearchThumbnail } from "@/components/pdf-thumbnail-viewer";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
-import { getTypeLabel, getTypeColor } from "@/lib/research-types";
+import { getTypeLabel } from "@/lib/research-types";
+import { ResearchRelated } from "@/components/research-related";
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 20 },
@@ -60,6 +54,7 @@ interface ResearchDetailHeroProps {
   viewCount: number;
   downloadCount: number;
   references: Array<{ citationText: string; url: string | null }>;
+  children?: React.ReactNode;
 }
 
 export function ResearchDetailHero({
@@ -67,6 +62,7 @@ export function ResearchDetailHero({
   abstract,
   itemType,
   publicationYear,
+  publishedAt,
   departmentName,
   departmentSlug,
   authors,
@@ -84,13 +80,13 @@ export function ResearchDetailHero({
   viewCount,
   downloadCount,
   references,
+  children,
 }: ResearchDetailHeroProps) {
   return (
     <section className="relative">
-      {/* Warm overlay gradient */}
-      <div className="pointer-events-none absolute inset-0 -top-20 bg-linear-to-b from-amber-600/3 via-transparent to-transparent" />
+      <div className="pointer-events-none absolute inset-0 -top-20 bg-linear-to-b from-primary/3 via-transparent to-transparent" />
 
-      <div className="relative mx-auto max-w-4xl px-6 pt-4 pb-12 md:px-12">
+      <div className="relative mx-auto max-w-6xl px-6 pt-4 pb-12 md:px-12 lg:px-20">
         {/* Breadcrumb */}
         <motion.nav
           custom={0}
@@ -98,17 +94,23 @@ export function ResearchDetailHero({
           initial="hidden"
           animate="visible"
           aria-label="Breadcrumb"
-          className="flex items-center gap-1.5 text-xs text-muted-foreground"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground"
         >
           <Link
-            href="/research"
-            className="flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium transition-colors hover:bg-muted hover:text-foreground"
+            href="/"
+            className="font-medium text-primary underline-offset-2 transition-colors hover:underline hover:text-primary/80"
           >
-            <Home className="size-3.5" />
-            <span className="sr-only sm:not-sr-only">Repository</span>
+            Home
           </Link>
-          <ChevronRight className="size-3 text-muted-foreground/50" />
-          <span className="max-w-70 truncate font-medium text-foreground sm:max-w-md">
+          <ChevronRight className="size-3.5 text-muted-foreground/50" />
+          <Link
+            href="/research"
+            className="font-medium transition-colors hover:text-foreground"
+          >
+            Research
+          </Link>
+          <ChevronRight className="size-3.5 text-muted-foreground/50" />
+          <span className="font-medium text-foreground max-sm:line-clamp-1">
             {title}
           </span>
         </motion.nav>
@@ -117,7 +119,7 @@ export function ResearchDetailHero({
         <div className="mt-6 flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
           {/* Left column — metadata + actions */}
           <div className="min-w-0 flex-1">
-            {/* Type badge + year */}
+            {/* Type + department */}
             <motion.div
               custom={1}
               variants={fadeUp}
@@ -125,43 +127,16 @@ export function ResearchDetailHero({
               animate="visible"
               className="flex flex-wrap items-center gap-2.5"
             >
-              <span
-                className={cn(
-                  "inline-flex rounded-md px-2.5 py-1 text-[11px] font-semibold leading-tight tracking-wide",
-                  getTypeColor(itemType),
-                )}
-              >
+              <span className="text-sm font-semibold text-primary">
                 {getTypeLabel(itemType)}
-              </span>
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <CalendarDays className="size-3" />
-                {publicationYear}
               </span>
               {departmentName && departmentSlug && (
                 <Link
                   href={`/departments/${departmentSlug}`}
-                  className="flex items-center gap-1 rounded-md bg-muted/60 px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  className="rounded-md bg-muted/60 px-2 py-0.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
-                  <Building2 className="size-3" />
                   {departmentName}
                 </Link>
-              )}
-              {(viewCount > 0 || downloadCount > 0) && (
-                <>
-                  <span className="text-border">·</span>
-                  {viewCount > 0 && (
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Eye className="size-3" />
-                      {viewCount.toLocaleString()} {viewCount === 1 ? "view" : "views"}
-                    </span>
-                  )}
-                  {downloadCount > 0 && (
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Download className="size-3" />
-                      {downloadCount.toLocaleString()} {downloadCount === 1 ? "download" : "downloads"}
-                    </span>
-                  )}
-                </>
               )}
             </motion.div>
 
@@ -171,7 +146,7 @@ export function ResearchDetailHero({
               variants={fadeUp}
               initial="hidden"
               animate="visible"
-              className="mt-5 font-sans text-3xl leading-[1.15] tracking-tight text-foreground sm:text-4xl md:text-[2.75rem]"
+              className="mt-5 text-2xl font-bold leading-[1.2] tracking-tight text-foreground sm:text-3xl"
             >
               {title}
             </motion.h1>
@@ -183,16 +158,15 @@ export function ResearchDetailHero({
                 variants={fadeUp}
                 initial="hidden"
                 animate="visible"
-                className="mt-4 flex items-start gap-2"
+                className="mt-4"
               >
-                <Users className="mt-0.5 size-3.5 shrink-0 text-amber-600/70" />
-                <p className="text-sm leading-relaxed text-muted-foreground">
+                <p className="text-base leading-relaxed text-muted-foreground">
                   {authors.map((a, i) => (
                     <span key={a.id}>
                       {i > 0 && ", "}
                       <Link
                         href={`/authors/${a.id}`}
-                        className="underline decoration-border underline-offset-2 transition-colors hover:text-foreground hover:decoration-amber-600/40"
+                        className="underline decoration-border underline-offset-2 transition-colors hover:text-foreground hover:decoration-primary/40"
                       >
                         {a.name}
                       </Link>
@@ -209,13 +183,13 @@ export function ResearchDetailHero({
                 variants={fadeUp}
                 initial="hidden"
                 animate="visible"
-                className="mt-4 flex flex-wrap gap-1.5"
+                className="mt-4 flex flex-wrap gap-2"
               >
                 {tags.map((tag) => (
                   <Link
                     key={tag.id}
                     href={`/research?tag=${tag.slug}`}
-                    className="rounded-full border border-border/60 bg-muted/40 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:border-amber-600/30 hover:text-foreground"
+                    className="rounded-full border border-primary/30 px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-primary/5"
                   >
                     {tag.name}
                   </Link>
@@ -242,7 +216,7 @@ export function ResearchDetailHero({
                   <Download className="size-4" />
                   {fileOriginalName ? "Download PDF" : "Open PDF"}
                   {fileSizeBytes && (
-                    <span className="ml-1 text-[10px] opacity-70">
+                    <span className="ml-1 text-xs opacity-70">
                       ({(fileSizeBytes / (1024 * 1024)).toFixed(1)} MB)
                     </span>
                   )}
@@ -271,6 +245,35 @@ export function ResearchDetailHero({
                 </a>
               )}
             </motion.div>
+
+            {/* Published date + views */}
+            <motion.div
+              custom={6}
+              variants={fadeUp}
+              initial="hidden"
+              animate="visible"
+              className="mt-4 flex flex-wrap items-center gap-3 text-sm text-muted-foreground"
+            >
+              {publishedAt && (
+                <span>
+                  Published{" "}
+                  {new Date(publishedAt).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </span>
+              )}
+              {publishedAt && viewCount > 0 && (
+                <span className="text-border">·</span>
+              )}
+              {viewCount > 0 && (
+                <span className="flex items-center gap-1">
+                  <Eye className="size-3.5" />
+                  {viewCount.toLocaleString()} {viewCount === 1 ? "view" : "views"}
+                </span>
+              )}
+            </motion.div>
           </div>
 
           {/* Right column — PDF thumbnail / cover image */}
@@ -292,126 +295,307 @@ export function ResearchDetailHero({
         </div>
 
         {/* Divider */}
-        <motion.div
-          custom={6}
-          variants={fadeUp}
-          initial="hidden"
-          animate="visible"
-          className="mt-8 border-t border-border/60"
-        />
+        <div className="mt-8 border-t border-border/60" />
 
-        {/* Abstract */}
-        <motion.div
-          custom={7}
-          variants={fadeUp}
-          initial="hidden"
-          animate="visible"
-          className="mt-8"
-        >
-          <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            <FileText className="size-3.5" />
-            Abstract
-          </h2>
-          <p className="text-[15px] leading-[1.8] text-foreground/85">
-            {abstract}
-          </p>
-        </motion.div>
+        {/* Two-column: content left, sticky tabbed nav right */}
+        <div className="mt-8 flex flex-col gap-10 lg:flex-row">
+          {/* Left: main content */}
+          <div className="min-w-0 flex-1">
+            {/* Abstract */}
+            <section id="abstract">
+              <h2 className="mb-3 text-lg font-bold text-primary">
+                Abstract
+              </h2>
+              <p className="text-base leading-[1.85] text-foreground/85">
+                {abstract}
+              </p>
+            </section>
 
-        {/* Additional metadata */}
-        {(supervisorName || programName || license) && (
-          <motion.div
-            custom={8}
-            variants={fadeUp}
-            initial="hidden"
-            animate="visible"
-            className="mt-8 rounded-xl border border-border/60 bg-card/50 p-5"
-          >
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Additional details
-            </h2>
-            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-              {supervisorName && (
-                <div className="flex items-start gap-2">
-                  <GraduationCap className="mt-0.5 size-3.5 shrink-0 text-muted-foreground/60" />
-                  <div>
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                      Supervisor
-                    </p>
-                    <p className="text-sm text-foreground">{supervisorName}</p>
-                  </div>
+            {/* Additional metadata */}
+            {(supervisorName || programName || license) && (
+              <section id="additional-details" className="mt-10">
+                <h2 className="mb-3 text-lg font-bold text-primary">
+                  Additional Details
+                </h2>
+                <div className="grid gap-3 rounded-xl border border-border/60 bg-card/50 p-5 sm:grid-cols-2 md:grid-cols-3">
+                  {supervisorName && (
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Supervisor
+                      </p>
+                      <p className="text-base text-foreground">{supervisorName}</p>
+                    </div>
+                  )}
+                  {programName && (
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Program
+                      </p>
+                      <p className="text-base text-foreground">{programName}</p>
+                    </div>
+                  )}
+                  {license && (
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        License
+                      </p>
+                      <p className="text-base text-foreground">{license}</p>
+                    </div>
+                  )}
                 </div>
-              )}
-              {programName && (
-                <div className="flex items-start gap-2">
-                  <Building2 className="mt-0.5 size-3.5 shrink-0 text-muted-foreground/60" />
+              </section>
+            )}
+
+            {/* References (inline in left col) */}
+            {references.length > 0 && (
+              <section id="references" className="mt-10">
+                <h2 className="mb-3 text-lg font-bold text-primary">
+                  References ({references.length})
+                </h2>
+                <ol className="space-y-2.5">
+                  {references.map((ref, index) => (
+                    <li
+                      key={index}
+                      className="flex items-baseline gap-2.5 text-base leading-relaxed text-foreground/85"
+                    >
+                      <span className="shrink-0 text-sm font-medium text-muted-foreground">
+                        [{index + 1}]
+                      </span>
+                      <span>
+                        {ref.citationText}
+                        {ref.url && (
+                          <>
+                            {" "}
+                            <a
+                              href={ref.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-primary underline decoration-primary/30 underline-offset-2 transition-colors hover:text-primary/80"
+                            >
+                              Link
+                            </a>
+                          </>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+
+            {/* About this paper */}
+            <section id="about-this-paper" className="mt-10">
+              <h2 className="mb-1 text-xl font-bold text-primary">
+                About this paper
+              </h2>
+              <div className="mb-6 border-b border-primary/20" />
+              <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
+                {doi && (
                   <div>
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                      Program
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      DOI
                     </p>
-                    <p className="text-sm text-foreground">{programName}</p>
+                    <a
+                      href={`https://doi.org/${doi}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 block text-sm text-primary underline decoration-primary/30 underline-offset-2 transition-colors hover:text-primary/80"
+                    >
+                      https://doi.org/{doi}
+                    </a>
                   </div>
-                </div>
-              )}
-              {license && (
-                <div className="flex items-start gap-2">
-                  <Scale className="mt-0.5 size-3.5 shrink-0 text-muted-foreground/60" />
+                )}
+                {publishedAt && (
                   <div>
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Published
+                    </p>
+                    <p className="mt-1 text-base text-foreground">
+                      {new Date(publishedAt).toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </p>
+                  </div>
+                )}
+                {departmentName && (
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Department
+                    </p>
+                    <p className="mt-1 text-base text-foreground">{departmentName}</p>
+                  </div>
+                )}
+                {license && (
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                       License
                     </p>
-                    <p className="text-sm text-foreground">{license}</p>
+                    <p className="mt-1 text-base text-foreground">{license}</p>
+                  </div>
+                )}
+                {supervisorName && (
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Supervisor
+                    </p>
+                    <p className="mt-1 text-base text-foreground">{supervisorName}</p>
+                  </div>
+                )}
+                {programName && (
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Program
+                    </p>
+                    <p className="mt-1 text-base text-foreground">{programName}</p>
+                  </div>
+                )}
+              </div>
+              {tags.length > 0 && (
+                <div className="mt-8">
+                  <h3 className="mb-3 text-lg font-bold text-primary">Keywords</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map((tag) => (
+                      <Link
+                        key={tag.id}
+                        href={`/research?tag=${tag.slug}`}
+                        className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+                      >
+                        {tag.name}
+                      </Link>
+                    ))}
                   </div>
                 </div>
               )}
-            </div>
-          </motion.div>
-        )}
+            </section>
 
-        {/* References */}
-        {references.length > 0 && (
-          <motion.div
-            custom={9}
-            variants={fadeUp}
-            initial="hidden"
-            animate="visible"
-            className="mt-8"
-          >
-            <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <BookOpen className="size-3.5" />
-              References ({references.length})
-            </h2>
-            <ol className="space-y-2">
-              {references.map((ref, index) => (
-                <li
-                  key={index}
-                  className="flex items-baseline gap-2 text-sm leading-relaxed text-foreground/85"
-                >
-                  <span className="shrink-0 text-xs font-medium text-muted-foreground">
-                    [{index + 1}]
-                  </span>
-                  <span>
-                    {ref.citationText}
-                    {ref.url && (
-                      <>
-                        {" "}
-                        <a
-                          href={ref.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-0.5 text-xs text-amber-600 underline decoration-amber-600/30 underline-offset-2 transition-colors hover:text-amber-700"
-                        >
-                          <LinkIcon className="size-2.5" />
-                          Link
-                        </a>
-                      </>
-                    )}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </motion.div>
-        )}
+            {/* Publish with us */}
+            <section id="publish-with-us" className="mt-10">
+              <h2 className="mb-1 text-xl font-bold text-primary">
+                Publish with us
+              </h2>
+              <div className="mb-4 border-b border-primary/20" />
+              <p className="mb-4 text-base text-muted-foreground">
+                Submit your research to MUJ General. Join our community of
+                researchers and share your work with the academic world.
+              </p>
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              >
+                Get started
+              </Link>
+            </section>
+
+            {/* Related sections passed as children */}
+            {children}
+          </div>
+
+          {/* Right: sticky tabbed sidebar */}
+          <SidebarNav
+            hasAdditionalDetails={Boolean(supervisorName || programName || license)}
+            hasReferences={references.length > 0}
+            references={references}
+          />
+        </div>
       </div>
     </section>
+  );
+}
+
+function SidebarNav({
+  hasAdditionalDetails,
+  hasReferences,
+  references,
+}: {
+  hasAdditionalDetails: boolean;
+  hasReferences: boolean;
+  references: Array<{ citationText: string; url: string | null }>;
+}) {
+  const [activeTab, setActiveTab] = useState<"sections" | "references">("sections");
+
+  const sections = [
+    { id: "abstract", label: "Abstract" },
+    ...(hasAdditionalDetails
+      ? [{ id: "additional-details", label: "Additional details" }]
+      : []),
+    ...(hasReferences ? [{ id: "references", label: "References" }] : []),
+    { id: "about-this-paper", label: "About this paper" },
+    { id: "publish-with-us", label: "Publish with us" },
+  ];
+
+  return (
+    <aside className="hidden w-64 shrink-0 lg:block">
+      <div className="sticky top-8">
+        {/* Tab switcher */}
+        <div className="flex rounded-lg border border-border/60 text-sm font-medium">
+          <button
+            onClick={() => setActiveTab("sections")}
+            className={cn(
+              "flex-1 rounded-l-lg px-4 py-2.5 transition-colors",
+              activeTab === "sections"
+                ? "bg-muted text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Sections
+          </button>
+          <button
+            onClick={() => setActiveTab("references")}
+            className={cn(
+              "flex-1 rounded-r-lg border-l border-border/60 px-4 py-2.5 transition-colors",
+              activeTab === "references"
+                ? "bg-muted text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            References
+          </button>
+        </div>
+
+        {/* Tab content */}
+        <div className="mt-4">
+          {activeTab === "sections" ? (
+            <nav className="space-y-0.5 border-l border-border/60">
+              {sections.map((section) => (
+                <a
+                  key={section.id}
+                  href={`#${section.id}`}
+                  className="block border-l-2 border-transparent py-2 pl-4 text-sm text-primary underline-offset-2 transition-colors hover:border-primary hover:underline"
+                >
+                  {section.label}
+                </a>
+              ))}
+            </nav>
+          ) : (
+            <div className="space-y-0">
+              {references.map((ref, index) => (
+                <div
+                  key={index}
+                  className="border-b border-border/40 py-4 first:pt-0 last:border-b-0"
+                >
+                  <p className="text-sm leading-relaxed text-foreground/85">
+                    {index + 1}. {ref.citationText}
+                  </p>
+                  {ref.url && (
+                    <div className="mt-2 flex justify-end">
+                      <a
+                        href={ref.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-medium text-primary underline-offset-2 transition-colors hover:underline"
+                      >
+                        Link
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </aside>
   );
 }
