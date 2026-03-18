@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -106,6 +106,7 @@ export function AdminResearchModeration({
   const router = useRouter();
   const searchParams = useSearchParams();
   const moderationParam = searchParams.get("moderation");
+  const handledModerationParamRef = useRef<string | null>(null);
   const [query, setQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -114,6 +115,9 @@ export function AdminResearchModeration({
 
   useEffect(() => {
     if (!moderationParam) return;
+    if (handledModerationParamRef.current === moderationParam) return;
+
+    handledModerationParamRef.current = moderationParam;
     const msg = MODERATION_MESSAGES[moderationParam];
     if (!msg) return;
     if (msg.type === "success") toast.success(msg.text);
@@ -166,7 +170,7 @@ export function AdminResearchModeration({
   return (
     <div className="space-y-4">
       <Card className="border-border/60">
-        <CardContent className="grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-5">
+        <CardContent className="grid gap-3  sm:grid-cols-2 lg:grid-cols-5">
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}

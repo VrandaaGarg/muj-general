@@ -25,6 +25,7 @@ import {
 } from "@/lib/uploads/presigned-upload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -128,9 +129,13 @@ export function EditorSubmissionForm({
   const router = useRouter();
   const searchParams = useSearchParams();
   const submissionParam = searchParams.get("submission");
+  const handledSubmissionParamRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!submissionParam) return;
+    if (handledSubmissionParamRef.current === submissionParam) return;
+
+    handledSubmissionParamRef.current = submissionParam;
     const msg = SUBMISSION_MESSAGES[submissionParam];
     if (!msg) return;
     if (msg.type === "success") {
@@ -157,6 +162,10 @@ export function EditorSubmissionForm({
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [references, setReferences] = useState<ReferenceDraft[]>([]);
   const [showAdditional, setShowAdditional] = useState(false);
+  const [pendingAuthorConfirm, setPendingAuthorConfirm] = useState<{
+    index: number;
+    suggestion: AuthorSuggestion;
+  } | null>(null);
   const authorSearchTimeoutsRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const authorSearchRequestSeqRef = useRef<Record<number, number>>({});
 
@@ -279,13 +288,12 @@ export function EditorSubmissionForm({
   }
 
   function applyAuthorSuggestion(index: number, suggestion: AuthorSuggestion) {
-    if (
-      !window.confirm(
-        `Use existing author "${suggestion.displayName}" for Author ${index + 1}?`,
-      )
-    ) {
-      return;
-    }
+    setPendingAuthorConfirm({ index, suggestion });
+  }
+
+  function confirmAuthorSuggestion() {
+    if (!pendingAuthorConfirm) return;
+    const { index, suggestion } = pendingAuthorConfirm;
 
     setAuthors((current) =>
       current.map((author, authorIndex) =>
@@ -300,6 +308,11 @@ export function EditorSubmissionForm({
       ),
     );
     setAuthorMatches((current) => ({ ...current, [index]: [] }));
+    setPendingAuthorConfirm(null);
+  }
+
+  function cancelAuthorSuggestion() {
+    setPendingAuthorConfirm(null);
   }
 
   function addAuthor() {
@@ -1025,47 +1038,65 @@ export function EditorSubmissionForm({
               ))}
             </div>
 
-            <Button
-              type="submit"
-              name="workflowIntent"
-              value="save_draft"
-              variant="outline"
-              disabled={isSubmitting}
-              className="w-full"
-            >
-              {isSubmitting && activeIntent === "save_draft" ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <FileUp className="size-3.5" />
-              )}
-              {uploadPhase === "uploading" && activeIntent === "save_draft"
-                ? "Uploading files…"
-                : uploadPhase === "saving" && activeIntent === "save_draft"
-                  ? "Saving draft…"
-                  : "Save draft"}
-            </Button>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Button
+                type="submit"
+                name="workflowIntent"
+                value="save_draft"
+                variant="outline"
+                disabled={isSubmitting}
+                onClick={() => setActiveIntent("save_draft")}
+                className="w-full"
+              >
+                {isSubmitting && activeIntent === "save_draft" ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <FileUp className="size-3.5" />
+                )}
+                {uploadPhase === "uploading" && activeIntent === "save_draft"
+                  ? "Uploading files..."
+                  : uploadPhase === "saving" && activeIntent === "save_draft"
+                    ? "Saving draft..."
+                    : "Save draft"}
+              </Button>
 
-            <Button
-              type="submit"
-              name="workflowIntent"
-              value="submit"
-              disabled={isSubmitting}
-              className="w-full bg-violet-600 text-white hover:bg-violet-700"
-            >
-              {isSubmitting && activeIntent === "submit" ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Send className="size-3.5" />
-              )}
-              {uploadPhase === "uploading" && activeIntent === "submit"
-                ? "Uploading files…"
-                : uploadPhase === "saving" && activeIntent === "submit"
-                  ? "Saving submission…"
-                  : "Submit for review"}
-            </Button>
+              <Button
+                type="submit"
+                name="workflowIntent"
+                value="submit"
+                disabled={isSubmitting}
+                onClick={() => setActiveIntent("submit")}
+                className="w-full bg-violet-600 text-white hover:bg-violet-700"
+              >
+                {isSubmitting && activeIntent === "submit" ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Send className="size-3.5" />
+                )}
+                {uploadPhase === "uploading" && activeIntent === "submit"
+                  ? "Uploading files..."
+                  : uploadPhase === "saving" && activeIntent === "submit"
+                    ? "Saving submission..."
+                    : "Submit for review"}
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={pendingAuthorConfirm !== null}
+        title="Link existing author?"
+        description={
+          pendingAuthorConfirm
+            ? `Use "${pendingAuthorConfirm.suggestion.displayName}" for Author ${pendingAuthorConfirm.index + 1}? This will overwrite the current name and email fields.`
+            : ""
+        }
+        confirmLabel="Use this author"
+        cancelLabel="Cancel"
+        onConfirm={confirmAuthorSuggestion}
+        onCancel={cancelAuthorSuggestion}
+      />
     </div>
   );
 }

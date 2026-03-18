@@ -86,27 +86,34 @@ export default async function AdminPage() {
           </p>
         </div>
 
-        {/* Pending editor requests */}
-        <div className="mb-8">
-          <Suspense
-            fallback={
-              <div className="h-32 animate-pulse rounded-xl border border-border/60 bg-muted/20" />
-            }
-          >
-            <AdminPendingRequests requests={pendingRequests} />
-          </Suspense>
-        </div>
-
-        {/* Research moderation */}
-        <div className="mb-8">
-          <Suspense
-            fallback={
-              <div className="h-32 animate-pulse rounded-xl border border-border/60 bg-muted/20" />
-            }
-          >
-            <AdminResearchModeration items={pendingResearchItems} />
-          </Suspense>
-        </div>
+        {/* Sections: whichever has items renders first */}
+        {pendingResearchCount >= pendingRequestCount ? (
+          <>
+            <div className="mb-8">
+              <Suspense fallback={<div className="h-32 animate-pulse rounded-xl border border-border/60 bg-muted/20" />}>
+                <AdminResearchModeration items={pendingResearchItems} />
+              </Suspense>
+            </div>
+            <div className="mb-8">
+              <Suspense fallback={<div className="h-32 animate-pulse rounded-xl border border-border/60 bg-muted/20" />}>
+                <AdminPendingRequests requests={pendingRequests} />
+              </Suspense>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="mb-8">
+              <Suspense fallback={<div className="h-32 animate-pulse rounded-xl border border-border/60 bg-muted/20" />}>
+                <AdminPendingRequests requests={pendingRequests} />
+              </Suspense>
+            </div>
+            <div className="mb-8">
+              <Suspense fallback={<div className="h-32 animate-pulse rounded-xl border border-border/60 bg-muted/20" />}>
+                <AdminResearchModeration items={pendingResearchItems} />
+              </Suspense>
+            </div>
+          </>
+        )}
 
         {/* Admin section cards */}
         <div className="grid gap-4 sm:grid-cols-2">

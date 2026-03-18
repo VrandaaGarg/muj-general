@@ -2,7 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -57,6 +57,15 @@ type SubmissionIntent = "submit" | "save_draft";
 function getSubmissionIntent(formData: FormData): SubmissionIntent {
   const value = formData.get("workflowIntent");
   return value === "save_draft" ? "save_draft" : "submit";
+}
+
+function normalizeEmail(email: string | undefined) {
+  if (!email) {
+    return null;
+  }
+
+  const normalized = email.trim().toLowerCase();
+  return normalized.length > 0 ? normalized : null;
 }
 
 function parseSubmissionPayload(formData: FormData) {
@@ -342,13 +351,33 @@ export async function submitResearchSubmission(formData: FormData) {
       }>;
 
       for (const [index, author] of parsed.data.authors.entries()) {
-        const authorId = author.id ?? randomUUID();
+        let authorId = author.id;
+        const normalizedEmail = normalizeEmail(author.email);
+        let matchedExistingAuthor = false;
 
-        if (!author.id) {
+        if (!authorId && normalizedEmail) {
+          const [existingAuthorByEmail] = await tx
+            .select({ id: authors.id })
+            .from(authors)
+            .where(sql`lower(${authors.email}) = ${normalizedEmail}`)
+            .orderBy(desc(authors.updatedAt), desc(authors.createdAt))
+            .limit(1);
+
+          if (existingAuthorByEmail) {
+            authorId = existingAuthorByEmail.id;
+            matchedExistingAuthor = true;
+          }
+        }
+
+        if (!authorId) {
+          authorId = randomUUID();
+        }
+
+        if (!author.id && !matchedExistingAuthor) {
           await tx.insert(authors).values({
             id: authorId,
             displayName: author.displayName,
-            email: author.email || null,
+            email: normalizedEmail,
             affiliation: author.affiliation || null,
             orcid: author.orcid || null,
           });
@@ -707,13 +736,33 @@ export async function submitResearchRevision(formData: FormData) {
       }>;
 
       for (const [index, author] of parsed.data.authors.entries()) {
-        const authorId = author.id ?? randomUUID();
+        let authorId = author.id;
+        const normalizedEmail = normalizeEmail(author.email);
+        let matchedExistingAuthor = false;
 
-        if (!author.id) {
+        if (!authorId && normalizedEmail) {
+          const [existingAuthorByEmail] = await tx
+            .select({ id: authors.id })
+            .from(authors)
+            .where(sql`lower(${authors.email}) = ${normalizedEmail}`)
+            .orderBy(desc(authors.updatedAt), desc(authors.createdAt))
+            .limit(1);
+
+          if (existingAuthorByEmail) {
+            authorId = existingAuthorByEmail.id;
+            matchedExistingAuthor = true;
+          }
+        }
+
+        if (!authorId) {
+          authorId = randomUUID();
+        }
+
+        if (!author.id && !matchedExistingAuthor) {
           await tx.insert(authors).values({
             id: authorId,
             displayName: author.displayName,
-            email: author.email || null,
+            email: normalizedEmail,
             affiliation: author.affiliation || null,
             orcid: author.orcid || null,
           });

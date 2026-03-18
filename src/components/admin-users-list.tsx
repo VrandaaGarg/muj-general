@@ -135,7 +135,7 @@ export function AdminUsersList({ users, departments }: AdminUsersListProps) {
   return (
     <div className="space-y-4">
       <Card className="border-border/60">
-        <CardContent className="grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-5">
+        <CardContent className="grid gap-3  sm:grid-cols-2 lg:grid-cols-5">
           <Input
             value={query}
             onChange={(event: ChangeEvent<HTMLInputElement>) =>

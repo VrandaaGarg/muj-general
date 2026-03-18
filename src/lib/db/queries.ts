@@ -260,7 +260,7 @@ export async function searchAuthorSuggestions(params: {
   const limit = Math.min(Math.max(params.limit ?? 8, 1), 20);
   const pattern = `%${query}%`;
 
-  return db
+  const rows = await db
     .select({
       id: authors.id,
       displayName: authors.displayName,
@@ -274,7 +274,30 @@ export async function searchAuthorSuggestions(params: {
       ),
     )
     .orderBy(asc(authors.displayName))
-    .limit(limit);
+    .limit(limit * 4);
+
+  const deduped: Array<{
+    id: string;
+    displayName: string;
+    email: string | null;
+  }> = [];
+  const seen = new Set<string>();
+
+  for (const row of rows) {
+    const key = row.email ? `email:${row.email.trim().toLowerCase()}` : `id:${row.id}`;
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    deduped.push(row);
+
+    if (deduped.length >= limit) {
+      break;
+    }
+  }
+
+  return deduped;
 }
 
 export async function getLatestEditorAccessRequestForUser(userId: string) {

@@ -31,6 +31,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -188,9 +189,13 @@ export function EditorRevisionForm({
   const router = useRouter();
   const searchParams = useSearchParams();
   const revisionParam = searchParams.get("revision");
+  const handledRevisionParamRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!revisionParam) return;
+    if (handledRevisionParamRef.current === revisionParam) return;
+
+    handledRevisionParamRef.current = revisionParam;
     const msg = REVISION_MESSAGES[revisionParam];
     if (!msg) return;
     if (msg.type === "success") {
@@ -232,6 +237,10 @@ export function EditorRevisionForm({
         item.notesToAdmin,
     ),
   );
+  const [pendingAuthorConfirm, setPendingAuthorConfirm] = useState<{
+    index: number;
+    suggestion: AuthorSuggestion;
+  } | null>(null);
 
   const isResubmitted = revisionParam === "submitted";
   const isDisabled = isSubmitting || isResubmitted;
@@ -358,13 +367,12 @@ export function EditorRevisionForm({
   }
 
   function applyAuthorSuggestion(index: number, suggestion: AuthorSuggestion) {
-    if (
-      !window.confirm(
-        `Use existing author "${suggestion.displayName}" for Author ${index + 1}?`,
-      )
-    ) {
-      return;
-    }
+    setPendingAuthorConfirm({ index, suggestion });
+  }
+
+  function confirmAuthorSuggestion() {
+    if (!pendingAuthorConfirm) return;
+    const { index, suggestion } = pendingAuthorConfirm;
 
     setAuthors((current) =>
       current.map((author, authorIndex) =>
@@ -379,6 +387,11 @@ export function EditorRevisionForm({
       ),
     );
     setAuthorMatches((current) => ({ ...current, [index]: [] }));
+    setPendingAuthorConfirm(null);
+  }
+
+  function cancelAuthorSuggestion() {
+    setPendingAuthorConfirm(null);
   }
 
   function addAuthor() {
@@ -1162,51 +1175,69 @@ export function EditorRevisionForm({
               ))}
             </div>
 
-            {isDraftItem && (
+            <div className={isDraftItem ? "grid gap-3 sm:grid-cols-2" : "grid gap-3"}>
+              {isDraftItem && (
+                <Button
+                  type="submit"
+                  name="workflowIntent"
+                  value="save_draft"
+                  variant="outline"
+                  disabled={isDisabled}
+                  onClick={() => setActiveIntent("save_draft")}
+                  className="w-full"
+                >
+                  {isSubmitting && activeIntent === "save_draft" ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <FileUp className="size-3.5" />
+                  )}
+                  {uploadPhase === "uploading" && activeIntent === "save_draft"
+                    ? "Uploading files..."
+                    : uploadPhase === "saving" && activeIntent === "save_draft"
+                      ? "Saving draft..."
+                      : "Save draft"}
+                </Button>
+              )}
+
               <Button
                 type="submit"
                 name="workflowIntent"
-                value="save_draft"
-                variant="outline"
+                value="submit"
                 disabled={isDisabled}
-                className="w-full"
+                onClick={() => setActiveIntent("submit")}
+                className="w-full bg-orange-600 text-white hover:bg-orange-700"
               >
-                {isSubmitting && activeIntent === "save_draft" ? (
+                {isSubmitting && activeIntent === "submit" ? (
                   <Loader2 className="size-3.5 animate-spin" />
                 ) : (
-                  <FileUp className="size-3.5" />
+                  <RefreshCw className="size-3.5" />
                 )}
-                {uploadPhase === "uploading" && activeIntent === "save_draft"
-                  ? "Uploading files…"
-                  : uploadPhase === "saving" && activeIntent === "save_draft"
-                    ? "Saving draft…"
-                    : "Save draft"}
+                {uploadPhase === "uploading" && activeIntent === "submit"
+                  ? "Uploading files..."
+                  : uploadPhase === "saving" && activeIntent === "submit"
+                    ? "Saving revision..."
+                    : isDraftItem
+                      ? "Submit for review"
+                      : "Resubmit for review"}
               </Button>
-            )}
-
-            <Button
-              type="submit"
-              name="workflowIntent"
-              value="submit"
-              disabled={isDisabled}
-              className="w-full bg-orange-600 text-white hover:bg-orange-700"
-            >
-              {isSubmitting && activeIntent === "submit" ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="size-3.5" />
-              )}
-              {uploadPhase === "uploading" && activeIntent === "submit"
-                ? "Uploading files…"
-                : uploadPhase === "saving" && activeIntent === "submit"
-                  ? "Saving revision…"
-                  : isDraftItem
-                    ? "Submit for review"
-                    : "Resubmit for review"}
-            </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={pendingAuthorConfirm !== null}
+        title="Link existing author?"
+        description={
+          pendingAuthorConfirm
+            ? `Use "${pendingAuthorConfirm.suggestion.displayName}" for Author ${pendingAuthorConfirm.index + 1}? This will overwrite the current name and email fields.`
+            : ""
+        }
+        confirmLabel="Use this author"
+        cancelLabel="Cancel"
+        onConfirm={confirmAuthorSuggestion}
+        onCancel={cancelAuthorSuggestion}
+      />
     </div>
   );
 }
