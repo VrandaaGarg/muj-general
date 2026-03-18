@@ -75,7 +75,7 @@ export function SiteHeader({ role }: SiteHeaderProps) {
                 variant="ghost"
                 size="sm"
                 onClick={() => setMenuOpen((prev) => !prev)}
-                className="gap-2 px-2 py-1.5 text-sm hover:bg-muted data-[state=open]:bg-muted"
+                className="gap-2 px-2 py-2 cursor-pointer h-11 text-sm hover:bg-muted data-[state=open]:bg-muted"
               >
                 <div className="flex size-6 items-center justify-center rounded-full bg-primary/10">
                   <User className="size-4 text-primary" />

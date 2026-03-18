@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
+import { ChevronRight } from "lucide-react";
 
 import { SiteHeader } from "@/components/site-header";
 import { ResearchSearchBar } from "@/components/research-search-bar";
@@ -59,11 +61,15 @@ export default async function ResearchPage({ searchParams }: ResearchPageProps) 
       <SiteHeader />
 
       <main className="relative z-10 mx-auto max-w-7xl px-6 pt-8 pb-20 md:px-12 md:pt-12 lg:px-20">
+        {/* Breadcrumb */}
+        <nav className="mb-4 flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Link href="/" className="transition-colors hover:text-foreground hover:underline">Home</Link>
+          <ChevronRight className="size-3.5" />
+          <span className="font-medium text-foreground">Research</span>
+        </nav>
+
         {/* Hero area */}
         <div className="mb-6 max-w-2xl">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary">
-            Research Repository
-          </p>
           <h1 className="text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-4xl">
             Explore MUJ Research
           </h1>
