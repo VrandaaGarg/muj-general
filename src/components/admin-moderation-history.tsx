@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -17,6 +18,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface ModerationEntry {
   id: string;
@@ -78,6 +81,96 @@ function formatRelativeDate(date: Date): string {
 export function AdminModerationHistory({
   entries,
 }: AdminModerationHistoryProps) {
+  const [query, setQuery] = useState("");
+  const [decisionFilter, setDecisionFilter] = useState<"all" | ModerationEntry["decision"]>("all");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest">("newest");
+
+  const departmentOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(entries.map((entry) => entry.departmentName).filter((value): value is string => Boolean(value))),
+      ).sort((a, b) => a.localeCompare(b)),
+    [entries],
+  );
+
+  const filteredEntries = useMemo(
+    () =>
+      entries
+        .filter((entry) => {
+          if (decisionFilter !== "all" && entry.decision !== decisionFilter) {
+            return false;
+          }
+
+          if (departmentFilter !== "all" && entry.departmentName !== departmentFilter) {
+            return false;
+          }
+
+          if (query.trim()) {
+            const haystack = `${entry.researchTitle} ${entry.reviewerName} ${entry.reviewerEmail} ${entry.comment ?? ""}`.toLowerCase();
+            if (!haystack.includes(query.trim().toLowerCase())) {
+              return false;
+            }
+          }
+
+          return true;
+        })
+        .sort((a, b) =>
+          sortBy === "newest"
+            ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        ),
+    [departmentFilter, decisionFilter, entries, query, sortBy],
+  );
+
+  function exportCsv() {
+    const sanitizeCell = (value: string) => {
+      const trimmed = value.trimStart();
+      if (
+        trimmed.startsWith("=") ||
+        trimmed.startsWith("+") ||
+        trimmed.startsWith("-") ||
+        trimmed.startsWith("@")
+      ) {
+        return `'${value}`;
+      }
+
+      return value;
+    };
+
+    const rows = [
+      ["date", "decision", "research_title", "reviewer", "reviewer_email", "department", "comment"],
+      ...filteredEntries.map((entry) => [
+        new Date(entry.createdAt).toISOString(),
+        entry.decision,
+        entry.researchTitle,
+        entry.reviewerName,
+        entry.reviewerEmail,
+        entry.departmentName ?? "",
+        entry.comment ?? "",
+      ]),
+    ];
+
+    const csv = rows
+      .map((row) =>
+        row
+          .map((value) => {
+            const safeValue = sanitizeCell(String(value));
+            return `"${safeValue.replaceAll('"', '""')}"`;
+          })
+          .join(","),
+      )
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `moderation-history-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   if (entries.length === 0) {
     return (
       <Card className="border-border/60">
@@ -94,15 +187,63 @@ export function AdminModerationHistory({
     );
   }
 
-  const approvedCount = entries.filter((e) => e.decision === "approved").length;
-  const changesCount = entries.filter(
+  const approvedCount = filteredEntries.filter((e) => e.decision === "approved").length;
+  const changesCount = filteredEntries.filter(
     (e) => e.decision === "changes_requested",
   ).length;
-  const archivedCount = entries.filter((e) => e.decision === "archived").length;
+  const archivedCount = filteredEntries.filter((e) => e.decision === "archived").length;
 
   return (
     <div className="space-y-6">
       {/* Summary stats */}
+      <Card className="border-border/60">
+        <CardContent className="grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-5">
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search title/reviewer/comment"
+            className="h-8"
+          />
+          <select
+            value={decisionFilter}
+            onChange={(event) =>
+              setDecisionFilter(
+                event.target.value as "all" | "approved" | "changes_requested" | "archived",
+              )
+            }
+            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
+          >
+            <option value="all">All decisions</option>
+            <option value="approved">Approved</option>
+            <option value="changes_requested">Changes requested</option>
+            <option value="archived">Archived</option>
+          </select>
+          <select
+            value={departmentFilter}
+            onChange={(event) => setDepartmentFilter(event.target.value)}
+            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
+          >
+            <option value="all">All departments</option>
+            {departmentOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          <select
+            value={sortBy}
+            onChange={(event) => setSortBy(event.target.value as "newest" | "oldest")}
+            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
+          >
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
+          <Button type="button" variant="outline" size="sm" onClick={exportCsv}>
+            Export CSV
+          </Button>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-lg border border-border/60 bg-card p-3 text-center">
           <p className="text-lg font-semibold tracking-tight text-emerald-600">
@@ -133,9 +274,9 @@ export function AdminModerationHistory({
       {/* Timeline */}
       <div className="space-y-3">
         <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
-          All decisions ({entries.length})
+          All decisions ({filteredEntries.length})
         </h2>
-        {entries.map((entry, idx) => (
+        {filteredEntries.map((entry, idx) => (
           <motion.div
             key={entry.id}
             initial={{ opacity: 0, y: 8 }}
@@ -167,7 +308,7 @@ function HistoryCard({ entry }: { entry: ModerationEntry }) {
             <div className="min-w-0">
               <CardTitle className="truncate text-sm font-semibold tracking-tight">
                 <Link
-                  href={`/research/${entry.researchSlug}`}
+                  href={`/admin/review/${entry.researchItemId}`}
                   className="transition-colors hover:text-rose-600"
                 >
                   {entry.researchTitle}

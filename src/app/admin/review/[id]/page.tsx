@@ -292,7 +292,7 @@ export default async function AdminReviewPage({
 
           {/* Moderation actions */}
           <div className="border-t border-border/60 pt-6">
-            <AdminReviewActions researchItemId={item.id} />
+            <AdminReviewActions researchItemId={item.id} status={item.status} />
           </div>
         </div>
       </main>
@@ -319,6 +319,5 @@ function DetailSection({
     </div>
   );
 }
-
 
 

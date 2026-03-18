@@ -114,11 +114,17 @@ export const createResearchSubmissionSchema = createResearchItemSchema.extend({
 
 export const reviewResearchSubmissionSchema = z.object({
   researchItemId: z.string().uuid(),
-  decision: z.enum(["publish", "request_changes"]),
+  decision: z.enum(["publish", "request_changes", "archive"]),
   comment: z.preprocess(
     (value) => (value === null ? undefined : value),
     z.string().trim().max(1000).optional().or(z.literal("")),
   ),
+});
+
+export const editorItemActionSchema = z.object({
+  researchItemId: z.string().uuid(),
+  action: z.enum(["delete_draft", "withdraw"]),
+  reason: z.preprocess(normalizeOptionalString, z.string().trim().max(500).optional()),
 });
 
 export type CreateResearchItemInput = z.infer<typeof createResearchItemSchema>;
@@ -130,3 +136,4 @@ export type ResearchReferenceInput = z.infer<typeof referenceSchema>;
 export type ReviewResearchSubmissionInput = z.infer<
   typeof reviewResearchSubmissionSchema
 >;
+export type EditorItemActionInput = z.infer<typeof editorItemActionSchema>;

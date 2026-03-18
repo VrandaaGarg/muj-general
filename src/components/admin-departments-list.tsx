@@ -4,15 +4,25 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
+  Archive,
   BookOpen,
   Building2,
+  Check,
   Loader2,
+  Pencil,
   Plus,
+  Trash2,
+  Undo2,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { createDepartmentAction } from "@/lib/actions/admin";
+import {
+  archiveDepartmentAction,
+  createDepartmentAction,
+  deleteDepartmentAction,
+  updateDepartmentAction,
+} from "@/lib/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,6 +40,7 @@ interface DepartmentStat {
   name: string;
   slug: string;
   description: string | null;
+  archivedAt: Date | null;
   createdAt: Date;
   userCount: number;
   researchCount: number;
@@ -42,12 +53,20 @@ interface AdminDepartmentsListProps {
 const CREATE_MESSAGES: Record<string, { text: string; type: "success" | "error" }> = {
   success: { text: "Department created successfully.", type: "success" },
   invalid: { text: "Invalid data — name and slug are required.", type: "error" },
+  updated: { text: "Department updated successfully.", type: "success" },
+  archived: { text: "Department archived.", type: "success" },
+  restored: { text: "Department restored.", type: "success" },
+  deleted: { text: "Department deleted.", type: "success" },
+  "has-links": {
+    text: "Cannot delete department with linked users or research items.",
+    type: "error",
+  },
 };
 
 export function AdminDepartmentsList({ departments }: AdminDepartmentsListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const createParam = searchParams.get("create");
+  const createParam = searchParams.get("create") ?? searchParams.get("op");
 
   useEffect(() => {
     if (!createParam) return;
@@ -117,6 +136,59 @@ export function AdminDepartmentsList({ departments }: AdminDepartmentsListProps)
 }
 
 function DepartmentCard({ department }: { department: DepartmentStat }) {
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  async function handleUpdate(formData: FormData) {
+    setSaving(true);
+    try {
+      await updateDepartmentAction(formData);
+    } catch {
+      setSaving(false);
+    }
+  }
+
+  async function handleArchive(mode: "archive" | "restore") {
+    if (
+      !window.confirm(
+        mode === "archive"
+          ? "Archive this department? It will be hidden from editor/public dropdowns."
+          : "Restore this department?",
+      )
+    ) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("departmentId", department.id);
+    formData.set("mode", mode);
+    setSaving(true);
+    try {
+      await archiveDepartmentAction(formData);
+    } catch {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (
+      !window.confirm(
+        "Delete this department permanently? This works only if no users/items are linked.",
+      )
+    ) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("departmentId", department.id);
+    setSaving(true);
+    try {
+      await deleteDepartmentAction(formData);
+    } catch {
+      setSaving(false);
+    }
+  }
+
   return (
     <Card className="border-border/60">
       <CardHeader className="pb-2">
@@ -132,6 +204,11 @@ function DepartmentCard({ department }: { department: DepartmentStat }) {
               <CardDescription className="truncate font-mono text-[10px]">
                 /{department.slug}
               </CardDescription>
+              {department.archivedAt && (
+                <p className="mt-1 text-[10px] font-medium text-amber-600">
+                  Archived
+                </p>
+              )}
             </div>
           </div>
 
@@ -148,13 +225,95 @@ function DepartmentCard({ department }: { department: DepartmentStat }) {
         </div>
       </CardHeader>
 
-      {department.description && (
-        <CardContent>
-          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-            {department.description}
-          </p>
-        </CardContent>
-      )}
+      <CardContent>
+        {editing ? (
+          <form action={handleUpdate} className="space-y-2">
+            <input type="hidden" name="departmentId" value={department.id} />
+            <Input
+              name="name"
+              defaultValue={department.name}
+              required
+              maxLength={160}
+              disabled={saving}
+            />
+            <Input
+              name="slug"
+              defaultValue={department.slug}
+              required
+              maxLength={180}
+              disabled={saving}
+            />
+            <Textarea
+              name="description"
+              defaultValue={department.description ?? ""}
+              maxLength={500}
+              disabled={saving}
+              rows={2}
+            />
+            <div className="flex items-center gap-2">
+              <Button type="submit" size="sm" disabled={saving}>
+                <Check className="size-3.5" />
+                Save
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditing(false)}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <>
+            {department.description && (
+              <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                {department.description}
+              </p>
+            )}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setEditing(true)}
+                disabled={saving}
+              >
+                <Pencil className="size-3.5" />
+                Edit
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  handleArchive(department.archivedAt ? "restore" : "archive")
+                }
+                disabled={saving}
+              >
+                {department.archivedAt ? (
+                  <Undo2 className="size-3.5" />
+                ) : (
+                  <Archive className="size-3.5" />
+                )}
+                {department.archivedAt ? "Restore" : "Archive"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleDelete}
+                disabled={saving}
+              >
+                <Trash2 className="size-3.5" />
+                Delete
+              </Button>
+            </div>
+          </>
+        )}
+      </CardContent>
     </Card>
   );
 }

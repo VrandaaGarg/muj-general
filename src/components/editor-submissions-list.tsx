@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -12,8 +14,13 @@ import {
   Pencil,
   RefreshCw,
   Send,
+  Trash2,
+  Undo2,
 } from "lucide-react";
+import { toast } from "sonner";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 
+import { manageEditorResearchItemAction } from "@/lib/actions/research";
 import {
   Card,
   CardContent,
@@ -21,6 +28,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 interface SubmittedItem {
   id: string;
@@ -97,6 +105,64 @@ function formatDate(date: Date) {
 }
 
 export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const itemParam = searchParams.get("item");
+  const [activeActionItemId, setActiveActionItemId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!itemParam) return;
+
+    const itemMessages: Record<string, { text: string; type: "success" | "error" }> = {
+      withdrawn: {
+        text: "Submission withdrawn successfully.",
+        type: "success",
+      },
+      "draft-deleted": {
+        text: "Draft deleted successfully.",
+        type: "success",
+      },
+      invalid: {
+        text: "That action is not allowed for this item.",
+        type: "error",
+      },
+      missing: {
+        text: "Research item not found.",
+        type: "error",
+      },
+    };
+
+    const message = itemMessages[itemParam];
+    if (!message) return;
+
+    if (message.type === "success") toast.success(message.text);
+    else toast.error(message.text);
+
+    router.replace("/editor", { scroll: false });
+  }, [itemParam, router]);
+
+  async function runItemAction(
+    itemId: string,
+    action: "delete_draft" | "withdraw",
+    reason?: string,
+  ) {
+    setActiveActionItemId(itemId);
+    const formData = new FormData();
+    formData.set("researchItemId", itemId);
+    formData.set("action", action);
+    if (reason) {
+      formData.set("reason", reason);
+    }
+
+    try {
+      await manageEditorResearchItemAction(formData);
+    } catch (error) {
+      if (isRedirectError(error)) throw error;
+      toast.error("Action failed. Please try again.");
+      setActiveActionItemId(null);
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -128,6 +194,10 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
             const status = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.draft;
             const needsRevision = item.status === "changes_requested";
             const isPublished = item.status === "published";
+            const isDraft = item.status === "draft";
+            const canWithdraw =
+              item.status === "submitted" || item.status === "changes_requested";
+            const isBusy = activeActionItemId === item.id;
 
             return (
               <motion.div
@@ -191,6 +261,54 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
                             <ArrowRight className="size-2.5" />
                           </Link>
                         )}
+                        {isDraft && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (
+                                !window.confirm(
+                                  "Delete this draft permanently? This cannot be undone.",
+                                )
+                              ) {
+                                return;
+                              }
+                              void runItemAction(item.id, "delete_draft");
+                            }}
+                            disabled={isBusy}
+                            className="h-6 rounded-md border-border/60 px-2 py-1 text-[10px] font-medium"
+                          >
+                            <Trash2 className="size-3" />
+                            Delete
+                          </Button>
+                        )}
+                        {canWithdraw && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (
+                                !window.confirm(
+                                  "Withdraw this submission from review? It will move to archived status.",
+                                )
+                              ) {
+                                return;
+                              }
+                              void runItemAction(
+                                item.id,
+                                "withdraw",
+                                "Withdrawn by editor from workspace",
+                              );
+                            }}
+                            disabled={isBusy}
+                            className="h-6 rounded-md border-border/60 px-2 py-1 text-[10px] font-medium"
+                          >
+                            <Undo2 className="size-3" />
+                            Withdraw
+                          </Button>
+                        )}
                         {isPublished && (
                           <Link
                             href={`/research/${item.slug}`}
@@ -206,7 +324,7 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
                             className="inline-flex items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                           >
                             <Eye className="size-3" />
-                            Details
+                            {isDraft ? "Edit draft" : "Details"}
                           </Link>
                         )}
                       </div>

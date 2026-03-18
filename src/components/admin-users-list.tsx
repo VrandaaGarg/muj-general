@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type ChangeEvent, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -21,6 +21,7 @@ import { toast } from "sonner";
 
 import { updateUserAdminAction } from "@/lib/actions/admin";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Card,
@@ -77,6 +78,11 @@ export function AdminUsersList({ users, departments }: AdminUsersListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const updateParam = searchParams.get("update");
+  const [query, setQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<"all" | "reader" | "editor" | "admin">("all");
+  const [verifiedFilter, setVerifiedFilter] = useState<"all" | "verified" | "unverified">("all");
+  const [departmentFilter, setDepartmentFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name">("newest");
 
   useEffect(() => {
     if (!updateParam) return;
@@ -87,11 +93,113 @@ export function AdminUsersList({ users, departments }: AdminUsersListProps) {
     router.replace("/admin/users", { scroll: false });
   }, [updateParam, router]);
 
+  const filteredUsers = users
+    .filter((user) => {
+      if (roleFilter !== "all" && user.role !== roleFilter) {
+        return false;
+      }
+
+      if (verifiedFilter === "verified" && !user.emailVerified) {
+        return false;
+      }
+
+      if (verifiedFilter === "unverified" && user.emailVerified) {
+        return false;
+      }
+
+      if (departmentFilter !== "all" && user.departmentId !== departmentFilter) {
+        return false;
+      }
+
+      if (query.trim()) {
+        const haystack = `${user.name} ${user.email}`.toLowerCase();
+        if (!haystack.includes(query.trim().toLowerCase())) {
+          return false;
+        }
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === "name") {
+        return a.name.localeCompare(b.name);
+      }
+
+      if (sortBy === "oldest") {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
   return (
     <div className="space-y-4">
+      <Card className="border-border/60">
+        <CardContent className="grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-5">
+          <Input
+            value={query}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setQuery(event.target.value)
+            }
+            placeholder="Search name or email"
+            className="h-8"
+          />
+
+          <select
+            value={roleFilter}
+            onChange={(event) =>
+              setRoleFilter(event.target.value as "all" | "reader" | "editor" | "admin")
+            }
+            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
+          >
+            <option value="all">All roles</option>
+            <option value="reader">Reader</option>
+            <option value="editor">Editor</option>
+            <option value="admin">Admin</option>
+          </select>
+
+          <select
+            value={verifiedFilter}
+            onChange={(event) =>
+              setVerifiedFilter(event.target.value as "all" | "verified" | "unverified")
+            }
+            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
+          >
+            <option value="all">All verification</option>
+            <option value="verified">Verified</option>
+            <option value="unverified">Unverified</option>
+          </select>
+
+          <select
+            value={departmentFilter}
+            onChange={(event) => setDepartmentFilter(event.target.value)}
+            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
+          >
+            <option value="all">All departments</option>
+            {departments.map((department) => (
+              <option key={department.id} value={department.id}>
+                {department.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={sortBy}
+            onChange={(event) =>
+              setSortBy(event.target.value as "newest" | "oldest" | "name")
+            }
+            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
+          >
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="name">Name A-Z</option>
+          </select>
+        </CardContent>
+      </Card>
+
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
-          {users.length} {users.length === 1 ? "user" : "users"} total
+          {filteredUsers.length} of {users.length} {users.length === 1 ? "user" : "users"}
         </p>
         <div className="flex gap-1.5">
           {(["admin", "editor", "reader"] as const).map((role) => {
@@ -110,7 +218,7 @@ export function AdminUsersList({ users, departments }: AdminUsersListProps) {
       </div>
 
       <div className="space-y-3">
-        {users.map((u, idx) => (
+        {filteredUsers.map((u, idx) => (
           <motion.div
             key={u.id}
             initial={{ opacity: 0, y: 8 }}

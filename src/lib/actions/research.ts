@@ -2,7 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -35,6 +35,7 @@ import {
 import { isR2Configured } from "@/lib/env";
 import {
   createResearchSubmissionSchema,
+  editorItemActionSchema,
   reviewResearchSubmissionSchema,
   type CreateResearchSubmissionInput,
 } from "@/lib/validation/research";
@@ -51,6 +52,12 @@ type StoredResearchFile = {
 };
 
 type UploadMetaPrefix = "uploaded" | "coverUploaded";
+type SubmissionIntent = "submit" | "save_draft";
+
+function getSubmissionIntent(formData: FormData): SubmissionIntent {
+  const value = formData.get("workflowIntent");
+  return value === "save_draft" ? "save_draft" : "submit";
+}
 
 function parseSubmissionPayload(formData: FormData) {
   const authorsValue = formData.get("authors");
@@ -196,26 +203,31 @@ export async function submitResearchSubmission(formData: FormData) {
   });
 
   const parsed = parseSubmissionPayload(formData);
+  const workflowIntent = getSubmissionIntent(formData);
 
   if (!parsed.success) {
     redirect("/editor?submission=invalid");
   }
 
-  if (!isR2Configured) {
-    redirect("/editor?submission=storage-not-configured");
-  }
-
   const submissionPdf = formData.get("pdf");
   const hasPdfFile = submissionPdf instanceof File && submissionPdf.size > 0;
-
-  if (!hasPdfFile && !hasUploadedMeta(formData, "uploaded")) {
-    redirect("/editor?submission=missing-file");
-  }
+  const hasPdfMeta = hasUploadedMeta(formData, "uploaded");
 
   const submissionCover = formData.get("coverImage");
   const hasCoverFile = submissionCover instanceof File && submissionCover.size > 0;
+  const hasCoverMeta = hasUploadedMeta(formData, "coverUploaded");
 
-  if (!hasCoverFile && !hasUploadedMeta(formData, "coverUploaded")) {
+  const hasFileUpload = hasPdfFile || hasCoverFile || hasPdfMeta || hasCoverMeta;
+
+  if (!isR2Configured && hasFileUpload) {
+    redirect("/editor?submission=storage-not-configured");
+  }
+
+  if (workflowIntent === "submit" && !hasPdfFile && !hasPdfMeta) {
+    redirect("/editor?submission=missing-file");
+  }
+
+  if (workflowIntent === "submit" && !hasCoverFile && !hasCoverMeta) {
     redirect("/editor?submission=missing-cover");
   }
 
@@ -271,8 +283,24 @@ export async function submitResearchSubmission(formData: FormData) {
         }
       }
 
-      if (parsed.data.authors.some((author) => author.id)) {
-        throw new Error("New submissions cannot reuse existing author ids.");
+      const authorIds = parsed.data.authors
+        .map((author) => author.id)
+        .filter((value): value is string => Boolean(value));
+      const uniqueAuthorIds = Array.from(new Set(authorIds));
+
+      if (authorIds.length !== uniqueAuthorIds.length) {
+        throw new Error("Duplicate author ids are not allowed.");
+      }
+
+      if (uniqueAuthorIds.length > 0) {
+        const existingAuthorRows = await tx
+          .select({ id: authors.id })
+          .from(authors)
+          .where(inArray(authors.id, uniqueAuthorIds));
+
+        if (existingAuthorRows.length !== uniqueAuthorIds.length) {
+          throw new Error("One or more author ids are invalid.");
+        }
       }
 
       await tx.insert(researchItems).values({
@@ -285,7 +313,7 @@ export async function submitResearchSubmission(formData: FormData) {
         departmentId: parsed.data.departmentId,
         submittedByUserId: session.appUser.id,
         currentVersionId: versionId,
-        status: "submitted",
+        status: workflowIntent === "submit" ? "submitted" : "draft",
         license: parsed.data.license || null,
         externalUrl: parsed.data.externalUrl || null,
         doi: parsed.data.doi || null,
@@ -314,15 +342,17 @@ export async function submitResearchSubmission(formData: FormData) {
       }>;
 
       for (const [index, author] of parsed.data.authors.entries()) {
-        const authorId = randomUUID();
+        const authorId = author.id ?? randomUUID();
 
-        await tx.insert(authors).values({
-          id: authorId,
-          displayName: author.displayName,
-          email: author.email || null,
-          affiliation: author.affiliation || null,
-          orcid: author.orcid || null,
-        });
+        if (!author.id) {
+          await tx.insert(authors).values({
+            id: authorId,
+            displayName: author.displayName,
+            email: author.email || null,
+            affiliation: author.affiliation || null,
+            orcid: author.orcid || null,
+          });
+        }
 
         authorJoinRows.push({
           researchItemId: itemId,
@@ -354,19 +384,21 @@ export async function submitResearchSubmission(formData: FormData) {
         );
       }
 
-      await tx.insert(files).values({
-        id: randomUUID(),
-        researchItemId: itemId,
-        itemVersionId: versionId,
-        fileKind: "main_pdf",
-        storageBucket: mainPdf.file!.bucketName,
-        objectKey: mainPdf.file!.objectKey,
-        originalName: mainPdf.file!.originalName,
-        mimeType: mainPdf.file!.mimeType,
-        sizeBytes: mainPdf.file!.sizeBytes,
-        checksum: mainPdf.file!.checksum,
-        uploadedByUserId: session.appUser.id,
-      });
+      if (mainPdf.file) {
+        await tx.insert(files).values({
+          id: randomUUID(),
+          researchItemId: itemId,
+          itemVersionId: versionId,
+          fileKind: "main_pdf",
+          storageBucket: mainPdf.file.bucketName,
+          objectKey: mainPdf.file.objectKey,
+          originalName: mainPdf.file.originalName,
+          mimeType: mainPdf.file.mimeType,
+          sizeBytes: mainPdf.file.sizeBytes,
+          checksum: mainPdf.file.checksum,
+          uploadedByUserId: session.appUser.id,
+        });
+      }
 
       if (coverImage.file) {
         await tx.insert(files).values({
@@ -388,11 +420,15 @@ export async function submitResearchSubmission(formData: FormData) {
         actorUserId: session.appUser.id,
         targetType: "research_item",
         targetId: itemId,
-        action: "research_item_submitted",
+        action:
+          workflowIntent === "submit"
+            ? "research_item_submitted"
+            : "research_item_draft_saved",
         metadata: JSON.stringify({
           researchItemId: itemId,
           title: parsed.data.title,
           versionId,
+          workflowIntent,
           authorCount: parsed.data.authors.length,
           tagCount: uniqueTagIds.length,
           hasCoverImage: Boolean(coverImage.file),
@@ -415,7 +451,11 @@ export async function submitResearchSubmission(formData: FormData) {
   revalidatePath("/editor");
   revalidatePath("/admin");
   revalidatePath("/dashboard");
-  redirect("/editor?submission=submitted");
+  redirect(
+    workflowIntent === "submit"
+      ? "/editor?submission=submitted"
+      : "/editor?submission=draft-saved",
+  );
 }
 
 export async function reviewResearchSubmissionAction(formData: FormData) {
@@ -434,10 +474,16 @@ export async function reviewResearchSubmissionAction(formData: FormData) {
     redirect("/admin?moderation=invalid");
   }
 
-  const pendingCount = await countPendingResearchModerationItems();
+  if (parsed.data.decision === "archive" && !parsed.data.comment?.trim()) {
+    redirect("/admin?moderation=invalid");
+  }
 
-  if (pendingCount <= 0) {
-    redirect("/admin?moderation=empty");
+  if (parsed.data.decision !== "archive") {
+    const pendingCount = await countPendingResearchModerationItems();
+
+    if (pendingCount <= 0) {
+      redirect("/admin?moderation=empty");
+    }
   }
 
   const reviewedItem = await reviewResearchSubmission({
@@ -449,7 +495,7 @@ export async function reviewResearchSubmissionAction(formData: FormData) {
 
   const targetUser = await getAppUserById(reviewedItem.submittedByUserId);
 
-  if (targetUser) {
+  if (targetUser && parsed.data.decision !== "archive") {
     try {
       await sendResearchModerationEmail({
         to: targetUser.email,
@@ -468,8 +514,15 @@ export async function reviewResearchSubmissionAction(formData: FormData) {
   revalidatePath("/editor");
   revalidatePath("/admin");
   revalidatePath("/dashboard");
+  revalidatePath(`/research/${reviewedItem.slug}`);
   redirect(
-    `/admin?moderation=${parsed.data.decision === "publish" ? "published" : "changes-requested"}`,
+    `/admin?moderation=${
+      parsed.data.decision === "publish"
+        ? "published"
+        : parsed.data.decision === "archive"
+          ? "archived"
+          : "changes-requested"
+    }`,
   );
 }
 
@@ -495,8 +548,13 @@ export async function submitResearchRevision(formData: FormData) {
   }
 
   const parsed = parseSubmissionPayload(formData);
+  const workflowIntent = getSubmissionIntent(formData);
 
   if (!parsed.success) {
+    redirect(`/editor/${slug}/revise?revision=invalid`);
+  }
+
+  if (workflowIntent === "save_draft" && existingItem.status !== "draft") {
     redirect(`/editor/${slug}/revise?revision=invalid`);
   }
 
@@ -506,8 +564,22 @@ export async function submitResearchRevision(formData: FormData) {
   const hasNewCoverImage =
     replacementCoverImage instanceof File && replacementCoverImage.size > 0;
 
-  if (!existingItem.pdfFile && !hasNewPdf && !hasUploadedMeta(formData, "uploaded")) {
+  if (
+    workflowIntent === "submit" &&
+    !existingItem.pdfFile &&
+    !hasNewPdf &&
+    !hasUploadedMeta(formData, "uploaded")
+  ) {
     redirect(`/editor/${slug}/revise?revision=missing-file`);
+  }
+
+  if (
+    workflowIntent === "submit" &&
+    !existingItem.coverImageFile &&
+    !hasNewCoverImage &&
+    !hasUploadedMeta(formData, "coverUploaded")
+  ) {
+    redirect(`/editor/${slug}/revise?revision=missing-cover`);
   }
 
   if (
@@ -571,19 +643,24 @@ export async function submitResearchRevision(formData: FormData) {
         }
       }
 
-      const allowedAuthorIds = new Set(existingItem.authors.map((author) => author.id));
-      const seenAuthorIds = new Set<string>();
+      const authorIds = parsed.data.authors
+        .map((author) => author.id)
+        .filter((value): value is string => Boolean(value));
+      const uniqueAuthorIds = Array.from(new Set(authorIds));
 
-      for (const author of parsed.data.authors) {
-        if (!author.id) {
-          continue;
-        }
+      if (authorIds.length !== uniqueAuthorIds.length) {
+        throw new Error("Duplicate author ids are not allowed.");
+      }
 
-        if (!allowedAuthorIds.has(author.id) || seenAuthorIds.has(author.id)) {
+      if (uniqueAuthorIds.length > 0) {
+        const existingAuthorRows = await tx
+          .select({ id: authors.id })
+          .from(authors)
+          .where(inArray(authors.id, uniqueAuthorIds));
+
+        if (existingAuthorRows.length !== uniqueAuthorIds.length) {
           throw new Error("One or more author ids are invalid.");
         }
-
-        seenAuthorIds.add(author.id);
       }
 
       await tx.insert(itemVersions).values({
@@ -610,7 +687,7 @@ export async function submitResearchRevision(formData: FormData) {
           publicationYear: parsed.data.publicationYear,
           departmentId: parsed.data.departmentId,
           currentVersionId: versionId,
-          status: "submitted",
+          status: workflowIntent === "submit" ? "submitted" : "draft",
           license: parsed.data.license || null,
           externalUrl: parsed.data.externalUrl || null,
           doi: parsed.data.doi || null,
@@ -632,18 +709,7 @@ export async function submitResearchRevision(formData: FormData) {
       for (const [index, author] of parsed.data.authors.entries()) {
         const authorId = author.id ?? randomUUID();
 
-        if (author.id) {
-          await tx
-            .update(authors)
-            .set({
-              displayName: author.displayName,
-              email: author.email || null,
-              affiliation: author.affiliation || null,
-              orcid: author.orcid || null,
-              updatedAt: new Date(),
-            })
-            .where(eq(authors.id, author.id));
-        } else {
+        if (!author.id) {
           await tx.insert(authors).values({
             id: authorId,
             displayName: author.displayName,
@@ -743,11 +809,15 @@ export async function submitResearchRevision(formData: FormData) {
         actorUserId: session.appUser.id,
         targetType: "research_item",
         targetId: existingItem.id,
-        action: "research_item_resubmitted",
+        action:
+          workflowIntent === "submit"
+            ? "research_item_resubmitted"
+            : "research_item_draft_saved",
         metadata: JSON.stringify({
           researchItemId: existingItem.id,
           versionId,
           versionNumber: nextVersionNumber,
+          workflowIntent,
           hasNewPdf: Boolean(mainPdf.file),
           hasNewCoverImage: Boolean(coverImage.file),
           authorCount: parsed.data.authors.length,
@@ -772,7 +842,123 @@ export async function submitResearchRevision(formData: FormData) {
   revalidatePath(`/editor/${slug}/revise`);
   revalidatePath("/admin");
   revalidatePath(`/research/${slug}`);
-  redirect(`/editor/${slug}/revise?revision=submitted`);
+  redirect(
+    workflowIntent === "submit"
+      ? `/editor/${slug}/revise?revision=submitted`
+      : `/editor/${slug}/revise?revision=draft-saved`,
+  );
+}
+
+export async function manageEditorResearchItemAction(formData: FormData) {
+  const session = await requireRole(["editor", "admin"], {
+    returnTo: "/editor",
+    unauthorizedRedirectTo: "/dashboard",
+  });
+
+  const parsed = editorItemActionSchema.safeParse({
+    researchItemId: formData.get("researchItemId"),
+    action: formData.get("action"),
+    reason: formData.get("reason"),
+  });
+
+  if (!parsed.success) {
+    redirect("/editor?item=invalid");
+  }
+
+  const [item] = await db
+    .select({
+      id: researchItems.id,
+      slug: researchItems.slug,
+      status: researchItems.status,
+    })
+    .from(researchItems)
+    .where(
+      and(
+        eq(researchItems.id, parsed.data.researchItemId),
+        eq(researchItems.submittedByUserId, session.appUser.id),
+      ),
+    )
+    .limit(1);
+
+  if (!item) {
+    redirect("/editor?item=missing");
+  }
+
+  if (parsed.data.action === "delete_draft") {
+    if (item.status !== "draft") {
+      redirect("/editor?item=invalid");
+    }
+
+    const fileRows = await db
+      .select({ objectKey: files.objectKey })
+      .from(files)
+      .where(eq(files.researchItemId, item.id));
+
+    await db.transaction(async (tx) => {
+      await tx.insert(activityLogs).values({
+        actorUserId: session.appUser.id,
+        targetType: "research_item",
+        targetId: item.id,
+        action: "research_item_draft_deleted",
+        metadata: JSON.stringify({
+          researchItemId: item.id,
+          slug: item.slug,
+          status: item.status,
+        }),
+      });
+
+      await tx.delete(researchItems).where(eq(researchItems.id, item.id));
+    });
+
+    for (const row of fileRows) {
+      try {
+        await deleteResearchObject(row.objectKey);
+      } catch {
+        // ignore storage cleanup failures
+      }
+    }
+
+    revalidatePath("/editor");
+    revalidatePath("/admin");
+    revalidatePath("/dashboard");
+    redirect("/editor?item=draft-deleted");
+  }
+
+  if (item.status !== "submitted" && item.status !== "changes_requested") {
+    redirect("/editor?item=invalid");
+  }
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(researchItems)
+      .set({
+        status: "archived",
+        archivedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(researchItems.id, item.id));
+
+    await tx.insert(activityLogs).values({
+      actorUserId: session.appUser.id,
+      targetType: "research_item",
+      targetId: item.id,
+      action: "research_item_archived",
+      metadata: JSON.stringify({
+        researchItemId: item.id,
+        slug: item.slug,
+        archivedBy: "editor",
+        archiveSource: "withdraw",
+        previousStatus: item.status,
+        reason: parsed.data.reason ?? "Withdrawn by editor from workspace",
+      }),
+    });
+  });
+
+  revalidatePath("/editor");
+  revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  revalidatePath(`/research/${item.slug}`);
+  redirect("/editor?item=withdrawn");
 }
 
 

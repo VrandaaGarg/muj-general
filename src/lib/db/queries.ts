@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, desc, eq, ilike, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -207,27 +207,74 @@ export async function getAppUserById(userId: string) {
   return result ?? null;
 }
 
-export async function listDepartments() {
+export async function listDepartments(options?: { includeIds?: string[] }) {
+  const includeIds = options?.includeIds ?? [];
+
+  const whereClause =
+    includeIds.length > 0
+      ? or(isNull(departments.archivedAt), inArray(departments.id, includeIds))
+      : isNull(departments.archivedAt);
+
   return db
     .select({
       id: departments.id,
       name: departments.name,
       slug: departments.slug,
       description: departments.description,
+      archivedAt: departments.archivedAt,
     })
     .from(departments)
+    .where(whereClause)
     .orderBy(departments.name);
 }
 
-export async function listTags() {
+export async function listTags(options?: { includeIds?: string[] }) {
+  const includeIds = options?.includeIds ?? [];
+
+  const whereClause =
+    includeIds.length > 0
+      ? or(isNull(tags.archivedAt), inArray(tags.id, includeIds))
+      : isNull(tags.archivedAt);
+
   return db
     .select({
       id: tags.id,
       name: tags.name,
       slug: tags.slug,
+      archivedAt: tags.archivedAt,
     })
     .from(tags)
+    .where(whereClause)
     .orderBy(asc(tags.name));
+}
+
+export async function searchAuthorSuggestions(params: {
+  query: string;
+  limit?: number;
+}) {
+  const query = params.query.trim();
+  if (query.length < 2) {
+    return [];
+  }
+
+  const limit = Math.min(Math.max(params.limit ?? 8, 1), 20);
+  const pattern = `%${query}%`;
+
+  return db
+    .select({
+      id: authors.id,
+      displayName: authors.displayName,
+      email: authors.email,
+    })
+    .from(authors)
+    .where(
+      or(
+        ilike(authors.displayName, pattern),
+        ilike(sql`coalesce(${authors.email}, '')`, pattern),
+      ),
+    )
+    .orderBy(asc(authors.displayName))
+    .limit(limit);
 }
 
 export async function getLatestEditorAccessRequestForUser(userId: string) {
@@ -536,7 +583,7 @@ export async function getResearchItemForAdminReview(researchItemId: string) {
 export async function reviewResearchSubmission(params: {
   researchItemId: string;
   reviewerUserId: string;
-  decision: "publish" | "request_changes";
+  decision: "publish" | "request_changes" | "archive";
   comment?: string;
 }) {
   return db.transaction(async (tx) => {
@@ -561,7 +608,11 @@ export async function reviewResearchSubmission(params: {
       throw new Error("Research submission is missing its current version.");
     }
 
-    if (item.status !== "submitted") {
+    if (params.decision === "archive") {
+      if (item.status !== "published") {
+        throw new Error("Only published items can be archived.");
+      }
+    } else if (item.status !== "submitted") {
       throw new Error("This submission is not currently awaiting review.");
     }
 
@@ -570,7 +621,11 @@ export async function reviewResearchSubmission(params: {
       itemVersionId: item.currentVersionId,
       reviewedByUserId: params.reviewerUserId,
       decision:
-        params.decision === "publish" ? "approved" : "changes_requested",
+        params.decision === "publish"
+          ? "approved"
+          : params.decision === "archive"
+            ? "archived"
+            : "changes_requested",
       comment: params.comment?.trim() || null,
     });
 
@@ -578,8 +633,13 @@ export async function reviewResearchSubmission(params: {
       .update(researchItems)
       .set({
         status:
-          params.decision === "publish" ? "published" : "changes_requested",
+          params.decision === "publish"
+            ? "published"
+            : params.decision === "archive"
+              ? "archived"
+              : "changes_requested",
         publishedAt: params.decision === "publish" ? new Date() : null,
+        archivedAt: params.decision === "archive" ? new Date() : null,
         updatedAt: new Date(),
       })
       .where(eq(researchItems.id, params.researchItemId));
@@ -591,7 +651,9 @@ export async function reviewResearchSubmission(params: {
       action:
         params.decision === "publish"
           ? "research_item_published"
-          : "research_item_changes_requested",
+          : params.decision === "archive"
+            ? "research_item_archived"
+            : "research_item_changes_requested",
       metadata: JSON.stringify({
         researchItemId: params.researchItemId,
         decision: params.decision,
@@ -1114,6 +1176,7 @@ export async function listDepartmentAdminStats() {
       name: departments.name,
       slug: departments.slug,
       description: departments.description,
+      archivedAt: departments.archivedAt,
       createdAt: departments.createdAt,
       userCount: sql<number>`count(distinct ${appUsers.id})`,
       researchCount: sql<number>`count(distinct ${researchItems.id})`,
@@ -1137,6 +1200,7 @@ export async function listTagAdminStats() {
       id: tags.id,
       name: tags.name,
       slug: tags.slug,
+      archivedAt: tags.archivedAt,
       createdAt: tags.createdAt,
       researchCount: sql<number>`count(distinct ${researchItemTags.researchItemId})`,
     })

@@ -92,19 +92,20 @@ export default async function RevisePage({ params }: RevisePageProps) {
   });
   const { appUser } = session;
 
-  const [item, departments, tags] = await Promise.all([
-    getOwnedResearchItemForRevision({ slug, userId: appUser.id }),
-    listDepartments(),
-    listTags(),
-  ]);
+  const item = await getOwnedResearchItemForRevision({ slug, userId: appUser.id });
 
   if (!item) {
     notFound();
   }
 
+  const [departments, tags] = await Promise.all([
+    listDepartments({ includeIds: [item.departmentId] }),
+    listTags({ includeIds: item.tagIds }),
+  ]);
+
   const statusConfig = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.draft;
   const latestDecision = item.decisions[0] ?? null;
-  const canRevise = item.status === "changes_requested";
+  const canRevise = item.status === "changes_requested" || item.status === "draft";
 
   return (
     <div className="relative min-h-screen bg-background">
@@ -347,6 +348,7 @@ export default async function RevisePage({ params }: RevisePageProps) {
             <EditorRevisionForm
               item={{
                 slug: item.slug,
+                status: item.status,
                 title: item.title,
                 abstract: item.abstract,
                 itemType: item.itemType,

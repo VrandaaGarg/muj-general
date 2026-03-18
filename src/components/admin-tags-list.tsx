@@ -4,14 +4,24 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
+  Archive,
   BookOpen,
+  Check,
   Loader2,
+  Pencil,
   Plus,
   Tag,
+  Trash2,
+  Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { createTagAction } from "@/lib/actions/admin";
+import {
+  archiveTagAction,
+  createTagAction,
+  deleteTagAction,
+  updateTagAction,
+} from "@/lib/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +37,7 @@ interface TagStat {
   id: string;
   name: string;
   slug: string;
+  archivedAt: Date | null;
   createdAt: Date;
   researchCount: number;
 }
@@ -40,6 +51,14 @@ const CREATE_MESSAGES: Record<
   { text: string; type: "success" | "error" }
 > = {
   success: { text: "Tag created successfully.", type: "success" },
+  updated: { text: "Tag updated successfully.", type: "success" },
+  archived: { text: "Tag archived.", type: "success" },
+  restored: { text: "Tag restored.", type: "success" },
+  deleted: { text: "Tag deleted.", type: "success" },
+  "has-links": {
+    text: "Cannot delete tag while it is attached to research items.",
+    type: "error",
+  },
   invalid: {
     text: "Invalid data — name and slug are required.",
     type: "error",
@@ -49,7 +68,7 @@ const CREATE_MESSAGES: Record<
 export function AdminTagsList({ tags }: AdminTagsListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const createParam = searchParams.get("create");
+  const createParam = searchParams.get("create") ?? searchParams.get("op");
 
   useEffect(() => {
     if (!createParam) return;
@@ -118,6 +137,49 @@ export function AdminTagsList({ tags }: AdminTagsListProps) {
 }
 
 function TagCard({ tag }: { tag: TagStat }) {
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  async function handleUpdate(formData: FormData) {
+    setSaving(true);
+    try {
+      await updateTagAction(formData);
+    } catch {
+      setSaving(false);
+    }
+  }
+
+  async function handleArchive(mode: "archive" | "restore") {
+    if (!window.confirm(mode === "archive" ? "Archive this tag?" : "Restore this tag?")) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("tagId", tag.id);
+    formData.set("mode", mode);
+    setSaving(true);
+    try {
+      await archiveTagAction(formData);
+    } catch {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm("Delete this tag permanently?")) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("tagId", tag.id);
+    setSaving(true);
+    try {
+      await deleteTagAction(formData);
+    } catch {
+      setSaving(false);
+    }
+  }
+
   return (
     <Card className="border-border/60">
       <CardHeader className="pb-2">
@@ -133,6 +195,11 @@ function TagCard({ tag }: { tag: TagStat }) {
               <CardDescription className="truncate font-mono text-[10px]">
                 /{tag.slug}
               </CardDescription>
+              {tag.archivedAt && (
+                <p className="mt-1 text-[10px] font-medium text-amber-600">
+                  Archived
+                </p>
+              )}
             </div>
           </div>
 
@@ -142,6 +209,46 @@ function TagCard({ tag }: { tag: TagStat }) {
           </span>
         </div>
       </CardHeader>
+
+      <CardContent>
+        {editing ? (
+          <form action={handleUpdate} className="space-y-2">
+            <input type="hidden" name="tagId" value={tag.id} />
+            <Input name="name" defaultValue={tag.name} required maxLength={120} disabled={saving} />
+            <Input name="slug" defaultValue={tag.slug} required maxLength={140} disabled={saving} />
+            <div className="flex items-center gap-2">
+              <Button type="submit" size="sm" disabled={saving}>
+                <Check className="size-3.5" />
+                Save
+              </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={saving}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => setEditing(true)} disabled={saving}>
+              <Pencil className="size-3.5" />
+              Edit
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => handleArchive(tag.archivedAt ? "restore" : "archive")}
+              disabled={saving}
+            >
+              {tag.archivedAt ? <Undo2 className="size-3.5" /> : <Archive className="size-3.5" />}
+              {tag.archivedAt ? "Restore" : "Archive"}
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={handleDelete} disabled={saving}>
+              <Trash2 className="size-3.5" />
+              Delete
+            </Button>
+          </div>
+        )}
+      </CardContent>
     </Card>
   );
 }

@@ -40,12 +40,20 @@ interface Department {
   name: string;
   slug: string;
   description: string | null;
+  archivedAt: Date | null;
 }
 
 interface TagOption {
   id: string;
   name: string;
   slug: string;
+  archivedAt: Date | null;
+}
+
+interface AuthorSuggestion {
+  id: string;
+  displayName: string;
+  email: string | null;
 }
 
 interface AuthorDraft {
@@ -66,6 +74,7 @@ interface RevisionFile {
 
 interface RevisionItem {
   slug: string;
+  status: string;
   title: string;
   abstract: string;
   itemType: string;
@@ -104,10 +113,18 @@ interface EditorRevisionFormProps {
   tags: TagOption[];
 }
 
+function normalizeSearch(value: string) {
+  return value.trim().toLowerCase();
+}
+
 const REVISION_MESSAGES: Record<
   string,
   { text: string; type: "success" | "error" }
 > = {
+  "draft-saved": {
+    text: "Draft saved successfully.",
+    type: "success",
+  },
   submitted: {
     text: "Your revision has been resubmitted for review. You'll be notified when it's reviewed.",
     type: "success",
@@ -118,6 +135,10 @@ const REVISION_MESSAGES: Record<
   },
   "missing-file": {
     text: "A PDF is required for this item. Upload one before resubmitting.",
+    type: "error",
+  },
+  "missing-cover": {
+    text: "A cover image is required for this item. Upload one before resubmitting.",
     type: "error",
   },
   "storage-not-configured": {
@@ -184,6 +205,7 @@ export function EditorRevisionForm({
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadPhase, setUploadPhase] = useState<"idle" | "uploading" | "saving">("idle");
+  const [activeIntent, setActiveIntent] = useState<"submit" | "save_draft">("submit");
   const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
   const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
   const [authors, setAuthors] = useState<AuthorDraft[]>(
@@ -191,6 +213,9 @@ export function EditorRevisionForm({
       ? item.authors.map(toAuthorDraft)
       : [createEmptyAuthor(true)],
   );
+  const [authorMatches, setAuthorMatches] = useState<
+    Record<number, AuthorSuggestion[]>
+  >({});
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(item.tagIds);
   const [references, setReferences] = useState<ReferenceDraft[]>(
     item.references.length > 0 ? item.references : [],
@@ -210,6 +235,85 @@ export function EditorRevisionForm({
 
   const isResubmitted = revisionParam === "submitted";
   const isDisabled = isSubmitting || isResubmitted;
+  const isDraftItem = item.status === "draft";
+  const authorSearchTimeoutsRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
+  const authorSearchRequestSeqRef = useRef<Record<number, number>>({});
+
+  useEffect(
+    () => () => {
+      for (const timeout of Object.values(authorSearchTimeoutsRef.current)) {
+        clearTimeout(timeout);
+      }
+    },
+    [],
+  );
+
+  function clearAuthorSearches() {
+    for (const timeout of Object.values(authorSearchTimeoutsRef.current)) {
+      clearTimeout(timeout);
+    }
+    authorSearchTimeoutsRef.current = {};
+    authorSearchRequestSeqRef.current = {};
+    setAuthorMatches({});
+  }
+
+  function queueAuthorSearch(index: number, nextAuthors: AuthorDraft[]) {
+    const currentAuthor = nextAuthors[index];
+    if (!currentAuthor) {
+      return;
+    }
+
+    const query = normalizeSearch(`${currentAuthor.displayName} ${currentAuthor.email}`);
+    if (query.length < 2) {
+      setAuthorMatches((current) => ({ ...current, [index]: [] }));
+      return;
+    }
+
+    const selectedIds = new Set(
+      nextAuthors
+        .map((author) => author.id)
+        .filter((value): value is string => Boolean(value)),
+    );
+    if (currentAuthor.id) {
+      selectedIds.delete(currentAuthor.id);
+    }
+
+    const existingTimeout = authorSearchTimeoutsRef.current[index];
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
+    authorSearchTimeoutsRef.current[index] = setTimeout(async () => {
+      const requestSeq = (authorSearchRequestSeqRef.current[index] ?? 0) + 1;
+      authorSearchRequestSeqRef.current[index] = requestSeq;
+
+      try {
+        const response = await fetch(
+          `/api/authors/search?query=${encodeURIComponent(query)}&limit=5`,
+          { cache: "no-store" },
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as {
+          results: AuthorSuggestion[];
+        };
+
+        if (authorSearchRequestSeqRef.current[index] !== requestSeq) {
+          return;
+        }
+
+        setAuthorMatches((current) => ({
+          ...current,
+          [index]: payload.results.filter((suggestion) => !selectedIds.has(suggestion.id)),
+        }));
+      } catch {
+        setAuthorMatches((current) => ({ ...current, [index]: [] }));
+      }
+    }, 250);
+  }
 
   function addReference() {
     setReferences((current) => [...current, { citationText: "", url: "" }]);
@@ -234,18 +338,56 @@ export function EditorRevisionForm({
     field: K,
     value: AuthorDraft[K],
   ) {
+    setAuthors((current) => {
+      const nextAuthors = current.map((author, authorIndex) =>
+        authorIndex === index
+          ? {
+              ...author,
+              [field]: value,
+              ...(field !== "isCorresponding" ? { id: undefined } : {}),
+            }
+          : author,
+      );
+
+      if (field === "displayName" || field === "email") {
+        queueAuthorSearch(index, nextAuthors);
+      }
+
+      return nextAuthors;
+    });
+  }
+
+  function applyAuthorSuggestion(index: number, suggestion: AuthorSuggestion) {
+    if (
+      !window.confirm(
+        `Use existing author "${suggestion.displayName}" for Author ${index + 1}?`,
+      )
+    ) {
+      return;
+    }
+
     setAuthors((current) =>
       current.map((author, authorIndex) =>
-        authorIndex === index ? { ...author, [field]: value } : author,
+        authorIndex === index
+          ? {
+              ...author,
+              id: suggestion.id,
+              displayName: suggestion.displayName,
+              email: suggestion.email ?? "",
+            }
+          : author,
       ),
     );
+    setAuthorMatches((current) => ({ ...current, [index]: [] }));
   }
 
   function addAuthor() {
+    clearAuthorSearches();
     setAuthors((current) => [...current, createEmptyAuthor(false)]);
   }
 
   function removeAuthor(index: number) {
+    clearAuthorSearches();
     setAuthors((current) =>
       current.length === 1
         ? current
@@ -254,6 +396,7 @@ export function EditorRevisionForm({
   }
 
   function moveAuthor(index: number, direction: -1 | 1) {
+    clearAuthorSearches();
     setAuthors((current) => {
       const nextIndex = index + direction;
       if (nextIndex < 0 || nextIndex >= current.length) {
@@ -298,7 +441,15 @@ export function EditorRevisionForm({
   }
 
   async function handleSubmit(formData: FormData) {
-    if (!item.coverImageFile && !selectedCoverFile) {
+    const workflowIntent =
+      formData.get("workflowIntent") === "save_draft" ? "save_draft" : "submit";
+    setActiveIntent(workflowIntent);
+
+    if (
+      workflowIntent === "submit" &&
+      !item.coverImageFile &&
+      !selectedCoverFile
+    ) {
       toast.error("Cover image / poster is required.");
       return;
     }
@@ -459,6 +610,7 @@ export function EditorRevisionForm({
                   {departments.map((department) => (
                     <option key={department.id} value={department.id}>
                       {department.name}
+                      {department.archivedAt ? " (Archived)" : ""}
                     </option>
                   ))}
                 </select>
@@ -541,6 +693,35 @@ export function EditorRevisionForm({
                           required
                           disabled={isDisabled}
                         />
+                        {author.id && (
+                          <p className="text-[10px] text-emerald-600">
+                            Linked existing author
+                          </p>
+                        )}
+
+                        {authorMatches[index] && authorMatches[index].length > 0 && (
+                          <div className="mt-1.5 rounded-md border border-border/60 bg-background p-1.5">
+                            <p className="mb-1 text-[10px] text-muted-foreground">
+                              Matching existing authors
+                            </p>
+                            <div className="space-y-1">
+                              {authorMatches[index].map((suggestion) => (
+                                <button
+                                  key={suggestion.id}
+                                  type="button"
+                                  onClick={() => applyAuthorSuggestion(index, suggestion)}
+                                  disabled={isDisabled}
+                                  className="flex w-full items-center justify-between rounded px-2 py-1 text-left text-[11px] transition-colors hover:bg-muted"
+                                >
+                                  <span className="font-medium">{suggestion.displayName}</span>
+                                  <span className="text-muted-foreground">
+                                    {suggestion.email ?? "No email"}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="space-y-1.5">
@@ -632,7 +813,10 @@ export function EditorRevisionForm({
                           onChange={() => toggleTag(tag.id)}
                           disabled={isDisabled}
                         />
-                        <span className="font-medium">{tag.name}</span>
+                        <span className="font-medium">
+                          {tag.name}
+                          {tag.archivedAt ? " (Archived)" : ""}
+                        </span>
                       </label>
                     );
                   })}
@@ -978,17 +1162,47 @@ export function EditorRevisionForm({
               ))}
             </div>
 
+            {isDraftItem && (
+              <Button
+                type="submit"
+                name="workflowIntent"
+                value="save_draft"
+                variant="outline"
+                disabled={isDisabled}
+                className="w-full"
+              >
+                {isSubmitting && activeIntent === "save_draft" ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <FileUp className="size-3.5" />
+                )}
+                {uploadPhase === "uploading" && activeIntent === "save_draft"
+                  ? "Uploading files…"
+                  : uploadPhase === "saving" && activeIntent === "save_draft"
+                    ? "Saving draft…"
+                    : "Save draft"}
+              </Button>
+            )}
+
             <Button
               type="submit"
+              name="workflowIntent"
+              value="submit"
               disabled={isDisabled}
               className="w-full bg-orange-600 text-white hover:bg-orange-700"
             >
-              {isSubmitting ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
-              {uploadPhase === "uploading"
+              {isSubmitting && activeIntent === "submit" ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="size-3.5" />
+              )}
+              {uploadPhase === "uploading" && activeIntent === "submit"
                 ? "Uploading files…"
-                : uploadPhase === "saving"
+                : uploadPhase === "saving" && activeIntent === "submit"
                   ? "Saving revision…"
-                  : "Resubmit for review"}
+                  : isDraftItem
+                    ? "Submit for review"
+                    : "Resubmit for review"}
             </Button>
           </form>
         </CardContent>

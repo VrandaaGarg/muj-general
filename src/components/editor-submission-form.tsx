@@ -34,12 +34,20 @@ interface Department {
   name: string;
   slug: string;
   description: string | null;
+  archivedAt: Date | null;
 }
 
 interface TagOption {
   id: string;
   name: string;
   slug: string;
+  archivedAt: Date | null;
+}
+
+interface AuthorSuggestion {
+  id: string;
+  displayName: string;
+  email: string | null;
 }
 
 interface AuthorDraft {
@@ -61,10 +69,18 @@ interface EditorSubmissionFormProps {
   tags: TagOption[];
 }
 
+function normalizeSearch(value: string) {
+  return value.trim().toLowerCase();
+}
+
 const SUBMISSION_MESSAGES: Record<
   string,
   { text: string; type: "success" | "error" }
 > = {
+  "draft-saved": {
+    text: "Draft saved. You can continue editing it anytime from your submissions list.",
+    type: "success",
+  },
   submitted: {
     text: "Your submission has been received and is awaiting admin review.",
     type: "success",
@@ -129,14 +145,96 @@ export function EditorSubmissionForm({
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadPhase, setUploadPhase] = useState<"idle" | "uploading" | "saving">("idle");
+  const [activeIntent, setActiveIntent] = useState<"submit" | "save_draft">("submit");
   const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
   const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
   const [authors, setAuthors] = useState<AuthorDraft[]>([
     createEmptyAuthor(true),
   ]);
+  const [authorMatches, setAuthorMatches] = useState<
+    Record<number, AuthorSuggestion[]>
+  >({});
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [references, setReferences] = useState<ReferenceDraft[]>([]);
   const [showAdditional, setShowAdditional] = useState(false);
+  const authorSearchTimeoutsRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
+  const authorSearchRequestSeqRef = useRef<Record<number, number>>({});
+
+  useEffect(
+    () => () => {
+      for (const timeout of Object.values(authorSearchTimeoutsRef.current)) {
+        clearTimeout(timeout);
+      }
+    },
+    [],
+  );
+
+  function clearAuthorSearches() {
+    for (const timeout of Object.values(authorSearchTimeoutsRef.current)) {
+      clearTimeout(timeout);
+    }
+    authorSearchTimeoutsRef.current = {};
+    authorSearchRequestSeqRef.current = {};
+    setAuthorMatches({});
+  }
+
+  function queueAuthorSearch(index: number, nextAuthors: AuthorDraft[]) {
+    const currentAuthor = nextAuthors[index];
+    if (!currentAuthor) {
+      return;
+    }
+
+    const query = normalizeSearch(`${currentAuthor.displayName} ${currentAuthor.email}`);
+    if (query.length < 2) {
+      setAuthorMatches((current) => ({ ...current, [index]: [] }));
+      return;
+    }
+
+    const selectedIds = new Set(
+      nextAuthors
+        .map((author) => author.id)
+        .filter((value): value is string => Boolean(value)),
+    );
+    if (currentAuthor.id) {
+      selectedIds.delete(currentAuthor.id);
+    }
+
+    const existingTimeout = authorSearchTimeoutsRef.current[index];
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
+    authorSearchTimeoutsRef.current[index] = setTimeout(async () => {
+      const requestSeq = (authorSearchRequestSeqRef.current[index] ?? 0) + 1;
+      authorSearchRequestSeqRef.current[index] = requestSeq;
+
+      try {
+        const response = await fetch(
+          `/api/authors/search?query=${encodeURIComponent(query)}&limit=5`,
+          { cache: "no-store" },
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as {
+          results: AuthorSuggestion[];
+        };
+
+        if (authorSearchRequestSeqRef.current[index] !== requestSeq) {
+          return;
+        }
+
+        setAuthorMatches((current) => ({
+          ...current,
+          [index]: payload.results.filter((suggestion) => !selectedIds.has(suggestion.id)),
+        }));
+      } catch {
+        setAuthorMatches((current) => ({ ...current, [index]: [] }));
+      }
+    }, 250);
+  }
 
   function addReference() {
     setReferences((current) => [...current, { citationText: "", url: "" }]);
@@ -161,18 +259,56 @@ export function EditorSubmissionForm({
     field: K,
     value: AuthorDraft[K],
   ) {
+    setAuthors((current) => {
+      const nextAuthors = current.map((author, authorIndex) =>
+        authorIndex === index
+          ? {
+              ...author,
+              [field]: value,
+              ...(field !== "isCorresponding" ? { id: undefined } : {}),
+            }
+          : author,
+      );
+
+      if (field === "displayName" || field === "email") {
+        queueAuthorSearch(index, nextAuthors);
+      }
+
+      return nextAuthors;
+    });
+  }
+
+  function applyAuthorSuggestion(index: number, suggestion: AuthorSuggestion) {
+    if (
+      !window.confirm(
+        `Use existing author "${suggestion.displayName}" for Author ${index + 1}?`,
+      )
+    ) {
+      return;
+    }
+
     setAuthors((current) =>
       current.map((author, authorIndex) =>
-        authorIndex === index ? { ...author, [field]: value } : author,
+        authorIndex === index
+          ? {
+              ...author,
+              id: suggestion.id,
+              displayName: suggestion.displayName,
+              email: suggestion.email ?? "",
+            }
+          : author,
       ),
     );
+    setAuthorMatches((current) => ({ ...current, [index]: [] }));
   }
 
   function addAuthor() {
+    clearAuthorSearches();
     setAuthors((current) => [...current, createEmptyAuthor(false)]);
   }
 
   function removeAuthor(index: number) {
+    clearAuthorSearches();
     setAuthors((current) =>
       current.length === 1
         ? current
@@ -181,6 +317,7 @@ export function EditorSubmissionForm({
   }
 
   function moveAuthor(index: number, direction: -1 | 1) {
+    clearAuthorSearches();
     setAuthors((current) => {
       const nextIndex = index + direction;
       if (nextIndex < 0 || nextIndex >= current.length) {
@@ -225,7 +362,11 @@ export function EditorSubmissionForm({
   }
 
   async function handleSubmit(formData: FormData) {
-    if (!selectedCoverFile) {
+    const workflowIntent =
+      formData.get("workflowIntent") === "save_draft" ? "save_draft" : "submit";
+    setActiveIntent(workflowIntent);
+
+    if (workflowIntent === "submit" && !selectedCoverFile) {
       toast.error("Cover image / poster is required.");
       return;
     }
@@ -469,6 +610,35 @@ export function EditorSubmissionForm({
                           placeholder="Dr. Jane Smith"
                           disabled={isSubmitting}
                         />
+                        {author.id && (
+                          <p className="text-[10px] text-emerald-600">
+                            Linked existing author
+                          </p>
+                        )}
+
+                        {authorMatches[index] && authorMatches[index].length > 0 && (
+                          <div className="mt-1.5 rounded-md border border-border/60 bg-background p-1.5">
+                            <p className="mb-1 text-[10px] text-muted-foreground">
+                              Matching existing authors
+                            </p>
+                            <div className="space-y-1">
+                              {authorMatches[index].map((suggestion) => (
+                                <button
+                                  key={suggestion.id}
+                                  type="button"
+                                  onClick={() => applyAuthorSuggestion(index, suggestion)}
+                                  disabled={isSubmitting}
+                                  className="flex w-full items-center justify-between rounded px-2 py-1 text-left text-[11px] transition-colors hover:bg-muted"
+                                >
+                                  <span className="font-medium">{suggestion.displayName}</span>
+                                  <span className="text-muted-foreground">
+                                    {suggestion.email ?? "No email"}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="space-y-1.5">
@@ -857,13 +1027,39 @@ export function EditorSubmissionForm({
 
             <Button
               type="submit"
+              name="workflowIntent"
+              value="save_draft"
+              variant="outline"
+              disabled={isSubmitting}
+              className="w-full"
+            >
+              {isSubmitting && activeIntent === "save_draft" ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <FileUp className="size-3.5" />
+              )}
+              {uploadPhase === "uploading" && activeIntent === "save_draft"
+                ? "Uploading files…"
+                : uploadPhase === "saving" && activeIntent === "save_draft"
+                  ? "Saving draft…"
+                  : "Save draft"}
+            </Button>
+
+            <Button
+              type="submit"
+              name="workflowIntent"
+              value="submit"
               disabled={isSubmitting}
               className="w-full bg-violet-600 text-white hover:bg-violet-700"
             >
-              {isSubmitting ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
-              {uploadPhase === "uploading"
+              {isSubmitting && activeIntent === "submit" ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Send className="size-3.5" />
+              )}
+              {uploadPhase === "uploading" && activeIntent === "submit"
                 ? "Uploading files…"
-                : uploadPhase === "saving"
+                : uploadPhase === "saving" && activeIntent === "submit"
                   ? "Saving submission…"
                   : "Submit for review"}
             </Button>

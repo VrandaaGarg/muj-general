@@ -22,6 +22,7 @@ import { reviewResearchSubmissionAction } from "@/lib/actions/research";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -75,6 +76,10 @@ const MODERATION_MESSAGES: Record<
     text: "Changes have been requested from the editor.",
     type: "info",
   },
+  archived: {
+    text: "Research item has been archived.",
+    type: "success",
+  },
   invalid: {
     text: "Invalid moderation data. Please try again.",
     type: "error",
@@ -101,6 +106,11 @@ export function AdminResearchModeration({
   const router = useRouter();
   const searchParams = useSearchParams();
   const moderationParam = searchParams.get("moderation");
+  const [query, setQuery] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [yearFilter, setYearFilter] = useState("all");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest">("newest");
 
   useEffect(() => {
     if (!moderationParam) return;
@@ -112,21 +122,117 @@ export function AdminResearchModeration({
     router.replace("/admin", { scroll: false });
   }, [moderationParam, router]);
 
+  const departmentOptions = Array.from(
+    new Set(items.map((item) => item.departmentName).filter((value): value is string => Boolean(value))),
+  ).sort((a, b) => a.localeCompare(b));
+
+  const typeOptions = Array.from(new Set(items.map((item) => item.itemType))).sort((a, b) =>
+    a.localeCompare(b),
+  );
+
+  const yearOptions = Array.from(new Set(items.map((item) => item.publicationYear)))
+    .sort((a, b) => b - a)
+    .map((year) => String(year));
+
+  const filteredItems = items
+    .filter((item) => {
+      if (departmentFilter !== "all" && item.departmentName !== departmentFilter) {
+        return false;
+      }
+
+      if (typeFilter !== "all" && item.itemType !== typeFilter) {
+        return false;
+      }
+
+      if (yearFilter !== "all" && String(item.publicationYear) !== yearFilter) {
+        return false;
+      }
+
+      if (query.trim()) {
+        const haystack = `${item.title} ${item.submittedByName} ${item.submittedByEmail}`.toLowerCase();
+        if (!haystack.includes(query.trim().toLowerCase())) {
+          return false;
+        }
+      }
+
+      return true;
+    })
+    .sort((a, b) =>
+      sortBy === "newest"
+        ? new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        : new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
+    );
+
   return (
     <div className="space-y-4">
+      <Card className="border-border/60">
+        <CardContent className="grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-5">
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search title or submitter"
+            className="h-8"
+          />
+          <select
+            value={departmentFilter}
+            onChange={(event) => setDepartmentFilter(event.target.value)}
+            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
+          >
+            <option value="all">All departments</option>
+            {departmentOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          <select
+            value={typeFilter}
+            onChange={(event) => setTypeFilter(event.target.value)}
+            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
+          >
+            <option value="all">All types</option>
+            {typeOptions.map((option) => (
+              <option key={option} value={option}>
+                {TYPE_LABELS[option] ?? option}
+              </option>
+            ))}
+          </select>
+          <select
+            value={yearFilter}
+            onChange={(event) => setYearFilter(event.target.value)}
+            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
+          >
+            <option value="all">All years</option>
+            {yearOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          <select
+            value={sortBy}
+            onChange={(event) => setSortBy(event.target.value as "newest" | "oldest")}
+            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
+          >
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
+        </CardContent>
+      </Card>
+
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
           Research submissions
         </h2>
-        {items.length > 0 && (
+        {filteredItems.length > 0 && (
           <span className="flex items-center gap-1.5 rounded-full bg-amber-600/10 px-2.5 py-0.5 text-xs font-medium text-amber-600">
             <Clock className="size-3" />
-            {items.length} pending
+            {filteredItems.length} pending
           </span>
         )}
       </div>
 
-      {items.length === 0 ? (
+      {filteredItems.length === 0 ? (
         <Card className="border-border/60">
           <CardContent className="py-8 text-center">
             <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-muted">
@@ -140,7 +246,7 @@ export function AdminResearchModeration({
         </Card>
       ) : (
         <div className="space-y-3">
-          {items.map((item, idx) => (
+          {filteredItems.map((item, idx) => (
             <motion.div
               key={item.id}
               initial={{ opacity: 0, y: 8 }}
