@@ -23,27 +23,47 @@ interface RelatedItem {
 interface ResearchRelatedProps {
   related: RelatedItem[];
   more: RelatedItem[];
+  sameAuthors?: RelatedItem[];
 }
 
-export function ResearchRelated({ related, more }: ResearchRelatedProps) {
+export function ResearchRelated({
+  related,
+  more,
+  sameAuthors = [],
+}: ResearchRelatedProps) {
   const hasRelated = related.length > 0;
   const hasMore = more.length > 0;
+  const hasSameAuthors = sameAuthors.length > 0;
 
-  if (!hasRelated && !hasMore) return null;
+  if (!hasRelated && !hasMore && !hasSameAuthors) return null;
+
+  // Compute staggered delays based on which sections are visible
+  const sections: Array<{
+    key: string;
+    title: string;
+    items: RelatedItem[];
+  }> = [];
+
+  if (hasSameAuthors) {
+    sections.push({ key: "same-authors", title: "More from the same authors", items: sameAuthors });
+  }
+  if (hasRelated) {
+    sections.push({ key: "related", title: "Related research", items: related });
+  }
+  if (hasMore) {
+    sections.push({ key: "more", title: "More from the repository", items: more });
+  }
 
   return (
     <div className="mx-auto max-w-4xl space-y-10 px-6 pb-16 md:px-12">
-      {hasRelated && (
-        <ItemGrid title="Related research" items={related} delayBase={0.6} />
-      )}
-
-      {hasMore && (
+      {sections.map((section, sectionIndex) => (
         <ItemGrid
-          title="More from the repository"
-          items={more}
-          delayBase={hasRelated ? 0.9 : 0.6}
+          key={section.key}
+          title={section.title}
+          items={section.items}
+          delayBase={0.6 + sectionIndex * 0.3}
         />
-      )}
+      ))}
     </div>
   );
 }

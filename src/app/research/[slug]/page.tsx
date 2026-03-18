@@ -7,6 +7,7 @@ import { ResearchRelated } from "@/components/research-related";
 import {
   getPublishedResearchItemBySlug,
   incrementViewCount,
+  listMoreFromSameAuthors,
   listRelatedPublishedResearchItems,
 } from "@/lib/db/queries";
 import { getPublicFileUrl } from "@/lib/storage/r2";
@@ -49,13 +50,23 @@ export default async function ResearchDetailPage({
   // Fire-and-forget view count increment
   incrementViewCount(item.id).catch(() => {});
 
-  const { related, more } = await listRelatedPublishedResearchItems({
-    researchItemId: item.id,
-    departmentSlug: item.departmentSlug,
-    itemType: item.itemType,
-  });
+  const authorIds = item.authors.map((a) => a.id);
 
-  const resolveUrls = (items: typeof related) =>
+  const [{ related, more }, sameAuthorItems] = await Promise.all([
+    listRelatedPublishedResearchItems({
+      researchItemId: item.id,
+      departmentSlug: item.departmentSlug,
+      itemType: item.itemType,
+    }),
+    listMoreFromSameAuthors({
+      researchItemId: item.id,
+      authorIds,
+    }),
+  ]);
+
+  const resolveUrls = <T extends { coverImageObjectKey: string | null }>(
+    items: T[],
+  ) =>
     items.map((i) => ({
       ...i,
       coverImageUrl: i.coverImageObjectKey
@@ -65,6 +76,7 @@ export default async function ResearchDetailPage({
 
   const relatedWithUrls = resolveUrls(related);
   const moreWithUrls = resolveUrls(more);
+  const sameAuthorWithUrls = resolveUrls(sameAuthorItems);
 
   const fileUrl = item.fileObjectKey
     ? getPublicFileUrl(item.fileObjectKey)
@@ -114,7 +126,11 @@ export default async function ResearchDetailPage({
           references={item.references}
         />
 
-        <ResearchRelated related={relatedWithUrls} more={moreWithUrls} />
+        <ResearchRelated
+          related={relatedWithUrls}
+          more={moreWithUrls}
+          sameAuthors={sameAuthorWithUrls}
+        />
       </main>
 
       {/* Footer */}

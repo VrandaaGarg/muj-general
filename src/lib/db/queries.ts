@@ -603,6 +603,87 @@ export async function getResearchItemForAdminReview(researchItemId: string) {
   };
 }
 
+export async function getResearchItemVersionDiff(researchItemId: string) {
+  // Get all versions ordered newest first
+  const versions = await db
+    .select({
+      id: itemVersions.id,
+      versionNumber: itemVersions.versionNumber,
+      title: itemVersions.title,
+      abstract: itemVersions.abstract,
+      license: itemVersions.license,
+      changeSummary: itemVersions.changeSummary,
+      notesToAdmin: itemVersions.notesToAdmin,
+      supervisorName: itemVersions.supervisorName,
+      programName: itemVersions.programName,
+      publicationDate: itemVersions.publicationDate,
+      createdAt: itemVersions.createdAt,
+    })
+    .from(itemVersions)
+    .where(eq(itemVersions.researchItemId, researchItemId))
+    .orderBy(desc(itemVersions.versionNumber))
+    .limit(2);
+
+  if (versions.length < 2) return null;
+
+  const [current, previous] = versions;
+
+  // Files for both versions
+  const [currentFiles, previousFiles] = await Promise.all([
+    db
+      .select({
+        fileKind: files.fileKind,
+        objectKey: files.objectKey,
+        originalName: files.originalName,
+        sizeBytes: files.sizeBytes,
+      })
+      .from(files)
+      .where(
+        and(
+          eq(files.researchItemId, researchItemId),
+          eq(files.itemVersionId, current.id),
+          inArray(files.fileKind, ["main_pdf", "cover_image"]),
+        ),
+      ),
+    db
+      .select({
+        fileKind: files.fileKind,
+        objectKey: files.objectKey,
+        originalName: files.originalName,
+        sizeBytes: files.sizeBytes,
+      })
+      .from(files)
+      .where(
+        and(
+          eq(files.researchItemId, researchItemId),
+          eq(files.itemVersionId, previous.id),
+          inArray(files.fileKind, ["main_pdf", "cover_image"]),
+        ),
+      ),
+  ]);
+
+  // Authors for both versions (via research_item_authors – join currently links to item level, so both show same)
+  // We fetch current state as "current" authors — historical author snapshots are not stored separately
+  const currentAuthors = await db
+    .select({
+      id: authors.id,
+      displayName: authors.displayName,
+      email: authors.email,
+      affiliation: authors.affiliation,
+      isCorresponding: researchItemAuthors.isCorresponding,
+      authorOrder: researchItemAuthors.authorOrder,
+    })
+    .from(researchItemAuthors)
+    .innerJoin(authors, eq(authors.id, researchItemAuthors.authorId))
+    .where(eq(researchItemAuthors.researchItemId, researchItemId))
+    .orderBy(asc(researchItemAuthors.authorOrder));
+
+  return {
+    current: { ...current, files: currentFiles, authors: currentAuthors },
+    previous: { ...previous, files: previousFiles },
+  };
+}
+
 export async function reviewResearchSubmission(params: {
   researchItemId: string;
   reviewerUserId: string;
@@ -924,6 +1005,51 @@ export async function listRelatedPublishedResearchItems(params: {
     related: relatedRows.map(enrich),
     more: moreRows.map(enrich),
   };
+}
+
+const SAME_AUTHORS_LIMIT = 6;
+
+export async function listMoreFromSameAuthors(params: {
+  researchItemId: string;
+  authorIds: string[];
+}) {
+  if (params.authorIds.length === 0) {
+    return [];
+  }
+
+  const rows = await db
+    .selectDistinctOn([researchItems.id], {
+      id: researchItems.id,
+      slug: researchItems.slug,
+      title: researchItems.title,
+      itemType: researchItems.itemType,
+      publicationYear: researchItems.publicationYear,
+      publishedAt: researchItems.publishedAt,
+      departmentName: departments.name,
+      departmentSlug: departments.slug,
+    })
+    .from(researchItemAuthors)
+    .innerJoin(researchItems, eq(researchItems.id, researchItemAuthors.researchItemId))
+    .leftJoin(departments, eq(departments.id, researchItems.departmentId))
+    .where(
+      and(
+        inArray(researchItemAuthors.authorId, params.authorIds),
+        eq(researchItems.status, "published"),
+        sql`${researchItems.id} <> ${params.researchItemId}`,
+      ),
+    )
+    .orderBy(researchItems.id, desc(researchItems.publishedAt))
+    .limit(SAME_AUTHORS_LIMIT);
+
+  if (rows.length === 0) return [];
+
+  const metaMap = await attachResearchMeta(rows);
+
+  return rows.map((row) => ({
+    ...row,
+    authors: metaMap.get(row.id)?.authors ?? [],
+    coverImageObjectKey: metaMap.get(row.id)?.coverImageObjectKey ?? null,
+  }));
 }
 
 export async function getAuthorById(authorId: string) {

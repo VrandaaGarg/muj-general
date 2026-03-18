@@ -6,27 +6,30 @@
 - Reader-to-editor access requests, editor submission/revision flows, admin moderation, and public browse/detail pages are implemented.
 - R2 presigned upload plumbing exists in code, but storage configuration still has a few operational gaps before the full flow is production-ready.
 
+## Completed
+
+- [x] Draft save/resume workflow — editors can save drafts, resume editing, and explicitly submit for review.
+- [x] Editor delete draft and withdraw submitted/changes_requested items to archived with audit metadata.
+- [x] Admin archive/unpublish flow for published items with required reason and activity log entry.
+- [x] Existing-author fuzzy attach — protected on-demand search by name/email, explicit in-app confirm dialog (no window.confirm), deduplication by email.
+- [x] Department and tag edit/archive/restore/delete management with safety link guards.
+- [x] Admin user management search, filter (role/verified/department), and sort controls.
+- [x] Admin moderation queue advanced filters (department/type/year/submitter/sort).
+- [x] Admin moderation history filters (decision/department/query/sort) and formula-safe CSV export.
+- [x] Admin page section ordering — section with pending items always renders first.
+- [x] Save draft / submit for review buttons in correct left/right layout with per-button loading state.
+- [x] Toast deduplication guard across editor and admin forms.
+- [x] Author email deduplication on submit/revise — reuses existing author row when email matches.
+
 ## P0 — Immediate Blockers
 
-- R2 bucket CORS still needs to be configured for browser `PUT` uploads from local and production frontend origins, otherwise presigned PDF uploads fail.
-- Public PDF delivery depends on correct R2 public access or custom-domain configuration; the app already builds public URLs, but the bucket/domain setup must be finalized.
-- Storage setup needs a clear deployment checklist for `CLOUDFLARE_ACCOUNT_ID`, R2 keys, bucket name, `R2_PUBLIC_BASE_URL`, public access, and CORS.
+- R2 bucket CORS still needs to be configured for browser `PUT` uploads from local and production frontend origins.
+- Public PDF delivery depends on correct R2 public access or custom-domain configuration.
+- Storage setup needs a deployment checklist for `CLOUDFLARE_ACCOUNT_ID`, R2 keys, bucket name, `R2_PUBLIC_BASE_URL`, public access, and CORS.
 
-## P1 — Repository Workflow Gaps
+## P1 — Remaining
 
-- Editor submission and revision UI does not let editors attach existing authors.
-- Editor submission and revision UI does not let editors assign tags, even though tags are already used in browse/filter flows.
-- No draft save/resume workflow yet; new items go straight into review instead of a staged draft lifecycle.
-- Editors cannot delete, withdraw, or archive their own draft/submitted items.
-- Moderation supports `publish` and `request_changes`, but there is no archive/unpublish/revert flow for already published items.
-- Resubmission review has no dedicated change-summary or version-diff experience for admins.
-
-## P1 — Admin Surface Gaps
-
-- Department and tag admin pages support create/list flows, but not edit/archive/delete management.
-- Admin user management has no search, filter, or sort controls.
-- Admin queues have no advanced filters for request type, department, status, or date.
-- Activity history exists, but there are no stronger audit filters or export tools.
+- Admin version-diff UX for resubmission review — field-by-field and file-level comparison between current and previous versions on the admin review page. *(in progress)*
 
 ## P2 — Public Repository Gaps
 
@@ -38,7 +41,6 @@
 
 ## P2 — UX and Robustness Gaps
 
-- Notifications still rely heavily on query-param banners instead of a shared toast/feedback system.
 - No custom `error.tsx` / `not-found.tsx` pages for major surfaces.
 - Loading and empty-state polish is inconsistent across admin/editor flows.
 - Email templates are functional but still basic.

@@ -19,11 +19,12 @@ import {
 } from "lucide-react";
 
 import { requireRole } from "@/lib/auth/session";
-import { getResearchItemForAdminReview } from "@/lib/db/queries";
+import { getResearchItemForAdminReview, getResearchItemVersionDiff } from "@/lib/db/queries";
 import { getPublicFileUrl } from "@/lib/storage/r2";
 import { getTypeLabel, getTypeColor } from "@/lib/research-types";
 import { SiteHeader } from "@/components/site-header";
 import { AdminReviewActions } from "@/components/admin-review-actions";
+import { AdminVersionDiff } from "@/components/admin-version-diff";
 
 interface AdminReviewPageProps {
   params: Promise<{ id: string }>;
@@ -57,7 +58,10 @@ export default async function AdminReviewPage({
   });
 
   const { id } = await params;
-  const item = await getResearchItemForAdminReview(id);
+  const [item, versionDiff] = await Promise.all([
+    getResearchItemForAdminReview(id),
+    getResearchItemVersionDiff(id),
+  ]);
 
   if (!item) notFound();
 
@@ -282,12 +286,32 @@ export default async function AdminReviewPage({
             </div>
           )}
 
-          {/* Change summary */}
-          {item.changeSummary && (
+          {/* Change summary (standalone, only shown when no diff available) */}
+          {item.changeSummary && !versionDiff && (
             <div className="rounded-xl border border-border/60 bg-muted/20 p-5">
               <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Change Summary (v{item.versionNumber})</h3>
               <p className="text-sm leading-relaxed text-foreground/85">{item.changeSummary}</p>
             </div>
+          )}
+
+          {/* Version diff — only on resubmissions */}
+          {versionDiff && (
+            <AdminVersionDiff
+              current={{
+                ...versionDiff.current,
+                files: versionDiff.current.files.map((f) => ({
+                  ...f,
+                  publicUrl: getPublicFileUrl(f.objectKey),
+                })),
+              }}
+              previous={{
+                ...versionDiff.previous,
+                files: versionDiff.previous.files.map((f) => ({
+                  ...f,
+                  publicUrl: getPublicFileUrl(f.objectKey),
+                })),
+              }}
+            />
           )}
 
           {/* Moderation actions */}

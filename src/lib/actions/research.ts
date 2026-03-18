@@ -17,6 +17,7 @@ import {
   researchItemTags,
   researchItems,
   tags,
+  user,
 } from "@/db/schema";
 import { requireRole } from "@/lib/auth/session";
 import {
@@ -66,6 +67,19 @@ function normalizeEmail(email: string | undefined) {
 
   const normalized = email.trim().toLowerCase();
   return normalized.length > 0 ? normalized : null;
+}
+
+async function findVerifiedUserIdByEmail(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  email: string,
+): Promise<string | null> {
+  const [match] = await tx
+    .select({ id: user.id })
+    .from(user)
+    .where(and(sql`lower(${user.email}) = ${email}`, eq(user.emailVerified, true)))
+    .limit(1);
+
+  return match?.id ?? null;
 }
 
 function parseSubmissionPayload(formData: FormData) {
@@ -374,13 +388,27 @@ export async function submitResearchSubmission(formData: FormData) {
         }
 
         if (!author.id && !matchedExistingAuthor) {
+          const linkedUserId = normalizedEmail
+            ? await findVerifiedUserIdByEmail(tx, normalizedEmail)
+            : null;
+
           await tx.insert(authors).values({
             id: authorId,
             displayName: author.displayName,
             email: normalizedEmail,
             affiliation: author.affiliation || null,
             orcid: author.orcid || null,
+            linkedUserId,
           });
+        } else if (matchedExistingAuthor && normalizedEmail) {
+          // backfill linkedUserId if existing author row is missing it
+          const linkedUserId = await findVerifiedUserIdByEmail(tx, normalizedEmail);
+          if (linkedUserId) {
+            await tx
+              .update(authors)
+              .set({ linkedUserId, updatedAt: new Date() })
+              .where(and(eq(authors.id, authorId), sql`${authors.linkedUserId} IS NULL`));
+          }
         }
 
         authorJoinRows.push({
@@ -759,13 +787,26 @@ export async function submitResearchRevision(formData: FormData) {
         }
 
         if (!author.id && !matchedExistingAuthor) {
+          const linkedUserId = normalizedEmail
+            ? await findVerifiedUserIdByEmail(tx, normalizedEmail)
+            : null;
+
           await tx.insert(authors).values({
             id: authorId,
             displayName: author.displayName,
             email: normalizedEmail,
             affiliation: author.affiliation || null,
             orcid: author.orcid || null,
+            linkedUserId,
           });
+        } else if (matchedExistingAuthor && normalizedEmail) {
+          const linkedUserId = await findVerifiedUserIdByEmail(tx, normalizedEmail);
+          if (linkedUserId) {
+            await tx
+              .update(authors)
+              .set({ linkedUserId, updatedAt: new Date() })
+              .where(and(eq(authors.id, authorId), sql`${authors.linkedUserId} IS NULL`));
+          }
         }
 
         authorJoinRows.push({
