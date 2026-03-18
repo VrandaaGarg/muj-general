@@ -251,7 +251,7 @@ export function HomeLanding({ journals, recentResearch, departments }: HomeLandi
                     )}
                     <div className="p-5">
                       <div className="mb-2 flex items-center gap-2">
-                        <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                        <span className=" text-xs font-medium text-primary capitalize">
                           {item.itemType.replace(/_/g, " ")}
                         </span>
                         {item.publicationYear && (
@@ -260,7 +260,7 @@ export function HomeLanding({ journals, recentResearch, departments }: HomeLandi
                           </span>
                         )}
                       </div>
-                      <h3 className="mb-2 line-clamp-2 text-base font-semibold leading-snug tracking-tight text-foreground transition-colors group-hover:text-primary">
+                      <h3 className="mb-2 line-clamp-2 group-hover:underline text-base font-semibold leading-snug tracking-tight text-foreground transition-colors group-hover:text-primary">
                         {item.title}
                       </h3>
                       {item.authors.length > 0 && (

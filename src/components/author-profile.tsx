@@ -55,7 +55,7 @@ export function AuthorProfile({ author }: AuthorProfileProps) {
   return (
     <section className="relative">
       {/* Warm overlay gradient */}
-      <div className="pointer-events-none absolute inset-0 -top-20 bg-gradient-to-b from-amber-600/[0.03] via-transparent to-transparent" />
+      <div className="pointer-events-none absolute inset-0 -top-20 bg-gradient-to-b from-primary/[0.06] via-transparent to-transparent" />
 
       <div className="relative mx-auto max-w-4xl px-6 pt-4 pb-12 md:px-12">
         {/* Breadcrumb */}
@@ -87,7 +87,7 @@ export function AuthorProfile({ author }: AuthorProfileProps) {
           animate="visible"
           className="mt-8"
         >
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-amber-600">
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-primary">
             Author
           </p>
           <h1 className="font-sans text-2xl leading-tight tracking-tight text-foreground sm:text-3xl md:text-4xl">
@@ -118,7 +118,7 @@ export function AuthorProfile({ author }: AuthorProfileProps) {
                 href={`mailto:${author.email}`}
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card/50 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors",
-                  "hover:border-amber-600/25 hover:bg-amber-600/[0.02] hover:text-foreground",
+                  "hover:border-primary/25 hover:bg-primary/[0.02] hover:text-foreground",
                 )}
               >
                 <Mail className="size-3" />
@@ -132,7 +132,7 @@ export function AuthorProfile({ author }: AuthorProfileProps) {
                 rel="noopener noreferrer"
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card/50 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors",
-                  "hover:border-amber-600/25 hover:bg-amber-600/[0.02] hover:text-foreground",
+                  "hover:border-primary/25 hover:bg-primary/[0.02] hover:text-foreground",
                 )}
               >
                 <ExternalLink className="size-3" />

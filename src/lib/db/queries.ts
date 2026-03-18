@@ -1457,10 +1457,50 @@ export async function getDepartmentBySlug(departmentSlug: string) {
     )
     .orderBy(desc(researchItems.publishedAt), desc(researchItems.updatedAt));
 
+  const rawContributors = await db
+    .select({
+      id: authors.id,
+      name: authors.displayName,
+      email: authors.email,
+      affiliation: authors.affiliation,
+      contributionCount: sql<number>`count(distinct ${researchItems.id})::int`,
+    })
+    .from(researchItemAuthors)
+    .innerJoin(
+      researchItems,
+      eq(researchItems.id, researchItemAuthors.researchItemId),
+    )
+    .innerJoin(authors, eq(authors.id, researchItemAuthors.authorId))
+    .innerJoin(departments, eq(departments.id, researchItems.departmentId))
+    .where(
+      and(
+        eq(researchItems.status, "published"),
+        eq(departments.slug, departmentSlug),
+      ),
+    )
+    .groupBy(authors.id, authors.displayName, authors.email, authors.affiliation)
+    .orderBy(
+      desc(sql<number>`count(distinct ${researchItems.id})::int`),
+      asc(authors.displayName),
+    );
+
+  // Deduplicate authors that share the same email address
+  const seenEmails = new Set<string>();
+  const contributors: typeof rawContributors = [];
+  for (const c of rawContributors) {
+    const key = c.email?.toLowerCase().trim();
+    if (key) {
+      if (seenEmails.has(key)) continue;
+      seenEmails.add(key);
+    }
+    contributors.push(c);
+  }
+
   const metaMap = await attachResearchMeta(items);
 
   return {
     ...department,
+    contributors,
     items: items.map((item) => ({
       ...item,
       authors: metaMap.get(item.id)?.authors ?? [],
