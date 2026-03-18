@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
+  ArrowRight,
   BookCheck,
   Building2,
   CheckCircle2,
@@ -22,7 +23,6 @@ import { reviewResearchSubmissionAction } from "@/lib/actions/research";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -48,6 +48,8 @@ interface PendingResearchItem {
 
 interface AdminResearchModerationProps {
   items: PendingResearchItem[];
+  limit?: number;
+  showAllHref?: string;
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -102,16 +104,13 @@ function formatDate(date: Date) {
 
 export function AdminResearchModeration({
   items,
+  limit,
+  showAllHref = "/admin/research-submissions",
 }: AdminResearchModerationProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const moderationParam = searchParams.get("moderation");
   const handledModerationParamRef = useRef<string | null>(null);
-  const [query, setQuery] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [yearFilter, setYearFilter] = useState("all");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest">("newest");
 
   useEffect(() => {
     if (!moderationParam) return;
@@ -126,117 +125,29 @@ export function AdminResearchModeration({
     router.replace("/admin", { scroll: false });
   }, [moderationParam, router]);
 
-  const departmentOptions = Array.from(
-    new Set(items.map((item) => item.departmentName).filter((value): value is string => Boolean(value))),
-  ).sort((a, b) => a.localeCompare(b));
-
-  const typeOptions = Array.from(new Set(items.map((item) => item.itemType))).sort((a, b) =>
-    a.localeCompare(b),
+  const sorted = [...items].sort(
+    (a, b) =>
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
   );
 
-  const yearOptions = Array.from(new Set(items.map((item) => item.publicationYear)))
-    .sort((a, b) => b - a)
-    .map((year) => String(year));
-
-  const filteredItems = items
-    .filter((item) => {
-      if (departmentFilter !== "all" && item.departmentName !== departmentFilter) {
-        return false;
-      }
-
-      if (typeFilter !== "all" && item.itemType !== typeFilter) {
-        return false;
-      }
-
-      if (yearFilter !== "all" && String(item.publicationYear) !== yearFilter) {
-        return false;
-      }
-
-      if (query.trim()) {
-        const haystack = `${item.title} ${item.submittedByName} ${item.submittedByEmail}`.toLowerCase();
-        if (!haystack.includes(query.trim().toLowerCase())) {
-          return false;
-        }
-      }
-
-      return true;
-    })
-    .sort((a, b) =>
-      sortBy === "newest"
-        ? new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        : new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
-    );
+  const displayItems = limit ? sorted.slice(0, limit) : sorted;
+  const hasMore = limit ? sorted.length > limit : false;
 
   return (
     <div className="space-y-4">
-      <Card className="border-border/60">
-        <CardContent className="grid gap-3  sm:grid-cols-2 lg:grid-cols-5">
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search title or submitter"
-            className="h-8"
-          />
-          <select
-            value={departmentFilter}
-            onChange={(event) => setDepartmentFilter(event.target.value)}
-            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
-          >
-            <option value="all">All departments</option>
-            {departmentOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-          <select
-            value={typeFilter}
-            onChange={(event) => setTypeFilter(event.target.value)}
-            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
-          >
-            <option value="all">All types</option>
-            {typeOptions.map((option) => (
-              <option key={option} value={option}>
-                {TYPE_LABELS[option] ?? option}
-              </option>
-            ))}
-          </select>
-          <select
-            value={yearFilter}
-            onChange={(event) => setYearFilter(event.target.value)}
-            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
-          >
-            <option value="all">All years</option>
-            {yearOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-          <select
-            value={sortBy}
-            onChange={(event) => setSortBy(event.target.value as "newest" | "oldest")}
-            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
-          >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-          </select>
-        </CardContent>
-      </Card>
-
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
           Research submissions
         </h2>
-        {filteredItems.length > 0 && (
+        {items.length > 0 && (
           <span className="flex items-center gap-1.5 rounded-full bg-amber-600/10 px-2.5 py-0.5 text-xs font-medium text-amber-600">
             <Clock className="size-3" />
-            {filteredItems.length} pending
+            {items.length} pending
           </span>
         )}
       </div>
 
-      {filteredItems.length === 0 ? (
+      {displayItems.length === 0 ? (
         <Card className="border-border/60">
           <CardContent className="py-8 text-center">
             <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-muted">
@@ -250,7 +161,7 @@ export function AdminResearchModeration({
         </Card>
       ) : (
         <div className="space-y-3">
-          {filteredItems.map((item, idx) => (
+          {displayItems.map((item, idx) => (
             <motion.div
               key={item.id}
               initial={{ opacity: 0, y: 8 }}
@@ -260,6 +171,18 @@ export function AdminResearchModeration({
               <ModerationReviewCard item={item} />
             </motion.div>
           ))}
+        </div>
+      )}
+
+      {hasMore && (
+        <div className="pt-1">
+          <Link
+            href={showAllHref}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+          >
+            Show all {items.length} submissions
+            <ArrowRight className="size-3.5" />
+          </Link>
         </div>
       )}
     </div>
@@ -315,7 +238,6 @@ function ModerationReviewCard({ item }: { item: PendingResearchItem }) {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Submitter info */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <User className="size-3" />
@@ -333,7 +255,6 @@ function ModerationReviewCard({ item }: { item: PendingResearchItem }) {
           )}
         </div>
 
-        {/* Notes to admin */}
         {item.notesToAdmin && (
           <div className="rounded-lg border border-border/40 bg-muted/30 px-3 py-2">
             <p className="mb-0.5 text-xs font-medium text-muted-foreground">
@@ -343,7 +264,6 @@ function ModerationReviewCard({ item }: { item: PendingResearchItem }) {
           </div>
         )}
 
-        {/* Actions */}
         <div className="flex items-center gap-2 pt-1">
           <Link
             href={`/admin/review/${item.id}`}
@@ -363,7 +283,7 @@ function ModerationReviewCard({ item }: { item: PendingResearchItem }) {
             ) : (
               <CheckCircle2 className="size-3.5" />
             )}
-            {isPublishing ? "Publishing…" : "Publish"}
+            {isPublishing ? "Publishing..." : "Publish"}
           </Button>
           {!showRequestChanges ? (
             <Button
@@ -387,7 +307,6 @@ function ModerationReviewCard({ item }: { item: PendingResearchItem }) {
           )}
         </div>
 
-        {/* Request changes form */}
         {showRequestChanges && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
@@ -403,7 +322,7 @@ function ModerationReviewCard({ item }: { item: PendingResearchItem }) {
                 <Textarea
                   id={`comment-${item.id}`}
                   name="comment"
-                  placeholder="Describe what needs to be changed…"
+                  placeholder="Describe what needs to be changed..."
                   maxLength={1000}
                   rows={2}
                   disabled={isBusy}
@@ -421,7 +340,7 @@ function ModerationReviewCard({ item }: { item: PendingResearchItem }) {
                 ) : (
                   <MessageSquareWarning className="size-3.5" />
                 )}
-                {isRequesting ? "Sending…" : "Confirm request"}
+                {isRequesting ? "Sending..." : "Confirm request"}
               </Button>
             </form>
           </motion.div>

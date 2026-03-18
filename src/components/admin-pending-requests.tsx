@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
+  ArrowRight,
   CheckCircle2,
   Clock,
   Building2,
@@ -38,6 +40,8 @@ interface PendingRequest {
 
 interface AdminPendingRequestsProps {
   requests: PendingRequest[];
+  limit?: number;
+  showAllHref?: string;
 }
 
 const TOAST_MESSAGES: Record<string, { text: string; type: "success" | "error" | "info" }> = {
@@ -57,7 +61,11 @@ function formatDate(date: Date) {
   });
 }
 
-export function AdminPendingRequests({ requests }: AdminPendingRequestsProps) {
+export function AdminPendingRequests({
+  requests,
+  limit,
+  showAllHref = "/admin/editor-requests",
+}: AdminPendingRequestsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reviewParam = searchParams.get("review");
@@ -71,6 +79,9 @@ export function AdminPendingRequests({ requests }: AdminPendingRequestsProps) {
     else toast.info(msg.text);
     router.replace("/admin", { scroll: false });
   }, [reviewParam, router]);
+
+  const displayRequests = limit ? requests.slice(0, limit) : requests;
+  const hasMore = limit ? requests.length > limit : false;
 
   return (
     <div className="space-y-4">
@@ -86,7 +97,7 @@ export function AdminPendingRequests({ requests }: AdminPendingRequestsProps) {
         )}
       </div>
 
-      {requests.length === 0 ? (
+      {displayRequests.length === 0 ? (
         <Card className="border-border/60">
           <CardContent className="py-8 text-center">
             <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-muted">
@@ -100,7 +111,7 @@ export function AdminPendingRequests({ requests }: AdminPendingRequestsProps) {
         </Card>
       ) : (
         <div className="space-y-3">
-          {requests.map((request, idx) => (
+          {displayRequests.map((request, idx) => (
             <motion.div
               key={request.id}
               initial={{ opacity: 0, y: 8 }}
@@ -110,6 +121,18 @@ export function AdminPendingRequests({ requests }: AdminPendingRequestsProps) {
               <RequestReviewCard request={request} />
             </motion.div>
           ))}
+        </div>
+      )}
+
+      {hasMore && (
+        <div className="pt-1">
+          <Link
+            href={showAllHref}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+          >
+            Show all {requests.length} requests
+            <ArrowRight className="size-3.5" />
+          </Link>
         </div>
       )}
     </div>
@@ -243,7 +266,7 @@ function RequestReviewCard({ request }: { request: PendingRequest }) {
                 ) : (
                   <XCircle className="size-3.5" />
                 )}
-                {isRejecting ? "Rejecting…" : "Confirm rejection"}
+                {isRejecting ? "Rejecting..." : "Confirm rejection"}
               </Button>
             </form>
           </motion.div>

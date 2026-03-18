@@ -29,7 +29,7 @@ export function ResearchThumbnail({
     >
       {/* Page 4 — furthest back */}
       <motion.div
-        className="absolute inset-0 rounded-xl border border-border/20 bg-muted/30 shadow-sm"
+        className="absolute inset-0 rounded-xl border border-border/20 bg-white/20 shadow-sm"
         variants={{
           rest: { x: 0, y: 0, rotate: 0, opacity: 0 },
           hover: { x: 28, y: 6, rotate: 5, opacity: 1 },
@@ -38,7 +38,7 @@ export function ResearchThumbnail({
       />
       {/* Page 3 */}
       <motion.div
-        className="absolute inset-0 rounded-xl border border-border/30 bg-muted/40 shadow-sm"
+        className="absolute inset-0 rounded-xl border border-border/30 bg-white/50 shadow-sm"
         variants={{
           rest: { x: 0, y: 0, rotate: 0, opacity: 0 },
           hover: { x: 20, y: 4, rotate: 3.5, opacity: 1 },
@@ -47,7 +47,7 @@ export function ResearchThumbnail({
       />
       {/* Page 2 */}
       <motion.div
-        className="absolute inset-0 rounded-xl border border-border/40 bg-muted/50 shadow-sm"
+        className="absolute inset-0 rounded-xl border border-border/40 bg-white/70 shadow-sm"
         variants={{
           rest: { x: 0, y: 0, rotate: 0, opacity: 0 },
           hover: { x: 12, y: 2, rotate: 2, opacity: 1 },
@@ -56,7 +56,7 @@ export function ResearchThumbnail({
       />
       {/* Page 1 — just behind the main card */}
       <motion.div
-        className="absolute inset-0 rounded-xl border border-border/50 bg-muted/60 shadow-sm"
+        className="absolute inset-0 rounded-xl border border-border/50 bg-white/90 shadow-sm"
         variants={{
           rest: { x: 0, y: 0, rotate: 0, opacity: 0 },
           hover: { x: 6, y: 1, rotate: 0.8, opacity: 1 },
