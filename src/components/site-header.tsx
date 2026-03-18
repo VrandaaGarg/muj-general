@@ -75,12 +75,12 @@ export function SiteHeader({ role }: SiteHeaderProps) {
                 variant="ghost"
                 size="sm"
                 onClick={() => setMenuOpen((prev) => !prev)}
-                className="gap-1.5"
+                className="gap-2 px-2 py-1.5 text-sm hover:bg-muted data-[state=open]:bg-muted"
               >
-                <div className="flex size-5 items-center justify-center rounded-full bg-primary/10">
-                  <User className="size-3 text-primary" />
+                <div className="flex size-6 items-center justify-center rounded-full bg-primary/10">
+                  <User className="size-4 text-primary" />
                 </div>
-                <span className="max-w-[120px] truncate text-sm">
+                <span className="max-w-[140px] truncate text-md font-medium text-foreground">
                   {session.user.name}
                 </span>
                 <ChevronDown
