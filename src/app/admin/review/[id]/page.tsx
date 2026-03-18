@@ -54,7 +54,7 @@ export default async function AdminReviewPage({
 }: AdminReviewPageProps) {
   await requireRole(["admin"], {
     returnTo: "/admin",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const { id } = await params;

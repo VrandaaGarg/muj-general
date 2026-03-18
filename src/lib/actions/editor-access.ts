@@ -18,24 +18,24 @@ import {
 } from "@/lib/validation/editor-access";
 
 export async function submitEditorAccessRequest(formData: FormData) {
-  const session = await requireAppSession("/dashboard");
+  const session = await requireAppSession("/settings");
 
   if (!session.user.emailVerified) {
-    redirect("/dashboard?request=email-not-verified");
+    redirect("/settings?request=email-not-verified");
   }
 
   if (session.appUser.role !== "reader") {
-    redirect("/dashboard?request=already-elevated");
+    redirect("/settings?request=already-elevated");
   }
 
   const latestRequest = await getLatestEditorAccessRequestForUser(session.appUser.id);
 
   if (latestRequest?.status === "approved") {
-    redirect("/dashboard?request=already-approved");
+    redirect("/settings?request=already-approved");
   }
 
   if (await hasPendingEditorAccessRequest(session.appUser.id)) {
-    redirect("/dashboard?request=already-pending");
+    redirect("/settings?request=already-pending");
   }
 
   const parsed = createEditorAccessRequestSchema.safeParse({
@@ -43,7 +43,7 @@ export async function submitEditorAccessRequest(formData: FormData) {
   });
 
   if (!parsed.success) {
-    redirect("/dashboard?request=invalid");
+    redirect("/settings?request=invalid");
   }
 
   await createEditorAccessRequest({
@@ -51,15 +51,15 @@ export async function submitEditorAccessRequest(formData: FormData) {
     message: parsed.data.message,
   });
 
-  revalidatePath("/dashboard");
+  revalidatePath("/settings");
   revalidatePath("/admin");
-  redirect("/dashboard?request=submitted");
+  redirect("/settings?request=submitted");
 }
 
 export async function reviewEditorAccessRequestAction(formData: FormData) {
   const session = await requireRole(["admin"], {
     returnTo: "/admin",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const rejectionReasonEntry = formData.get("rejectionReason");
@@ -105,7 +105,7 @@ export async function reviewEditorAccessRequestAction(formData: FormData) {
     }
   }
 
-  revalidatePath("/dashboard");
+  revalidatePath("/settings");
   revalidatePath("/admin");
   revalidatePath("/editor");
   redirect(`/admin?review=${decision}`);

@@ -7,15 +7,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight,
   ChevronDown,
-  LayoutDashboard,
   LogOut,
   PenTool,
+  Settings,
   Shield,
   User,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 import { useSession, signOut } from "@/lib/auth-client";
+import type { AppRole } from "@/lib/auth/permissions";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,7 @@ export function SiteHeader({ role }: SiteHeaderProps) {
   const { data: session, isPending } = useSession();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [resolvedRole, setResolvedRole] = useState<AppRole | undefined>(role);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,6 +43,57 @@ export function SiteHeader({ role }: SiteHeaderProps) {
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpen]);
+
+  useEffect(() => {
+    setResolvedRole(role);
+  }, [role]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadRole() {
+      if (!session?.user) {
+        if (!isCancelled) {
+          setResolvedRole(undefined);
+        }
+        return;
+      }
+
+      if (role) {
+        if (!isCancelled) {
+          setResolvedRole(role);
+        }
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/auth/app-role", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as { role: AppRole | null };
+
+        if (!isCancelled) {
+          setResolvedRole(data.role ?? undefined);
+        }
+      } catch {
+        if (!isCancelled) {
+          setResolvedRole(undefined);
+        }
+      }
+    }
+
+    void loadRole();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [session?.user, role]);
 
   async function handleSignOut() {
     setMenuOpen(false);
@@ -109,34 +162,34 @@ export function SiteHeader({ role }: SiteHeaderProps) {
                       </p>
                     </div>
 
-                    <Link
-                      href="/dashboard"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
-                    >
-                      <LayoutDashboard className="size-4 text-muted-foreground" />
-                      Dashboard
-                    </Link>
-                    {(role === "editor" || role === "admin") && (
-                      <Link
-                        href="/editor"
-                        onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
-                      >
-                        <PenTool className="size-4 text-muted-foreground" />
-                        Editor
-                      </Link>
-                    )}
-                    {role === "admin" && (
+                    {resolvedRole === "admin" && (
                       <Link
                         href="/admin"
                         onClick={() => setMenuOpen(false)}
                         className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
                       >
                         <Shield className="size-4 text-muted-foreground" />
-                        Admin
+                        Admin Panel
                       </Link>
                     )}
+                    {(resolvedRole === "editor" || resolvedRole === "admin") && (
+                      <Link
+                        href="/editor"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
+                      >
+                        <PenTool className="size-4 text-muted-foreground" />
+                        Editor Panel
+                      </Link>
+                    )}
+                    <Link
+                      href="/settings"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
+                    >
+                      <Settings className="size-4 text-muted-foreground" />
+                      Settings
+                    </Link>
 
                     <div className="my-1 border-t border-border/40" />
 

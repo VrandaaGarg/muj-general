@@ -10,7 +10,7 @@ import { AdminDepartmentsList } from "@/components/admin-departments-list";
 export default async function AdminDepartmentsPage() {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/departments",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
   const { appUser } = session;
 

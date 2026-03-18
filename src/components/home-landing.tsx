@@ -55,7 +55,7 @@ interface HomeLandingProps {
 const quickLinks = [
   { label: "Search Journals", href: "/journals" },
   { label: "Research Papers", href: "/research" },
-  { label: "Publish with us", href: "/dashboard" },
+  { label: "Publish with us", href: "/editor" },
 ] as const;
 
 export function HomeLanding({ journals, recentResearch, departments }: HomeLandingProps) {

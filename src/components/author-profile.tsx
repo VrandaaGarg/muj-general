@@ -3,11 +3,10 @@
 import Link from "next/link";
 import { motion, type Variants } from "framer-motion";
 import {
-  ArrowLeft,
   Building2,
+  ChevronRight,
   ExternalLink,
   Mail,
-  User,
 } from "lucide-react";
 
 import { ResearchCard } from "@/components/research-card";
@@ -52,18 +51,7 @@ interface AuthorProfileProps {
   };
 }
 
-function getInitials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0].toUpperCase())
-    .join("");
-}
-
 export function AuthorProfile({ author }: AuthorProfileProps) {
-  const initials = getInitials(author.name);
-
   return (
     <section className="relative">
       {/* Warm overlay gradient */}
@@ -71,15 +59,25 @@ export function AuthorProfile({ author }: AuthorProfileProps) {
 
       <div className="relative mx-auto max-w-4xl px-6 pt-4 pb-12 md:px-12">
         {/* Breadcrumb */}
-        <motion.div custom={0} variants={fadeUp} initial="hidden" animate="visible">
+        <motion.nav
+          custom={0}
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+          aria-label="Breadcrumb"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground"
+        >
           <Link
-            href="/research"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+            href="/"
+            className="font-medium text-primary underline-offset-2 transition-colors hover:underline hover:text-primary/80"
           >
-            <ArrowLeft className="size-3" />
-            Back to repository
+            Home
           </Link>
-        </motion.div>
+          <ChevronRight className="size-3.5 text-muted-foreground/50" />
+          <span className="font-medium text-foreground">
+            {author.name}
+          </span>
+        </motion.nav>
 
         {/* Author header */}
         <motion.div
@@ -87,32 +85,23 @@ export function AuthorProfile({ author }: AuthorProfileProps) {
           variants={fadeUp}
           initial="hidden"
           animate="visible"
-          className="mt-8 flex items-start gap-5"
+          className="mt-8"
         >
-          {/* Avatar */}
-          <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl border border-amber-600/20 bg-amber-600/[0.06] sm:size-20">
-            <span className="font-sans text-xl font-semibold text-amber-700 sm:text-2xl">
-              {initials}
-            </span>
-          </div>
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-amber-600">
+            Author
+          </p>
+          <h1 className="font-sans text-2xl leading-tight tracking-tight text-foreground sm:text-3xl md:text-4xl">
+            {author.name}
+          </h1>
 
-          <div className="min-w-0 pt-1">
-            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-amber-600">
-              Author
-            </p>
-            <h1 className="font-sans text-2xl leading-tight tracking-tight text-foreground sm:text-3xl md:text-4xl">
-              {author.name}
-            </h1>
-
-            {author.affiliation && (
-              <div className="mt-2 flex items-center gap-1.5">
-                <Building2 className="size-3.5 shrink-0 text-muted-foreground/60" />
-                <p className="text-sm text-muted-foreground">
-                  {author.affiliation}
-                </p>
-              </div>
-            )}
-          </div>
+          {author.affiliation && (
+            <div className="mt-2 flex items-center gap-1.5">
+              <Building2 className="size-3.5 shrink-0 text-muted-foreground/60" />
+              <p className="text-sm text-muted-foreground">
+                {author.affiliation}
+              </p>
+            </div>
+          )}
         </motion.div>
 
         {/* Contact links */}
@@ -171,8 +160,7 @@ export function AuthorProfile({ author }: AuthorProfileProps) {
           className="mt-8"
         >
           <div className="mb-5 flex items-center gap-2">
-            <User className="size-3.5 text-muted-foreground/60" />
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-primary">
               Published work
             </h2>
             <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">

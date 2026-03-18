@@ -42,7 +42,7 @@ import { eq, sql } from "drizzle-orm";
 export async function updateUserAdminAction(formData: FormData) {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/users",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const parsed = updateUserAdminSchema.safeParse({
@@ -93,14 +93,14 @@ export async function updateUserAdminAction(formData: FormData) {
 
   revalidatePath("/admin");
   revalidatePath("/admin/users");
-  revalidatePath("/dashboard");
+  revalidatePath("/settings");
   redirect("/admin/users?update=success");
 }
 
 export async function createDepartmentAction(formData: FormData) {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/departments",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const parsed = createDepartmentSchema.safeParse({
@@ -139,7 +139,7 @@ export async function createDepartmentAction(formData: FormData) {
 export async function updateDepartmentAction(formData: FormData) {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/departments",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const parsed = updateDepartmentSchema.safeParse({
@@ -184,7 +184,7 @@ export async function updateDepartmentAction(formData: FormData) {
 export async function archiveDepartmentAction(formData: FormData) {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/departments",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const parsed = archiveDepartmentSchema.safeParse({
@@ -225,7 +225,7 @@ export async function archiveDepartmentAction(formData: FormData) {
 export async function deleteDepartmentAction(formData: FormData) {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/departments",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const parsed = deleteDepartmentSchema.safeParse({
@@ -269,7 +269,7 @@ export async function deleteDepartmentAction(formData: FormData) {
 export async function createTagAction(formData: FormData) {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/tags",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const parsed = createTagSchema.safeParse({
@@ -306,7 +306,7 @@ export async function createTagAction(formData: FormData) {
 export async function updateTagAction(formData: FormData) {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/tags",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const parsed = updateTagSchema.safeParse({
@@ -349,7 +349,7 @@ export async function updateTagAction(formData: FormData) {
 export async function archiveTagAction(formData: FormData) {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/tags",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const parsed = archiveTagSchema.safeParse({
@@ -386,7 +386,7 @@ export async function archiveTagAction(formData: FormData) {
 export async function deleteTagAction(formData: FormData) {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/tags",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const parsed = deleteTagSchema.safeParse({
@@ -427,7 +427,7 @@ export async function deleteTagAction(formData: FormData) {
 export async function createJournalAction(formData: FormData) {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/journals",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const parsed = createJournalSchema.safeParse({
@@ -492,7 +492,7 @@ export async function createJournalAction(formData: FormData) {
 export async function updateJournalAction(formData: FormData) {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/journals",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const parsed = updateJournalSchema.safeParse({
@@ -561,7 +561,7 @@ export async function updateJournalAction(formData: FormData) {
 export async function createJournalVolumeAction(formData: FormData) {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/journals",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const parsed = createJournalVolumeSchema.safeParse({
@@ -600,7 +600,7 @@ export async function createJournalVolumeAction(formData: FormData) {
 export async function createJournalIssueAction(formData: FormData) {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/journals",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const parsed = createJournalIssueSchema.safeParse({
@@ -652,7 +652,7 @@ export async function createJournalIssueAction(formData: FormData) {
 export async function createJournalEditorialBoardAction(formData: FormData) {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/journals",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const parsed = createJournalEditorialBoardSchema.safeParse({
@@ -702,7 +702,7 @@ export async function createJournalEditorialBoardAction(formData: FormData) {
 export async function updateJournalEditorialBoardAction(formData: FormData) {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/journals",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const parsed = updateJournalEditorialBoardSchema.safeParse({
@@ -753,7 +753,7 @@ export async function updateJournalEditorialBoardAction(formData: FormData) {
 export async function deleteJournalEditorialBoardAction(formData: FormData) {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/journals",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const parsed = deleteJournalEditorialBoardSchema.safeParse({

@@ -10,7 +10,7 @@ import { AdminJournalsList } from "@/components/admin-journals-list";
 export default async function AdminJournalsPage() {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/journals",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const journals = await listJournalAdminOverview();

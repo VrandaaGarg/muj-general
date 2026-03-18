@@ -279,7 +279,7 @@ async function resolveUploadedResearchFile(params: {
 export async function submitResearchSubmission(formData: FormData) {
   const session = await requireRole(["editor", "admin"], {
     returnTo: "/editor",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const parsed = parseSubmissionPayload(formData);
@@ -574,7 +574,7 @@ export async function submitResearchSubmission(formData: FormData) {
 
   revalidatePath("/editor");
   revalidatePath("/admin");
-  revalidatePath("/dashboard");
+  revalidatePath("/settings");
   redirect(
     workflowIntent === "submit"
       ? "/editor?submission=submitted"
@@ -585,7 +585,7 @@ export async function submitResearchSubmission(formData: FormData) {
 export async function reviewResearchSubmissionAction(formData: FormData) {
   const session = await requireRole(["admin"], {
     returnTo: "/admin",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const parsed = reviewResearchSubmissionSchema.safeParse({
@@ -637,7 +637,7 @@ export async function reviewResearchSubmissionAction(formData: FormData) {
 
   revalidatePath("/editor");
   revalidatePath("/admin");
-  revalidatePath("/dashboard");
+  revalidatePath("/settings");
   revalidatePath(`/research/${reviewedItem.slug}`);
   redirect(
     `/admin?moderation=${
@@ -653,7 +653,7 @@ export async function reviewResearchSubmissionAction(formData: FormData) {
 export async function submitResearchRevision(formData: FormData) {
   const session = await requireRole(["editor", "admin"], {
     returnTo: "/editor",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const slug = formData.get("slug");
@@ -1019,7 +1019,7 @@ export async function submitResearchRevision(formData: FormData) {
 export async function manageEditorResearchItemAction(formData: FormData) {
   const session = await requireRole(["editor", "admin"], {
     returnTo: "/editor",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
 
   const parsed = editorItemActionSchema.safeParse({
@@ -1087,7 +1087,7 @@ export async function manageEditorResearchItemAction(formData: FormData) {
 
     revalidatePath("/editor");
     revalidatePath("/admin");
-    revalidatePath("/dashboard");
+    revalidatePath("/settings");
     redirect("/editor?item=draft-deleted");
   }
 
@@ -1123,7 +1123,7 @@ export async function manageEditorResearchItemAction(formData: FormData) {
 
   revalidatePath("/editor");
   revalidatePath("/admin");
-  revalidatePath("/dashboard");
+  revalidatePath("/settings");
   revalidatePath(`/research/${item.slug}`);
   redirect("/editor?item=withdrawn");
 }

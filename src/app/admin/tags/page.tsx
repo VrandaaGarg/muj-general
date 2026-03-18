@@ -10,7 +10,7 @@ import { AdminTagsList } from "@/components/admin-tags-list";
 export default async function AdminTagsPage() {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/tags",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
   const { appUser } = session;
 

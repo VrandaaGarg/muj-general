@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
-const protectedPrefixes = ["/dashboard", "/editor", "/admin"];
+const protectedPrefixes = ["/settings", "/editor", "/admin"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -28,5 +28,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/editor/:path*", "/admin/:path*"],
+  matcher: ["/settings/:path*", "/editor/:path*", "/admin/:path*"],
 };

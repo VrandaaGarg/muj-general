@@ -481,7 +481,7 @@ export function ResearchDetailHero({
                 researchers and share your work with the academic world.
               </p>
               <Link
-                href="/dashboard"
+                href="/editor"
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
               >
                 Get started

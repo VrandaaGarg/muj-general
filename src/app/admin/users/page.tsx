@@ -10,7 +10,7 @@ import { AdminUsersList } from "@/components/admin-users-list";
 export default async function AdminUsersPage() {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/users",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
   const { appUser } = session;
 

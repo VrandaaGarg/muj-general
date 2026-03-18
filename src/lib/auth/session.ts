@@ -58,7 +58,7 @@ export async function requireRole(
   const session = await requireAppSession(options?.returnTo);
 
   if (!allowedRoles.includes(session.appUser.role)) {
-    redirect(options?.unauthorizedRedirectTo ?? "/dashboard");
+    redirect(options?.unauthorizedRedirectTo ?? "/settings");
   }
 
   return session;

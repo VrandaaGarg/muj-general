@@ -30,11 +30,11 @@ const VERIFICATION_ERRORS: Record<string, string> = {
 
 function getSafeInternalRedirect(redirectTo: string | null) {
   if (!redirectTo || !redirectTo.startsWith("/")) {
-    return "/dashboard";
+    return "/settings";
   }
 
   if (redirectTo.startsWith("//") || redirectTo.includes("\\")) {
-    return "/dashboard";
+    return "/settings";
   }
 
   return redirectTo;

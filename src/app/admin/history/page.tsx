@@ -10,7 +10,7 @@ import { AdminModerationHistory } from "@/components/admin-moderation-history";
 export default async function AdminHistoryPage() {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/history",
-    unauthorizedRedirectTo: "/dashboard",
+    unauthorizedRedirectTo: "/settings",
   });
   const { appUser } = session;
 
