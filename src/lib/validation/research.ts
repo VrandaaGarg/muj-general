@@ -56,6 +56,12 @@ export const researchItemTypeSchema = z.enum([
   "presentation",
 ]);
 
+export const journalEligibleResearchItemTypeSchema = z.enum([
+  "research_paper",
+  "journal_article",
+  "conference_paper",
+]);
+
 export const researchItemStatusSchema = z.enum([
   "draft",
   "submitted",
@@ -107,9 +113,40 @@ export const createResearchSubmissionSchema = createResearchItemSchema.extend({
   notesToAdmin: optionalTrimmedString(1000),
   supervisorName: optionalTrimmedString(160),
   programName: optionalTrimmedString(160),
+  journalId: z.preprocess(normalizeOptionalString, z.string().uuid().optional()),
+  journalIssueId: z.preprocess(normalizeOptionalString, z.string().uuid().optional()),
+  pageRange: optionalTrimmedString(30),
+  articleNumber: optionalTrimmedString(30),
   authors: z.array(authorSchema).min(1).max(20),
   tagIds: z.array(tagIdSchema).max(25),
   references: z.array(referenceSchema).max(100).default([]),
+}).superRefine((value, ctx) => {
+  if (value.journalIssueId && !value.journalId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["journalIssueId"],
+      message: "Select a journal before choosing an issue.",
+    });
+  }
+
+  if (value.journalId) {
+    const allowed = journalEligibleResearchItemTypeSchema.safeParse(value.itemType);
+    if (!allowed.success) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["journalId"],
+        message: "Only journal-eligible item types can be assigned to journals.",
+      });
+    }
+  }
+
+  if (!value.journalId && (value.pageRange || value.articleNumber)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["journalId"],
+      message: "Page range and article number require a journal assignment.",
+    });
+  }
 });
 
 export const reviewResearchSubmissionSchema = z.object({

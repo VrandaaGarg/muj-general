@@ -4,6 +4,8 @@ import { BookCheck, ClipboardList, PenTool } from "lucide-react";
 import { requireRole } from "@/lib/auth/session";
 import {
   listDepartments,
+  listJournalIssueOptions,
+  listJournalOptions,
   listResearchItemsForEditor,
   listTags,
 } from "@/lib/db/queries";
@@ -24,10 +26,12 @@ export default async function EditorPage() {
   });
   const { appUser } = session;
 
-  const [departments, tags, submittedItems] = await Promise.all([
+  const [departments, tags, submittedItems, journals, journalIssues] = await Promise.all([
     listDepartments(),
     listTags(),
     listResearchItemsForEditor(appUser.id),
+    listJournalOptions(),
+    listJournalIssueOptions(),
   ]);
 
   const pendingCount = submittedItems.filter(
@@ -120,7 +124,12 @@ export default async function EditorPage() {
               <div className="h-64 animate-pulse rounded-xl border border-border/60 bg-muted/20" />
             }
           >
-            <EditorSubmissionForm departments={departments} tags={tags} />
+            <EditorSubmissionForm
+              departments={departments}
+              tags={tags}
+              journals={journals}
+              journalIssues={journalIssues}
+            />
           </Suspense>
         </div>
 

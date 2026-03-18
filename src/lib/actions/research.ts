@@ -12,6 +12,8 @@ import {
   authors,
   files,
   itemVersions,
+  journalIssues,
+  journals,
   researchItemAuthors,
   researchItemReferences,
   researchItemTags,
@@ -82,6 +84,57 @@ async function findVerifiedUserIdByEmail(
   return match?.id ?? null;
 }
 
+async function validateJournalSelection(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  params: {
+    itemType: CreateResearchSubmissionInput["itemType"];
+    journalId?: string;
+    journalIssueId?: string;
+  },
+) {
+  if (!params.journalId && !params.journalIssueId) {
+    return { journalId: null, journalIssueId: null };
+  }
+
+  if (!params.journalId && params.journalIssueId) {
+    throw new Error("Select a journal before choosing an issue.");
+  }
+
+  if (
+    params.itemType !== "research_paper" &&
+    params.itemType !== "journal_article" &&
+    params.itemType !== "conference_paper"
+  ) {
+    throw new Error("This item type cannot be assigned to a journal.");
+  }
+
+  const [journal] = await tx
+    .select({ id: journals.id, status: journals.status })
+    .from(journals)
+    .where(eq(journals.id, params.journalId!))
+    .limit(1);
+
+  if (!journal || journal.status !== "active") {
+    throw new Error("Selected journal is invalid or archived.");
+  }
+
+  if (!params.journalIssueId) {
+    return { journalId: journal.id, journalIssueId: null };
+  }
+
+  const [issue] = await tx
+    .select({ id: journalIssues.id, journalId: journalIssues.journalId })
+    .from(journalIssues)
+    .where(eq(journalIssues.id, params.journalIssueId))
+    .limit(1);
+
+  if (!issue || issue.journalId !== journal.id) {
+    throw new Error("Selected issue does not belong to the chosen journal.");
+  }
+
+  return { journalId: journal.id, journalIssueId: issue.id };
+}
+
 function parseSubmissionPayload(formData: FormData) {
   const authorsValue = formData.get("authors");
   let parsedAuthors: unknown = [];
@@ -120,6 +173,10 @@ function parseSubmissionPayload(formData: FormData) {
     license: formData.get("license"),
     externalUrl: formData.get("externalUrl"),
     doi: formData.get("doi"),
+    journalId: formData.get("journalId"),
+    journalIssueId: formData.get("journalIssueId"),
+    pageRange: formData.get("pageRange"),
+    articleNumber: formData.get("articleNumber"),
     notesToAdmin: formData.get("notesToAdmin"),
     supervisorName: formData.get("supervisorName"),
     programName: formData.get("programName"),
@@ -294,6 +351,11 @@ export async function submitResearchSubmission(formData: FormData) {
 
     await db.transaction(async (tx) => {
       const uniqueTagIds = Array.from(new Set(parsed.data.tagIds));
+      const journalSelection = await validateJournalSelection(tx, {
+        itemType: parsed.data.itemType,
+        journalId: parsed.data.journalId,
+        journalIssueId: parsed.data.journalIssueId,
+      });
 
       if (uniqueTagIds.length > 0) {
         const existingTagRows = await tx
@@ -340,6 +402,11 @@ export async function submitResearchSubmission(formData: FormData) {
         license: parsed.data.license || null,
         externalUrl: parsed.data.externalUrl || null,
         doi: parsed.data.doi || null,
+        journalId: journalSelection.journalId,
+        journalIssueId: journalSelection.journalIssueId,
+        pageRange: journalSelection.journalId ? parsed.data.pageRange || null : null,
+        articleNumber:
+          journalSelection.journalId ? parsed.data.articleNumber || null : null,
       });
 
       await tx.insert(itemVersions).values({
@@ -688,6 +755,11 @@ export async function submitResearchRevision(formData: FormData) {
 
     await db.transaction(async (tx) => {
       const uniqueTagIds = Array.from(new Set(parsed.data.tagIds));
+      const journalSelection = await validateJournalSelection(tx, {
+        itemType: parsed.data.itemType,
+        journalId: parsed.data.journalId,
+        journalIssueId: parsed.data.journalIssueId,
+      });
 
       if (uniqueTagIds.length > 0) {
         const existingTagRows = await tx
@@ -748,6 +820,11 @@ export async function submitResearchRevision(formData: FormData) {
           license: parsed.data.license || null,
           externalUrl: parsed.data.externalUrl || null,
           doi: parsed.data.doi || null,
+          journalId: journalSelection.journalId,
+          journalIssueId: journalSelection.journalIssueId,
+          pageRange: journalSelection.journalId ? parsed.data.pageRange || null : null,
+          articleNumber:
+            journalSelection.journalId ? parsed.data.articleNumber || null : null,
           updatedAt: new Date(),
         })
         .where(eq(researchItems.id, existingItem.id));

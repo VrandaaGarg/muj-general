@@ -15,6 +15,8 @@ import { requireRole } from "@/lib/auth/session";
 import {
   getOwnedResearchItemForRevision,
   listDepartments,
+  listJournalIssueOptions,
+  listJournalOptions,
   listTags,
 } from "@/lib/db/queries";
 import { getTypeLabel } from "@/lib/research-types";
@@ -98,9 +100,11 @@ export default async function RevisePage({ params }: RevisePageProps) {
     notFound();
   }
 
-  const [departments, tags] = await Promise.all([
+  const [departments, tags, journals, journalIssues] = await Promise.all([
     listDepartments({ includeIds: [item.departmentId] }),
     listTags({ includeIds: item.tagIds }),
+    listJournalOptions({ includeIds: item.journalId ? [item.journalId] : [] }),
+    listJournalIssueOptions(),
   ]);
 
   const statusConfig = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.draft;
@@ -354,9 +358,13 @@ export default async function RevisePage({ params }: RevisePageProps) {
                 itemType: item.itemType,
                 publicationYear: item.publicationYear,
                 departmentId: item.departmentId,
+                journalId: item.journalId,
+                journalIssueId: item.journalIssueId,
                 license: item.license,
                 externalUrl: item.externalUrl,
                 doi: item.doi,
+                pageRange: item.pageRange,
+                articleNumber: item.articleNumber,
                 publicationDate: toDateInputValue(item.publicationDate),
                 changeSummary: item.changeSummary,
                 notesToAdmin: item.notesToAdmin,
@@ -373,6 +381,8 @@ export default async function RevisePage({ params }: RevisePageProps) {
               }}
               departments={departments}
               tags={tags}
+              journals={journals}
+              journalIssues={journalIssues}
             />
           </Suspense>
         ) : (

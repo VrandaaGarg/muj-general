@@ -51,6 +51,24 @@ interface TagOption {
   archivedAt: Date | null;
 }
 
+interface JournalOption {
+  id: string;
+  name: string;
+  slug: string;
+  status: "active" | "archived";
+}
+
+interface JournalIssueOption {
+  id: string;
+  journalId: string;
+  volumeId: string;
+  issueNumber: number;
+  issueTitle: string | null;
+  publishedAt: Date | null;
+  volumeNumber: number;
+  volumeYear: number;
+}
+
 interface AuthorSuggestion {
   id: string;
   displayName: string;
@@ -81,9 +99,13 @@ interface RevisionItem {
   itemType: string;
   publicationYear: number;
   departmentId: string;
+  journalId: string | null;
+  journalIssueId: string | null;
   license: string | null;
   externalUrl: string | null;
   doi: string | null;
+  pageRange: string | null;
+  articleNumber: string | null;
   publicationDate: string;
   changeSummary: string | null;
   notesToAdmin: string | null;
@@ -112,7 +134,15 @@ interface EditorRevisionFormProps {
   item: RevisionItem;
   departments: Department[];
   tags: TagOption[];
+  journals: JournalOption[];
+  journalIssues: JournalIssueOption[];
 }
+
+const JOURNAL_ELIGIBLE_TYPES = new Set([
+  "research_paper",
+  "journal_article",
+  "conference_paper",
+]);
 
 function normalizeSearch(value: string) {
   return value.trim().toLowerCase();
@@ -185,6 +215,8 @@ export function EditorRevisionForm({
   item,
   departments,
   tags,
+  journals,
+  journalIssues,
 }: EditorRevisionFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -211,6 +243,8 @@ export function EditorRevisionForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadPhase, setUploadPhase] = useState<"idle" | "uploading" | "saving">("idle");
   const [activeIntent, setActiveIntent] = useState<"submit" | "save_draft">("submit");
+  const [selectedItemType, setSelectedItemType] = useState(item.itemType);
+  const [selectedJournalId, setSelectedJournalId] = useState(item.journalId ?? "");
   const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
   const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
   const [authors, setAuthors] = useState<AuthorDraft[]>(
@@ -245,6 +279,10 @@ export function EditorRevisionForm({
   const isResubmitted = revisionParam === "submitted";
   const isDisabled = isSubmitting || isResubmitted;
   const isDraftItem = item.status === "draft";
+  const eligibleForJournal = JOURNAL_ELIGIBLE_TYPES.has(selectedItemType);
+  const filteredJournalIssues = journalIssues.filter(
+    (issue) => issue.journalId === selectedJournalId,
+  );
   const authorSearchTimeoutsRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const authorSearchRequestSeqRef = useRef<Record<number, number>>({});
 
@@ -576,7 +614,14 @@ export function EditorRevisionForm({
                   id="itemType"
                   name="itemType"
                   required
-                  defaultValue={item.itemType}
+                  value={selectedItemType}
+                  onChange={(event) => {
+                    const nextType = event.target.value;
+                    setSelectedItemType(nextType);
+                    if (!JOURNAL_ELIGIBLE_TYPES.has(nextType)) {
+                      setSelectedJournalId("");
+                    }
+                  }}
                   disabled={isDisabled}
                   className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
                 >
@@ -1110,6 +1155,64 @@ export function EditorRevisionForm({
                     />
                   </div>
                 </div>
+
+                {eligibleForJournal && (
+                  <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4">
+                    <div>
+                      <h3 className="text-sm font-semibold tracking-tight">Journal assignment</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Keep this item standalone, assign it online-first, or place it into a specific issue.
+                      </p>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="journalId" className="text-xs">Journal</Label>
+                        <select
+                          id="journalId"
+                          name="journalId"
+                          value={selectedJournalId}
+                          onChange={(event) => setSelectedJournalId(event.target.value)}
+                          disabled={isDisabled}
+                          className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+                        >
+                          <option value="">Standalone / no journal</option>
+                          {journals.map((journal) => (
+                            <option key={journal.id} value={journal.id}>{journal.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="journalIssueId" className="text-xs">Issue</Label>
+                        <select
+                          key={selectedJournalId}
+                          id="journalIssueId"
+                          name="journalIssueId"
+                          defaultValue={item.journalIssueId ?? ""}
+                          disabled={isDisabled || !selectedJournalId}
+                          className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+                        >
+                          <option value="">Online first / no issue yet</option>
+                          {filteredJournalIssues.map((issue) => (
+                            <option key={issue.id} value={issue.id}>
+                              Vol. {issue.volumeNumber} ({issue.volumeYear}) - Issue {issue.issueNumber}
+                              {issue.issueTitle ? ` - ${issue.issueTitle}` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="pageRange" className="text-xs">Page range</Label>
+                        <Input id="pageRange" name="pageRange" defaultValue={item.pageRange ?? ""} placeholder="e.g. 12-28" maxLength={30} disabled={isDisabled} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="articleNumber" className="text-xs">Article number</Label>
+                        <Input id="articleNumber" name="articleNumber" defaultValue={item.articleNumber ?? ""} placeholder="e2026-0004" maxLength={30} disabled={isDisabled} />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
 

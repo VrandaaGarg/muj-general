@@ -8,6 +8,10 @@ import {
   activityLogs,
   appUsers,
   departments,
+  journalEditorialBoard,
+  journalIssues,
+  journals,
+  journalVolumes,
   researchItems,
   researchItemTags,
   tags,
@@ -19,9 +23,16 @@ import {
   createDepartmentSchema,
   archiveDepartmentSchema,
   archiveTagSchema,
+  createJournalIssueSchema,
+  createJournalSchema,
+  createJournalEditorialBoardSchema,
+  createJournalVolumeSchema,
   createTagSchema,
+  deleteJournalEditorialBoardSchema,
   deleteDepartmentSchema,
   deleteTagSchema,
+  updateJournalEditorialBoardSchema,
+  updateJournalSchema,
   updateDepartmentSchema,
   updateTagSchema,
   updateUserAdminSchema,
@@ -411,4 +422,372 @@ export async function deleteTagAction(formData: FormData) {
   revalidatePath("/research");
   revalidatePath("/editor");
   redirect("/admin/tags?op=deleted");
+}
+
+export async function createJournalAction(formData: FormData) {
+  const session = await requireRole(["admin"], {
+    returnTo: "/admin/journals",
+    unauthorizedRedirectTo: "/dashboard",
+  });
+
+  const parsed = createJournalSchema.safeParse({
+    name: formData.get("name"),
+    slug: formData.get("slug"),
+    description: formData.get("description"),
+    issn: formData.get("issn"),
+    eissn: formData.get("eissn"),
+    aimAndScope: formData.get("aimAndScope"),
+    topics: formData.get("topics"),
+    contentTypes: formData.get("contentTypes"),
+    ethicsPolicy: formData.get("ethicsPolicy"),
+    disclosuresPolicy: formData.get("disclosuresPolicy"),
+    rightsPermissions: formData.get("rightsPermissions"),
+    contactInfo: formData.get("contactInfo"),
+    submissionChecklist: formData.get("submissionChecklist"),
+    submissionGuidelines: formData.get("submissionGuidelines"),
+    howToPublish: formData.get("howToPublish"),
+    feesAndFunding: formData.get("feesAndFunding"),
+  });
+
+  if (!parsed.success) {
+    redirect("/admin/journals?op=invalid");
+  }
+
+  const [journal] = await db
+    .insert(journals)
+    .values({
+      name: parsed.data.name,
+      slug: parsed.data.slug,
+      description: parsed.data.description || null,
+      issn: parsed.data.issn || null,
+      eissn: parsed.data.eissn || null,
+      aimAndScope: parsed.data.aimAndScope || null,
+      topics: parsed.data.topics || null,
+      contentTypes: parsed.data.contentTypes || null,
+      ethicsPolicy: parsed.data.ethicsPolicy,
+      disclosuresPolicy: parsed.data.disclosuresPolicy,
+      rightsPermissions: parsed.data.rightsPermissions,
+      contactInfo: parsed.data.contactInfo,
+      submissionChecklist: parsed.data.submissionChecklist,
+      submissionGuidelines: parsed.data.submissionGuidelines,
+      howToPublish: parsed.data.howToPublish,
+      feesAndFunding: parsed.data.feesAndFunding,
+    })
+    .returning({ id: journals.id, slug: journals.slug });
+
+  await db.insert(activityLogs).values({
+    actorUserId: session.appUser.id,
+    targetType: "journal",
+    targetId: journal.id,
+    action: "journal_created",
+    metadata: JSON.stringify({ journalId: journal.id, slug: journal.slug }),
+  });
+
+  revalidatePath("/admin/journals");
+  revalidatePath("/journals");
+  revalidatePath("/editor");
+  redirect("/admin/journals?op=created");
+}
+
+export async function updateJournalAction(formData: FormData) {
+  const session = await requireRole(["admin"], {
+    returnTo: "/admin/journals",
+    unauthorizedRedirectTo: "/dashboard",
+  });
+
+  const parsed = updateJournalSchema.safeParse({
+    journalId: formData.get("journalId"),
+    name: formData.get("name"),
+    slug: formData.get("slug"),
+    description: formData.get("description"),
+    issn: formData.get("issn"),
+    eissn: formData.get("eissn"),
+    aimAndScope: formData.get("aimAndScope"),
+    topics: formData.get("topics"),
+    contentTypes: formData.get("contentTypes"),
+    ethicsPolicy: formData.get("ethicsPolicy"),
+    disclosuresPolicy: formData.get("disclosuresPolicy"),
+    rightsPermissions: formData.get("rightsPermissions"),
+    contactInfo: formData.get("contactInfo"),
+    submissionChecklist: formData.get("submissionChecklist"),
+    submissionGuidelines: formData.get("submissionGuidelines"),
+    howToPublish: formData.get("howToPublish"),
+    feesAndFunding: formData.get("feesAndFunding"),
+    status: formData.get("status"),
+  });
+
+  if (!parsed.success) {
+    redirect("/admin/journals?op=invalid");
+  }
+
+  await db
+    .update(journals)
+    .set({
+      name: parsed.data.name,
+      slug: parsed.data.slug,
+      description: parsed.data.description || null,
+      issn: parsed.data.issn || null,
+      eissn: parsed.data.eissn || null,
+      aimAndScope: parsed.data.aimAndScope || null,
+      topics: parsed.data.topics || null,
+      contentTypes: parsed.data.contentTypes || null,
+      ethicsPolicy: parsed.data.ethicsPolicy,
+      disclosuresPolicy: parsed.data.disclosuresPolicy,
+      rightsPermissions: parsed.data.rightsPermissions,
+      contactInfo: parsed.data.contactInfo,
+      submissionChecklist: parsed.data.submissionChecklist,
+      submissionGuidelines: parsed.data.submissionGuidelines,
+      howToPublish: parsed.data.howToPublish,
+      feesAndFunding: parsed.data.feesAndFunding,
+      status: parsed.data.status,
+      updatedAt: new Date(),
+    })
+    .where(eq(journals.id, parsed.data.journalId));
+
+  await db.insert(activityLogs).values({
+    actorUserId: session.appUser.id,
+    targetType: "journal",
+    targetId: parsed.data.journalId,
+    action: "journal_updated",
+    metadata: JSON.stringify({ journalId: parsed.data.journalId, status: parsed.data.status }),
+  });
+
+  revalidatePath("/admin/journals");
+  revalidatePath("/journals");
+  revalidatePath("/editor");
+  redirect("/admin/journals?op=updated");
+}
+
+export async function createJournalVolumeAction(formData: FormData) {
+  const session = await requireRole(["admin"], {
+    returnTo: "/admin/journals",
+    unauthorizedRedirectTo: "/dashboard",
+  });
+
+  const parsed = createJournalVolumeSchema.safeParse({
+    journalId: formData.get("journalId"),
+    volumeNumber: formData.get("volumeNumber"),
+    title: formData.get("title"),
+    year: formData.get("year"),
+  });
+
+  if (!parsed.success) {
+    redirect("/admin/journals?op=invalid-volume");
+  }
+
+  const [volume] = await db
+    .insert(journalVolumes)
+    .values({
+      journalId: parsed.data.journalId,
+      volumeNumber: parsed.data.volumeNumber,
+      title: parsed.data.title || null,
+      year: parsed.data.year,
+    })
+    .returning({ id: journalVolumes.id });
+
+  await db.insert(activityLogs).values({
+    actorUserId: session.appUser.id,
+    targetType: "journal_volume",
+    targetId: volume.id,
+    action: "journal_volume_created",
+    metadata: JSON.stringify({ journalId: parsed.data.journalId, volumeId: volume.id }),
+  });
+
+  revalidatePath("/admin/journals");
+  redirect("/admin/journals?op=volume-created");
+}
+
+export async function createJournalIssueAction(formData: FormData) {
+  const session = await requireRole(["admin"], {
+    returnTo: "/admin/journals",
+    unauthorizedRedirectTo: "/dashboard",
+  });
+
+  const parsed = createJournalIssueSchema.safeParse({
+    journalId: formData.get("journalId"),
+    volumeId: formData.get("volumeId"),
+    issueNumber: formData.get("issueNumber"),
+    title: formData.get("title"),
+    publishedAt: formData.get("publishedAt"),
+  });
+
+  if (!parsed.success) {
+    redirect("/admin/journals?op=invalid-issue");
+  }
+
+  const [volume] = await db
+    .select({ id: journalVolumes.id, journalId: journalVolumes.journalId })
+    .from(journalVolumes)
+    .where(eq(journalVolumes.id, parsed.data.volumeId))
+    .limit(1);
+
+  if (!volume || volume.journalId !== parsed.data.journalId) {
+    redirect("/admin/journals?op=invalid-issue");
+  }
+
+  const [issue] = await db
+    .insert(journalIssues)
+    .values({
+      journalId: parsed.data.journalId,
+      volumeId: parsed.data.volumeId,
+      issueNumber: parsed.data.issueNumber,
+      title: parsed.data.title || null,
+      publishedAt: parsed.data.publishedAt ?? null,
+    })
+    .returning({ id: journalIssues.id });
+
+  await db.insert(activityLogs).values({
+    actorUserId: session.appUser.id,
+    targetType: "journal_issue",
+    targetId: issue.id,
+    action: "journal_issue_created",
+    metadata: JSON.stringify({ journalId: parsed.data.journalId, issueId: issue.id }),
+  });
+
+  revalidatePath("/admin/journals");
+  revalidatePath("/journals");
+  redirect("/admin/journals?op=issue-created");
+}
+
+export async function createJournalEditorialBoardAction(formData: FormData) {
+  const session = await requireRole(["admin"], {
+    returnTo: "/admin/journals",
+    unauthorizedRedirectTo: "/dashboard",
+  });
+
+  const parsed = createJournalEditorialBoardSchema.safeParse({
+    journalId: formData.get("journalId"),
+    role: formData.get("role"),
+    personName: formData.get("personName"),
+    affiliation: formData.get("affiliation"),
+    email: formData.get("email"),
+    orcid: formData.get("orcid"),
+    displayOrder: formData.get("displayOrder"),
+  });
+
+  if (!parsed.success) {
+    redirect("/admin/journals?op=invalid-board");
+  }
+
+  const [member] = await db
+    .insert(journalEditorialBoard)
+    .values({
+      journalId: parsed.data.journalId,
+      role: parsed.data.role,
+      personName: parsed.data.personName,
+      affiliation: parsed.data.affiliation || null,
+      email: parsed.data.email || null,
+      orcid: parsed.data.orcid || null,
+      displayOrder: parsed.data.displayOrder,
+    })
+    .returning({ id: journalEditorialBoard.id });
+
+  await db.insert(activityLogs).values({
+    actorUserId: session.appUser.id,
+    targetType: "journal_editorial_board",
+    targetId: member.id,
+    action: "journal_editorial_board_created",
+    metadata: JSON.stringify({
+      journalId: parsed.data.journalId,
+      boardMemberId: member.id,
+      role: parsed.data.role,
+    }),
+  });
+
+  revalidatePath("/admin/journals");
+  revalidatePath("/journals");
+  redirect("/admin/journals?op=board-created");
+}
+
+export async function updateJournalEditorialBoardAction(formData: FormData) {
+  const session = await requireRole(["admin"], {
+    returnTo: "/admin/journals",
+    unauthorizedRedirectTo: "/dashboard",
+  });
+
+  const parsed = updateJournalEditorialBoardSchema.safeParse({
+    boardMemberId: formData.get("boardMemberId"),
+    journalId: formData.get("journalId"),
+    role: formData.get("role"),
+    personName: formData.get("personName"),
+    affiliation: formData.get("affiliation"),
+    email: formData.get("email"),
+    orcid: formData.get("orcid"),
+    displayOrder: formData.get("displayOrder"),
+  });
+
+  if (!parsed.success) {
+    redirect("/admin/journals?op=invalid-board");
+  }
+
+  await db
+    .update(journalEditorialBoard)
+    .set({
+      role: parsed.data.role,
+      personName: parsed.data.personName,
+      affiliation: parsed.data.affiliation || null,
+      email: parsed.data.email || null,
+      orcid: parsed.data.orcid || null,
+      displayOrder: parsed.data.displayOrder,
+      updatedAt: new Date(),
+    })
+    .where(eq(journalEditorialBoard.id, parsed.data.boardMemberId));
+
+  await db.insert(activityLogs).values({
+    actorUserId: session.appUser.id,
+    targetType: "journal_editorial_board",
+    targetId: parsed.data.boardMemberId,
+    action: "journal_editorial_board_updated",
+    metadata: JSON.stringify({
+      journalId: parsed.data.journalId,
+      boardMemberId: parsed.data.boardMemberId,
+      role: parsed.data.role,
+    }),
+  });
+
+  revalidatePath("/admin/journals");
+  revalidatePath("/journals");
+  redirect("/admin/journals?op=board-updated");
+}
+
+export async function deleteJournalEditorialBoardAction(formData: FormData) {
+  const session = await requireRole(["admin"], {
+    returnTo: "/admin/journals",
+    unauthorizedRedirectTo: "/dashboard",
+  });
+
+  const parsed = deleteJournalEditorialBoardSchema.safeParse({
+    boardMemberId: formData.get("boardMemberId"),
+  });
+
+  if (!parsed.success) {
+    redirect("/admin/journals?op=invalid-board");
+  }
+
+  const [member] = await db
+    .select({ id: journalEditorialBoard.id, journalId: journalEditorialBoard.journalId })
+    .from(journalEditorialBoard)
+    .where(eq(journalEditorialBoard.id, parsed.data.boardMemberId))
+    .limit(1);
+
+  if (!member) {
+    redirect("/admin/journals?op=invalid-board");
+  }
+
+  await db.delete(journalEditorialBoard).where(eq(journalEditorialBoard.id, parsed.data.boardMemberId));
+
+  await db.insert(activityLogs).values({
+    actorUserId: session.appUser.id,
+    targetType: "journal_editorial_board",
+    targetId: parsed.data.boardMemberId,
+    action: "journal_editorial_board_deleted",
+    metadata: JSON.stringify({
+      journalId: member.journalId,
+      boardMemberId: parsed.data.boardMemberId,
+    }),
+  });
+
+  revalidatePath("/admin/journals");
+  revalidatePath("/journals");
+  redirect("/admin/journals?op=board-deleted");
 }

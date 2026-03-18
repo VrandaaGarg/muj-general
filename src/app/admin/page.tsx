@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Building2,
   Clock,
+  Library,
   Settings,
   Shield,
   Tag,
@@ -116,7 +117,7 @@ export default async function AdminPage() {
         )}
 
         {/* Admin section cards */}
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Link href="/admin/users" className="group">
             <Card className="border-border/60 transition-colors group-hover:border-rose-600/30 group-hover:bg-rose-600/[0.02]">
               <CardHeader className="pb-2">
@@ -167,6 +168,26 @@ export default async function AdminPage() {
                   Tags
                 </CardTitle>
                 <CardDescription>Categorize research items</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 opacity-0 transition-opacity group-hover:opacity-100">
+                  Manage
+                  <ArrowRight className="size-3" />
+                </span>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/admin/journals" className="group">
+            <Card className="border-border/60 transition-colors group-hover:border-rose-600/30 group-hover:bg-rose-600/[0.02]">
+              <CardHeader className="pb-2">
+                <div className="flex size-9 items-center justify-center rounded-lg bg-rose-600/10 transition-colors group-hover:bg-rose-600/15">
+                  <Library className="size-4 text-rose-600" />
+                </div>
+                <CardTitle className="text-sm font-semibold tracking-tight">
+                  Journals
+                </CardTitle>
+                <CardDescription>Manage journals, volumes, and issues</CardDescription>
               </CardHeader>
               <CardContent>
                 <span className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 opacity-0 transition-opacity group-hover:opacity-100">

@@ -11,6 +11,7 @@ import {
   Library,
   LogOut,
   PenTool,
+  ScrollText,
   Shield,
   User,
 } from "lucide-react";
@@ -95,6 +96,13 @@ export function SiteHeader({
           >
             <Library className="size-3.5" />
             Research
+          </Link>
+          <Link
+            href="/journals"
+            className="hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:flex"
+          >
+            <ScrollText className="size-3.5" />
+            Journals
           </Link>
           {isPending ? (
             <div className="h-7 w-20 animate-pulse rounded-lg bg-muted" />

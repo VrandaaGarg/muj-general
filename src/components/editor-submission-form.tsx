@@ -45,6 +45,24 @@ interface TagOption {
   archivedAt: Date | null;
 }
 
+interface JournalOption {
+  id: string;
+  name: string;
+  slug: string;
+  status: "active" | "archived";
+}
+
+interface JournalIssueOption {
+  id: string;
+  journalId: string;
+  volumeId: string;
+  issueNumber: number;
+  issueTitle: string | null;
+  publishedAt: Date | null;
+  volumeNumber: number;
+  volumeYear: number;
+}
+
 interface AuthorSuggestion {
   id: string;
   displayName: string;
@@ -68,7 +86,15 @@ interface ReferenceDraft {
 interface EditorSubmissionFormProps {
   departments: Department[];
   tags: TagOption[];
+  journals: JournalOption[];
+  journalIssues: JournalIssueOption[];
 }
+
+const JOURNAL_ELIGIBLE_TYPES = new Set([
+  "research_paper",
+  "journal_article",
+  "conference_paper",
+]);
 
 function normalizeSearch(value: string) {
   return value.trim().toLowerCase();
@@ -125,6 +151,8 @@ function formatFileSize(sizeBytes: number) {
 export function EditorSubmissionForm({
   departments,
   tags,
+  journals,
+  journalIssues,
 }: EditorSubmissionFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -151,6 +179,8 @@ export function EditorSubmissionForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadPhase, setUploadPhase] = useState<"idle" | "uploading" | "saving">("idle");
   const [activeIntent, setActiveIntent] = useState<"submit" | "save_draft">("submit");
+  const [selectedItemType, setSelectedItemType] = useState("");
+  const [selectedJournalId, setSelectedJournalId] = useState("");
   const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
   const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
   const [authors, setAuthors] = useState<AuthorDraft[]>([
@@ -166,6 +196,11 @@ export function EditorSubmissionForm({
     index: number;
     suggestion: AuthorSuggestion;
   } | null>(null);
+  const eligibleForJournal = JOURNAL_ELIGIBLE_TYPES.has(selectedItemType);
+  const filteredJournalIssues = journalIssues.filter(
+    (issue) => issue.journalId === selectedJournalId,
+  );
+
   const authorSearchTimeoutsRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const authorSearchRequestSeqRef = useRef<Record<number, number>>({});
 
@@ -498,6 +533,14 @@ export function EditorSubmissionForm({
                   id="itemType"
                   name="itemType"
                   required
+                  value={selectedItemType}
+                  onChange={(event) => {
+                    const nextType = event.target.value;
+                    setSelectedItemType(nextType);
+                    if (!JOURNAL_ELIGIBLE_TYPES.has(nextType)) {
+                      setSelectedJournalId("");
+                    }
+                  }}
                   disabled={isSubmitting}
                   className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
                 >
@@ -973,6 +1016,63 @@ export function EditorSubmissionForm({
                     />
                   </div>
                 </div>
+
+                {eligibleForJournal && (
+                  <div className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-4">
+                    <div>
+                      <h3 className="text-sm font-semibold tracking-tight">Journal assignment</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Optionally publish this item into a journal now or leave it as standalone repository content.
+                      </p>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="journalId" className="text-xs">Journal</Label>
+                        <select
+                          id="journalId"
+                          name="journalId"
+                          value={selectedJournalId}
+                          onChange={(event) => setSelectedJournalId(event.target.value)}
+                          disabled={isSubmitting}
+                          className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+                        >
+                          <option value="">Standalone / no journal</option>
+                          {journals.map((journal) => (
+                            <option key={journal.id} value={journal.id}>{journal.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="journalIssueId" className="text-xs">Issue</Label>
+                        <select
+                          key={selectedJournalId}
+                          id="journalIssueId"
+                          name="journalIssueId"
+                          disabled={isSubmitting || !selectedJournalId}
+                          className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+                        >
+                          <option value="">Online first / no issue yet</option>
+                          {filteredJournalIssues.map((issue) => (
+                            <option key={issue.id} value={issue.id}>
+                              Vol. {issue.volumeNumber} ({issue.volumeYear}) - Issue {issue.issueNumber}
+                              {issue.issueTitle ? ` - ${issue.issueTitle}` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="pageRange" className="text-xs">Page range</Label>
+                        <Input id="pageRange" name="pageRange" placeholder="e.g. 12-28" maxLength={30} disabled={isSubmitting} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="articleNumber" className="text-xs">Article number</Label>
+                        <Input id="articleNumber" name="articleNumber" placeholder="e2026-0004" maxLength={30} disabled={isSubmitting} />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
 

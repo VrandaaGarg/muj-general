@@ -1,8 +1,11 @@
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  check,
+  foreignKey,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   primaryKey,
@@ -57,6 +60,13 @@ export const editorAccessRequestStatusEnum = pgEnum(
   "editor_access_request_status",
   ["pending", "approved", "rejected"],
 );
+
+export const journalStatusEnum = pgEnum("journal_status", ["active", "archived"]);
+
+type JournalStructuredSection = {
+  heading: string;
+  content: string;
+};
 
 const timestamps = {
   createdAt: timestamp("created_at", {
@@ -256,6 +266,117 @@ export const tags = pgTable(
   ],
 );
 
+export const journals = pgTable(
+  "journals",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    slug: varchar("slug", { length: 280 }).notNull(),
+    description: text("description"),
+    coverImageKey: text("cover_image_key"),
+    issn: varchar("issn", { length: 20 }),
+    eissn: varchar("eissn", { length: 20 }),
+    aimAndScope: text("aim_and_scope"),
+    topics: text("topics"),
+    contentTypes: text("content_types"),
+    ethicsPolicy: jsonb("ethics_policy").$type<JournalStructuredSection[]>(),
+    disclosuresPolicy: jsonb("disclosures_policy").$type<JournalStructuredSection[]>(),
+    rightsPermissions: jsonb("rights_permissions").$type<JournalStructuredSection[]>(),
+    contactInfo: jsonb("contact_info").$type<JournalStructuredSection[]>(),
+    submissionChecklist: jsonb("submission_checklist").$type<JournalStructuredSection[]>(),
+    submissionGuidelines: jsonb("submission_guidelines").$type<JournalStructuredSection[]>(),
+    howToPublish: jsonb("how_to_publish").$type<JournalStructuredSection[]>(),
+    feesAndFunding: jsonb("fees_and_funding").$type<JournalStructuredSection[]>(),
+    status: journalStatusEnum("status").notNull().default("active"),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("journals_slug_unique").on(table.slug),
+    uniqueIndex("journals_name_unique").on(table.name),
+    index("journals_status_idx").on(table.status),
+  ],
+);
+
+export const journalEditorialBoard = pgTable(
+  "journal_editorial_board",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    journalId: uuid("journal_id")
+      .notNull()
+      .references(() => journals.id, { onDelete: "cascade" }),
+    role: varchar("role", { length: 100 }).notNull(),
+    personName: varchar("person_name", { length: 200 }).notNull(),
+    affiliation: text("affiliation"),
+    email: varchar("email", { length: 255 }),
+    orcid: varchar("orcid", { length: 40 }),
+    displayOrder: integer("display_order").notNull().default(0),
+    ...timestamps,
+  },
+  (table) => [
+    index("journal_editorial_board_journal_id_idx").on(table.journalId),
+    index("journal_editorial_board_display_order_idx").on(
+      table.journalId,
+      table.displayOrder,
+    ),
+  ],
+);
+
+export const journalVolumes = pgTable(
+  "journal_volumes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    journalId: uuid("journal_id")
+      .notNull()
+      .references(() => journals.id, { onDelete: "cascade" }),
+    volumeNumber: integer("volume_number").notNull(),
+    title: varchar("title", { length: 255 }),
+    year: integer("year").notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("journal_volumes_unique_per_journal").on(
+      table.journalId,
+      table.volumeNumber,
+    ),
+    uniqueIndex("journal_volumes_id_journal_unique").on(table.id, table.journalId),
+    index("journal_volumes_journal_id_idx").on(table.journalId),
+  ],
+);
+
+export const journalIssues = pgTable(
+  "journal_issues",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    journalId: uuid("journal_id")
+      .notNull()
+      .references(() => journals.id, { onDelete: "cascade" }),
+    volumeId: uuid("volume_id")
+      .notNull()
+      .references(() => journalVolumes.id, { onDelete: "cascade" }),
+    issueNumber: integer("issue_number").notNull(),
+    title: varchar("title", { length: 255 }),
+    publishedAt: timestamp("published_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("journal_issues_unique_per_volume").on(
+      table.volumeId,
+      table.issueNumber,
+    ),
+    uniqueIndex("journal_issues_id_journal_unique").on(table.id, table.journalId),
+    index("journal_issues_journal_id_idx").on(table.journalId),
+    index("journal_issues_volume_id_idx").on(table.volumeId),
+    foreignKey({
+      columns: [table.volumeId, table.journalId],
+      foreignColumns: [journalVolumes.id, journalVolumes.journalId],
+      name: "journal_issues_volume_journal_consistency_fk",
+    }),
+  ],
+);
+
 export const researchItems = pgTable(
   "research_items",
   {
@@ -276,6 +397,14 @@ export const researchItems = pgTable(
     license: varchar("license", { length: 160 }),
     externalUrl: text("external_url"),
     doi: varchar("doi", { length: 255 }),
+    journalId: uuid("journal_id").references(() => journals.id, {
+      onDelete: "set null",
+    }),
+    journalIssueId: uuid("journal_issue_id").references(() => journalIssues.id, {
+      onDelete: "set null",
+    }),
+    pageRange: varchar("page_range", { length: 30 }),
+    articleNumber: varchar("article_number", { length: 30 }),
     publishedAt: timestamp("published_at", {
       withTimezone: true,
       mode: "date",
@@ -294,7 +423,18 @@ export const researchItems = pgTable(
     index("research_items_type_idx").on(table.itemType),
     index("research_items_publication_year_idx").on(table.publicationYear),
     index("research_items_department_id_idx").on(table.departmentId),
+    index("research_items_journal_id_idx").on(table.journalId),
+    index("research_items_journal_issue_id_idx").on(table.journalIssueId),
     index("research_items_submitted_by_user_id_idx").on(table.submittedByUserId),
+    foreignKey({
+      columns: [table.journalIssueId, table.journalId],
+      foreignColumns: [journalIssues.id, journalIssues.journalId],
+      name: "research_items_issue_journal_consistency_fk",
+    }),
+    check(
+      "research_items_issue_requires_journal_check",
+      sql`${table.journalIssueId} IS NULL OR ${table.journalId} IS NOT NULL`,
+    ),
   ],
 );
 
@@ -538,10 +678,55 @@ export const authorsRelations = relations(authors, ({ one, many }) => ({
   researchItemAuthors: many(researchItemAuthors),
 }));
 
+export const journalsRelations = relations(journals, ({ many }) => ({
+  editorialBoard: many(journalEditorialBoard),
+  volumes: many(journalVolumes),
+  issues: many(journalIssues),
+  researchItems: many(researchItems),
+}));
+
+export const journalEditorialBoardRelations = relations(
+  journalEditorialBoard,
+  ({ one }) => ({
+    journal: one(journals, {
+      fields: [journalEditorialBoard.journalId],
+      references: [journals.id],
+    }),
+  }),
+);
+
+export const journalVolumesRelations = relations(journalVolumes, ({ one, many }) => ({
+  journal: one(journals, {
+    fields: [journalVolumes.journalId],
+    references: [journals.id],
+  }),
+  issues: many(journalIssues),
+}));
+
+export const journalIssuesRelations = relations(journalIssues, ({ one, many }) => ({
+  journal: one(journals, {
+    fields: [journalIssues.journalId],
+    references: [journals.id],
+  }),
+  volume: one(journalVolumes, {
+    fields: [journalIssues.volumeId],
+    references: [journalVolumes.id],
+  }),
+  researchItems: many(researchItems),
+}));
+
 export const researchItemsRelations = relations(researchItems, ({ one, many }) => ({
   department: one(departments, {
     fields: [researchItems.departmentId],
     references: [departments.id],
+  }),
+  journal: one(journals, {
+    fields: [researchItems.journalId],
+    references: [journals.id],
+  }),
+  journalIssue: one(journalIssues, {
+    fields: [researchItems.journalIssueId],
+    references: [journalIssues.id],
   }),
   submittedByUser: one(appUsers, {
     fields: [researchItems.submittedByUserId],

@@ -9,6 +9,10 @@ import {
   departments,
   editorAccessRequests,
   itemVersions,
+  journalEditorialBoard,
+  journalIssues,
+  journals,
+  journalVolumes,
   moderationDecisions,
   researchItemAuthors,
   researchItemReferences,
@@ -248,6 +252,269 @@ export async function listTags(options?: { includeIds?: string[] }) {
     .orderBy(asc(tags.name));
 }
 
+export async function listJournalOptions(options?: { includeIds?: string[] }) {
+  const includeIds = options?.includeIds ?? [];
+
+  return db
+    .select({
+      id: journals.id,
+      name: journals.name,
+      slug: journals.slug,
+      status: journals.status,
+    })
+    .from(journals)
+    .where(
+      includeIds.length > 0
+        ? or(eq(journals.status, "active"), inArray(journals.id, includeIds))
+        : eq(journals.status, "active"),
+    )
+    .orderBy(asc(journals.name));
+}
+
+export async function listJournalIssueOptions(journalId?: string) {
+  return db
+    .select({
+      id: journalIssues.id,
+      journalId: journalIssues.journalId,
+      volumeId: journalIssues.volumeId,
+      issueNumber: journalIssues.issueNumber,
+      issueTitle: journalIssues.title,
+      publishedAt: journalIssues.publishedAt,
+      volumeNumber: journalVolumes.volumeNumber,
+      volumeYear: journalVolumes.year,
+    })
+    .from(journalIssues)
+    .innerJoin(journalVolumes, eq(journalVolumes.id, journalIssues.volumeId))
+    .where(journalId ? eq(journalIssues.journalId, journalId) : undefined)
+    .orderBy(desc(journalVolumes.year), desc(journalVolumes.volumeNumber), desc(journalIssues.issueNumber));
+}
+
+export async function listJournalAdminOverview() {
+  const rows = await db
+    .select({
+      id: journals.id,
+      name: journals.name,
+      slug: journals.slug,
+      description: journals.description,
+      issn: journals.issn,
+      eissn: journals.eissn,
+      aimAndScope: journals.aimAndScope,
+      submissionGuidelines: journals.submissionGuidelines,
+      feesAndFunding: journals.feesAndFunding,
+      status: journals.status,
+      createdAt: journals.createdAt,
+      volumeCount: sql<number>`count(distinct ${journalVolumes.id})`,
+      issueCount: sql<number>`count(distinct ${journalIssues.id})`,
+      itemCount: sql<number>`count(distinct ${researchItems.id})`,
+    })
+    .from(journals)
+    .leftJoin(journalVolumes, eq(journalVolumes.journalId, journals.id))
+    .leftJoin(journalIssues, eq(journalIssues.journalId, journals.id))
+    .leftJoin(researchItems, eq(researchItems.journalId, journals.id))
+    .groupBy(journals.id)
+    .orderBy(asc(journals.name));
+
+  const [volumes, issues, editorialBoard] = await Promise.all([
+    db
+      .select({
+        id: journalVolumes.id,
+        journalId: journalVolumes.journalId,
+        volumeNumber: journalVolumes.volumeNumber,
+        title: journalVolumes.title,
+        year: journalVolumes.year,
+      })
+      .from(journalVolumes)
+      .orderBy(desc(journalVolumes.year), desc(journalVolumes.volumeNumber)),
+    db
+      .select({
+        id: journalIssues.id,
+        journalId: journalIssues.journalId,
+        volumeId: journalIssues.volumeId,
+        issueNumber: journalIssues.issueNumber,
+        title: journalIssues.title,
+        publishedAt: journalIssues.publishedAt,
+      })
+      .from(journalIssues)
+      .orderBy(desc(journalIssues.publishedAt), desc(journalIssues.issueNumber)),
+    db
+      .select({
+        id: journalEditorialBoard.id,
+        journalId: journalEditorialBoard.journalId,
+        role: journalEditorialBoard.role,
+        personName: journalEditorialBoard.personName,
+        affiliation: journalEditorialBoard.affiliation,
+        email: journalEditorialBoard.email,
+        orcid: journalEditorialBoard.orcid,
+        displayOrder: journalEditorialBoard.displayOrder,
+      })
+      .from(journalEditorialBoard)
+      .orderBy(
+        asc(journalEditorialBoard.journalId),
+        asc(journalEditorialBoard.displayOrder),
+        asc(journalEditorialBoard.personName),
+      ),
+  ]);
+
+  return rows.map((row) => ({
+    ...row,
+    volumes: volumes.filter((volume) => volume.journalId === row.id),
+    issues: issues.filter((issue) => issue.journalId === row.id),
+    editorialBoard: editorialBoard.filter((member) => member.journalId === row.id),
+  }));
+}
+
+export async function listPublicJournals() {
+  return db
+    .select({
+      id: journals.id,
+      name: journals.name,
+      slug: journals.slug,
+      description: journals.description,
+      issn: journals.issn,
+      eissn: journals.eissn,
+      createdAt: journals.createdAt,
+      itemCount: sql<number>`count(distinct ${researchItems.id})`,
+    })
+    .from(journals)
+    .leftJoin(
+      researchItems,
+      and(eq(researchItems.journalId, journals.id), eq(researchItems.status, "published")),
+    )
+    .where(eq(journals.status, "active"))
+    .groupBy(journals.id)
+    .orderBy(asc(journals.name));
+}
+
+export async function getPublicJournalBySlug(slug: string) {
+  const [journal] = await db
+    .select({
+      id: journals.id,
+      name: journals.name,
+      slug: journals.slug,
+      description: journals.description,
+      issn: journals.issn,
+      eissn: journals.eissn,
+      aimAndScope: journals.aimAndScope,
+      topics: journals.topics,
+      contentTypes: journals.contentTypes,
+      ethicsPolicy: journals.ethicsPolicy,
+      disclosuresPolicy: journals.disclosuresPolicy,
+      rightsPermissions: journals.rightsPermissions,
+      contactInfo: journals.contactInfo,
+      submissionChecklist: journals.submissionChecklist,
+      submissionGuidelines: journals.submissionGuidelines,
+      howToPublish: journals.howToPublish,
+      feesAndFunding: journals.feesAndFunding,
+    })
+    .from(journals)
+    .where(and(eq(journals.slug, slug), eq(journals.status, "active")))
+    .limit(1);
+
+  if (!journal) return null;
+
+  const [editorialBoard, onlineFirstRows] = await Promise.all([
+    db
+      .select({
+        id: journalEditorialBoard.id,
+        role: journalEditorialBoard.role,
+        personName: journalEditorialBoard.personName,
+        affiliation: journalEditorialBoard.affiliation,
+        email: journalEditorialBoard.email,
+        orcid: journalEditorialBoard.orcid,
+        displayOrder: journalEditorialBoard.displayOrder,
+      })
+      .from(journalEditorialBoard)
+      .where(eq(journalEditorialBoard.journalId, journal.id))
+      .orderBy(asc(journalEditorialBoard.displayOrder), asc(journalEditorialBoard.personName)),
+    db
+    .select({
+      id: researchItems.id,
+      slug: researchItems.slug,
+      title: researchItems.title,
+      abstract: researchItems.abstract,
+      itemType: researchItems.itemType,
+      publicationYear: researchItems.publicationYear,
+      publishedAt: researchItems.publishedAt,
+      departmentName: departments.name,
+      departmentSlug: departments.slug,
+    })
+    .from(researchItems)
+    .leftJoin(departments, eq(departments.id, researchItems.departmentId))
+    .where(
+      and(
+        eq(researchItems.journalId, journal.id),
+        eq(researchItems.status, "published"),
+        isNull(researchItems.journalIssueId),
+      ),
+    )
+    .orderBy(desc(researchItems.publishedAt), desc(researchItems.updatedAt)),
+  ]);
+
+  const issueRows = await db
+    .select({
+      id: journalIssues.id,
+      title: journalIssues.title,
+      issueNumber: journalIssues.issueNumber,
+      publishedAt: journalIssues.publishedAt,
+      volumeId: journalIssues.volumeId,
+      volumeNumber: journalVolumes.volumeNumber,
+      volumeTitle: journalVolumes.title,
+      volumeYear: journalVolumes.year,
+    })
+    .from(journalIssues)
+    .innerJoin(journalVolumes, eq(journalVolumes.id, journalIssues.volumeId))
+    .where(eq(journalIssues.journalId, journal.id))
+    .orderBy(desc(journalVolumes.year), desc(journalVolumes.volumeNumber), desc(journalIssues.issueNumber));
+
+  const issueItems = await db
+    .select({
+      id: researchItems.id,
+      slug: researchItems.slug,
+      title: researchItems.title,
+      abstract: researchItems.abstract,
+      itemType: researchItems.itemType,
+      publicationYear: researchItems.publicationYear,
+      publishedAt: researchItems.publishedAt,
+      departmentName: departments.name,
+      departmentSlug: departments.slug,
+      journalIssueId: researchItems.journalIssueId,
+    })
+    .from(researchItems)
+    .leftJoin(departments, eq(departments.id, researchItems.departmentId))
+    .where(
+      and(
+        eq(researchItems.journalId, journal.id),
+        eq(researchItems.status, "published"),
+        sql`${researchItems.journalIssueId} IS NOT NULL`,
+      ),
+    )
+    .orderBy(desc(researchItems.publishedAt), desc(researchItems.updatedAt));
+
+  const metaMap = await attachResearchMeta([...onlineFirstRows, ...issueItems]);
+
+  return {
+    ...journal,
+    editorialBoard,
+    onlineFirstItems: onlineFirstRows.map((row) => ({
+      ...row,
+      authors: metaMap.get(row.id)?.authors ?? [],
+      tags: metaMap.get(row.id)?.tags ?? [],
+      coverImageObjectKey: metaMap.get(row.id)?.coverImageObjectKey ?? null,
+    })),
+    issues: issueRows.map((issue) => ({
+      ...issue,
+      items: issueItems
+        .filter((item) => item.journalIssueId === issue.id)
+        .map((row) => ({
+          ...row,
+          authors: metaMap.get(row.id)?.authors ?? [],
+          tags: metaMap.get(row.id)?.tags ?? [],
+          coverImageObjectKey: metaMap.get(row.id)?.coverImageObjectKey ?? null,
+        })),
+    })),
+  };
+}
+
 export async function searchAuthorSuggestions(params: {
   query: string;
   limit?: number;
@@ -461,13 +728,17 @@ export async function listResearchItemsForEditor(userId: string) {
       status: researchItems.status,
       itemType: researchItems.itemType,
       publicationYear: researchItems.publicationYear,
+      journalId: researchItems.journalId,
+      journalIssueId: researchItems.journalIssueId,
       currentVersionId: researchItems.currentVersionId,
       createdAt: researchItems.createdAt,
       updatedAt: researchItems.updatedAt,
       departmentName: departments.name,
+      journalName: journals.name,
     })
     .from(researchItems)
     .leftJoin(departments, eq(departments.id, researchItems.departmentId))
+    .leftJoin(journals, eq(journals.id, researchItems.journalId))
     .where(eq(researchItems.submittedByUserId, userId))
     .orderBy(desc(researchItems.updatedAt));
 }
@@ -1170,10 +1441,14 @@ export async function getOwnedResearchItemForRevision(params: {
       publicationYear: researchItems.publicationYear,
       departmentId: researchItems.departmentId,
       departmentName: departments.name,
+      journalId: researchItems.journalId,
+      journalIssueId: researchItems.journalIssueId,
       status: researchItems.status,
       license: researchItems.license,
       externalUrl: researchItems.externalUrl,
       doi: researchItems.doi,
+      pageRange: researchItems.pageRange,
+      articleNumber: researchItems.articleNumber,
       currentVersionId: researchItems.currentVersionId,
       currentVersionNumber: itemVersions.versionNumber,
       changeSummary: itemVersions.changeSummary,

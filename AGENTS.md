@@ -30,3 +30,7 @@ For muj-general, use `proxy.ts` only for optimistic redirects on protected route
 <!-- Added: 2026-03-17 -->
 ## Editor Access Workflow
 For muj-general, verified readers request editor access through `editor_access_requests`. Keep at most one pending request per user, let admins approve or reject requests with review metadata, and promote approved users by updating `app_users.role` to `editor`.
+
+<!-- Added: 2026-03-18 -->
+## Journals
+Implement journals as a publication layer on top of `research_items`, not a separate article system. Use `journals`, `journal_volumes`, and `journal_issues`, and keep optional `research_items.journal_id` + `research_items.journal_issue_id` to support both online-first and issue-assigned publication.

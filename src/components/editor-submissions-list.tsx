@@ -40,6 +40,7 @@ interface SubmittedItem {
   createdAt: Date;
   updatedAt: Date;
   departmentName: string | null;
+  journalName: string | null;
 }
 
 interface EditorSubmissionsListProps {
@@ -229,6 +230,12 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
                             <>
                               <span className="text-border">&middot;</span>
                               <span>{item.departmentName}</span>
+                            </>
+                          )}
+                          {item.journalName && (
+                            <>
+                              <span className="text-border">&middot;</span>
+                              <span>{item.journalName}</span>
                             </>
                           )}
                         </CardDescription>
