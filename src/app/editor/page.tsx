@@ -53,7 +53,7 @@ export default async function EditorPage() {
         }}
       />
 
-      <SiteHeader accentColor="violet" role={appUser.role} />
+      <SiteHeader role={appUser.role} />
 
       <main className="relative z-10 mx-auto max-w-3xl px-6 pt-12 pb-24 md:px-12 md:pt-16">
         {/* Title section */}

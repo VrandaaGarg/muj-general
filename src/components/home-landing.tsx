@@ -1,182 +1,330 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { motion, type Variants } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import {
   ArrowRight,
   FileText,
-  GraduationCap,
-  LayoutDashboard,
   Search,
-  Users,
 } from "lucide-react";
+import { useState, type FormEvent } from "react";
 
-import { useSession } from "@/lib/auth-client";
-import { buttonVariants } from "@/components/ui/button-variants";
 import { SiteHeader } from "@/components/site-header";
 
-const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: (index: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: {
-      delay: index * 0.1,
-      duration: 0.5,
-      ease: [0.25, 0.46, 0.45, 0.94],
-    },
-  }),
-};
+interface Journal {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  issn: string | null;
+  eissn: string | null;
+  createdAt: Date;
+  itemCount: number;
+}
 
-const pillars = [
-  {
-    icon: FileText,
-    title: "Publish",
-    description:
-      "Share research papers, theses, and academic work with your department and beyond.",
-  },
-  {
-    icon: Search,
-    title: "Discover",
-    description:
-      "Search across departments, filter by tags, and find the work that matters to you.",
-  },
-  {
-    icon: Users,
-    title: "Collaborate",
-    description:
-      "Connect with researchers, cite existing work, and build on collective knowledge.",
-  },
+interface ResearchItem {
+  id: string;
+  slug: string;
+  title: string;
+  abstract: string | null;
+  itemType: string;
+  publicationYear: number | null;
+  publishedAt: Date | null;
+  departmentName: string | null;
+  departmentSlug: string | null;
+  authors: { name: string }[];
+  tags: { name: string }[];
+  coverImageUrl: string | null;
+}
+
+interface Department {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+}
+
+interface HomeLandingProps {
+  journals: Journal[];
+  recentResearch: ResearchItem[];
+  departments: Department[];
+}
+
+const quickLinks = [
+  { label: "Search Journals", href: "/journals" },
+  { label: "Research Papers", href: "/research" },
+  { label: "Publish with us", href: "/dashboard" },
 ] as const;
 
-export function HomeLanding() {
-  const { data: session } = useSession();
-  const isSignedIn = Boolean(session?.user);
+export function HomeLanding({ journals, recentResearch, departments }: HomeLandingProps) {
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  function handleSearch(e: FormEvent) {
+    e.preventDefault();
+    const trimmed = searchQuery.trim();
+    if (trimmed) {
+      router.push(`/research?query=${encodeURIComponent(trimmed)}`);
+    } else {
+      router.push("/research");
+    }
+  }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
-      <div
-        className="pointer-events-none fixed inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(0,0,0,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.4) 1px, transparent 1px)",
-          backgroundSize: "64px 64px",
-        }}
-      />
-
+    <div className="relative min-h-screen bg-background">
       <SiteHeader />
 
-      <main className="relative z-10 mx-auto max-w-5xl px-6 pt-20 pb-32 md:px-12 md:pt-32 lg:pt-40">
-        <div className="flex flex-col items-start">
-          <motion.div
-            custom={0}
-            variants={fadeUp}
-            initial="hidden"
-            animate="visible"
-            className="mb-6 flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1"
-          >
-            <GraduationCap className="size-3.5 text-primary" />
-            <span className="text-xs font-medium text-primary">
-              Manipal University Jaipur
-            </span>
-          </motion.div>
-
-          <motion.h1
-            custom={1}
-            variants={fadeUp}
-            initial="hidden"
-            animate="visible"
-            className="max-w-3xl font-sans text-4xl leading-[1.1] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl"
-          >
-            The research repository
-            <br />
-            <span className="text-muted-foreground">
-              your campus deserves.
-            </span>
-          </motion.h1>
-
-          <motion.p
-            custom={2}
-            variants={fadeUp}
-            initial="hidden"
-            animate="visible"
-            className="mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground md:text-xl"
-          >
-            A unified platform for MUJ&apos;s academic community to publish,
-            discover, and collaborate on research across every department.
-          </motion.p>
-
-          <motion.div
-            custom={3}
-            variants={fadeUp}
-            initial="hidden"
-            animate="visible"
-            className="mt-10 flex flex-wrap items-center gap-3"
-          >
+      {/* Secondary Nav Bar */}
+      <div className="border-b border-border/60">
+        <div className="mx-auto flex max-w-7xl items-center gap-6 overflow-x-auto px-6 md:px-12 lg:px-20">
+          {quickLinks.map((link) => (
             <Link
-              href="/research"
-              className={buttonVariants({ size: "lg" })}
+              key={link.label}
+              href={link.href}
+              className="relative shrink-0 py-3 text-md font-medium text-muted-foreground transition-colors hover:text-foreground after:absolute after:bottom-0 after:left-0 after:h-[3px] after:w-full after:origin-left after:scale-x-0 after:rounded-full after:bg-primary after:transition-transform hover:after:scale-x-100"
             >
-              <Search className="size-4" />
-              Browse research
-              <ArrowRight data-icon="inline-end" className="size-4" />
+              {link.label}
             </Link>
-            {isSignedIn ? (
-              <Link
-                href="/dashboard"
-                className={buttonVariants({ variant: "outline", size: "lg" })}
-              >
-                <LayoutDashboard className="size-4" />
-                Dashboard
-              </Link>
-            ) : (
-              <Link
-                href="/sign-up"
-                className={buttonVariants({ variant: "outline", size: "lg" })}
-              >
-                Create your account
-              </Link>
-            )}
-          </motion.div>
-        </div>
-
-        <div className="mt-28 grid gap-6 sm:grid-cols-3 md:mt-36">
-          {pillars.map((pillar, index) => (
-            <motion.div
-              key={pillar.title}
-              custom={index + 4}
-              variants={fadeUp}
-              initial="hidden"
-              animate="visible"
-               className="group rounded-xl border border-border/60 bg-card/50 p-6 transition-colors hover:border-primary/20 hover:bg-primary/[0.02]"
-            >
-              <div className="mb-3 flex size-10 items-center justify-center rounded-lg bg-muted transition-colors group-hover:bg-primary/10">
-                <pillar.icon className="size-4.5 text-muted-foreground transition-colors group-hover:text-primary" />
-              </div>
-              <h3 className="text-base font-semibold tracking-tight">
-                {pillar.title}
-              </h3>
-              <p className="mt-1.5 text-[15px] leading-relaxed text-muted-foreground">
-                {pillar.description}
-              </p>
-            </motion.div>
           ))}
         </div>
+      </div>
+
+      <main className="relative z-10">
+        {/* Hero Section with Search */}
+        <section className="border-b border-border/60 bg-background">
+          <div className="mx-auto max-w-7xl px-6 py-16 md:px-12 md:py-24 lg:px-20">
+            <div className="flex flex-col items-center text-center">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+              >
+                <Image
+                  src="/manipal-university-jaipur-logo-01.svg"
+                  alt="Manipal University Jaipur"
+                  width={280}
+                  height={56}
+                  className="mx-auto mb-8 h-14 w-auto md:h-16"
+                  priority
+                />
+              </motion.div>
+
+              <motion.h1
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+                className="mb-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl"
+              >
+                Research Repository
+              </motion.h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.15 }}
+                className="mb-8 max-w-xl text-lg text-muted-foreground"
+              >
+                Search for articles, journals, theses, and authors
+              </motion.p>
+
+              <motion.form
+                onSubmit={handleSearch}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+                className="flex w-full max-w-2xl items-center gap-2"
+              >
+                <div className="relative flex-1">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search by title, author, keyword..."
+                    className="h-12 w-full rounded-lg border border-border bg-card pl-12 pr-4 text-base text-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="flex h-12 shrink-0 items-center gap-2 rounded-lg bg-primary px-6 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  Search
+                </button>
+              </motion.form>
+            </div>
+          </div>
+        </section>
+
+        {/* Browse Journals */}
+        {journals.length > 0 && (
+          <section className="border-b border-border/60 bg-primary/10">
+            <div className="mx-auto max-w-7xl px-6 py-12 md:px-12 md:py-16 lg:px-20">
+              <div className="mb-8 flex items-center justify-between">
+                <h2 className="text-3xl font-bold tracking-tight text-foreground">
+                  Browse Journals
+                </h2>
+                <Link
+                  href="/journals"
+                  className="flex items-center gap-1 text-md font-medium text-primary transition-colors hover:text-primary/80"
+                >
+                  View all
+                  <ArrowRight className="size-4" />
+                </Link>
+              </div>
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {journals.slice(0, 6).map((journal) => (
+                  <Link
+                    key={journal.id}
+                    href={`/journals/${journal.slug}`}
+                    className="group flex flex-col rounded-xl border border-border/60 bg-card p-6 transition-colors hover:border-primary/25 hover:shadow-sm"
+                  >
+                    <span className="mb-3 text-xs font-semibold uppercase tracking-wider text-primary">
+                      Journal
+                    </span>
+                    <h3 className="mb-2 text-lg font-bold leading-snug tracking-tight text-foreground">
+                      {journal.name}
+                    </h3>
+                    {journal.description && (
+                      <p className="mb-4 line-clamp-3 flex-1 text-md leading-relaxed text-muted-foreground">
+                        {journal.description}
+                      </p>
+                    )}
+                    <div className="mt-auto border-t border-border/40 pt-4">
+                      <p className="text-xs text-muted-foreground">
+                        Published articles
+                      </p>
+                      <p className="text-base font-bold text-foreground">
+                        {journal.itemCount}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Recent Research */}
+        {recentResearch.length > 0 && (
+          <section className="border-b border-border/60">
+            <div className="mx-auto max-w-7xl px-6 py-12 md:px-12 md:py-16 lg:px-20">
+              <div className="mb-8 flex items-center justify-between">
+                <div>
+                  <h2 className="text-3xl font-bold tracking-tight text-foreground">
+                    Recent Research
+                  </h2>
+                  <p className="mt-1 text-md text-muted-foreground">
+                    Latest published papers and articles
+                  </p>
+                </div>
+                <Link
+                  href="/research"
+                  className="flex items-center gap-1 text-md font-medium text-primary transition-colors hover:text-primary/80"
+                >
+                  View all
+                  <ArrowRight className="size-4" />
+                </Link>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {recentResearch.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/research/${item.slug}`}
+                    className="group overflow-hidden rounded-lg border border-border/60 bg-card transition-colors hover:border-primary/25 hover:bg-primary/[0.02]"
+                  >
+                    {item.coverImageUrl ? (
+                      <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted">
+                        <Image
+                          src={item.coverImageUrl}
+                          alt={item.title}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex aspect-[16/9] w-full items-center justify-center bg-muted/50">
+                        <FileText className="size-8 text-muted-foreground/30" />
+                      </div>
+                    )}
+                    <div className="p-5">
+                      <div className="mb-2 flex items-center gap-2">
+                        <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                          {item.itemType.replace(/_/g, " ")}
+                        </span>
+                        {item.publicationYear && (
+                          <span className="text-xs text-muted-foreground">
+                            {item.publicationYear}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="mb-2 line-clamp-2 text-base font-semibold leading-snug tracking-tight text-foreground transition-colors group-hover:text-primary">
+                        {item.title}
+                      </h3>
+                      {item.authors.length > 0 && (
+                        <p className="mb-2 truncate text-md text-muted-foreground">
+                          {item.authors.map((a) => a.name).join(", ")}
+                        </p>
+                      )}
+                      {item.departmentName && (
+                        <p className="truncate text-xs text-muted-foreground/70">
+                          {item.departmentName}
+                        </p>
+                      )}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Browse by Department */}
+        {departments.length > 0 && (
+          <section className="bg-primary/10">
+            <div className="mx-auto max-w-7xl px-6 py-12 md:px-12 md:py-16 lg:px-20  ">
+              <h2 className="mb-1 text-3xl font-bold tracking-tight text-foreground">
+                Browse by Department
+              </h2>
+              <div className="mb-6 border-b border-border/60" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+                {departments.slice(0, 12).map((dept) => (
+                  <Link
+                    key={dept.id}
+                    href={`/departments/${dept.slug}`}
+                    className="border-b border-border/40 px-1 py-4 text-[15px] font-medium text-primary underline decoration-primary/30 underline-offset-4 transition-colors hover:text-primary/80 hover:decoration-primary/60"
+                  >
+                    {dept.name}
+                  </Link>
+                ))}
+              </div>
+              {departments.length > 12 && (
+                <div className="mt-6">
+                  <Link
+                    href="/research"
+                    className="flex items-center gap-1 text-md font-medium text-primary transition-colors hover:text-primary/80"
+                  >
+                    View all departments
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
       </main>
 
-      <motion.footer
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1, duration: 0.5 }}
-        className="relative z-10 border-t px-6 py-6 md:px-12 lg:px-20"
-      >
-        <div className="flex flex-col items-center justify-between gap-3 text-sm text-muted-foreground sm:flex-row">
+      {/* Footer */}
+      <footer className="border-t border-border/60 px-6 py-6 md:px-12 lg:px-20">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 text-md text-muted-foreground sm:flex-row">
           <span>MUJ General — Manipal University Jaipur</span>
-          <span className="font-mono text-xs tracking-wider uppercase opacity-60">
+          <span className="text-xs tracking-wider uppercase opacity-60">
             Research Repository
           </span>
         </div>
-      </motion.footer>
+      </footer>
     </div>
   );
 }

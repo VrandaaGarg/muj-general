@@ -26,7 +26,7 @@ export default async function AdminJournalsPage() {
         }}
       />
 
-      <SiteHeader accentColor="rose" role={session.appUser.role} />
+      <SiteHeader role={session.appUser.role} />
 
       <main className="relative z-10 mx-auto max-w-4xl px-6 pb-24 pt-12 md:px-12 md:pt-16">
         <Link
