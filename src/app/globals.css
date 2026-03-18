@@ -132,7 +132,6 @@
   button,
   [role="button"],
   a,
-  label[for],
   select,
   [type="checkbox"],
   [type="radio"] {

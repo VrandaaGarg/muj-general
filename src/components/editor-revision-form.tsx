@@ -4,7 +4,6 @@ import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
-  BookOpen,
   ChevronDown,
   ChevronUp,
   FileImage,
@@ -23,6 +22,7 @@ import {
   appendUploadMeta,
   presignedUpload,
 } from "@/lib/uploads/presigned-upload";
+import { AnimatedSelect } from "@/components/ui/animated-select";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -244,7 +244,9 @@ export function EditorRevisionForm({
   const [uploadPhase, setUploadPhase] = useState<"idle" | "uploading" | "saving">("idle");
   const [activeIntent, setActiveIntent] = useState<"submit" | "save_draft">("submit");
   const [selectedItemType, setSelectedItemType] = useState(item.itemType);
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState(item.departmentId);
   const [selectedJournalId, setSelectedJournalId] = useState(item.journalId ?? "");
+  const [selectedJournalIssueId, setSelectedJournalIssueId] = useState(item.journalIssueId ?? "");
   const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
   const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
   const [authors, setAuthors] = useState<AuthorDraft[]>(
@@ -257,7 +259,7 @@ export function EditorRevisionForm({
   >({});
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(item.tagIds);
   const [references, setReferences] = useState<ReferenceDraft[]>(
-    item.references.length > 0 ? item.references : [],
+    item.references.length > 0 ? item.references : [{ citationText: "", url: "" }],
   );
   const [showAdditional, setShowAdditional] = useState(
     Boolean(
@@ -575,7 +577,7 @@ export function EditorRevisionForm({
             ))}
 
             <div className="space-y-1.5">
-              <Label htmlFor="title" className="text-xs">
+              <Label htmlFor="title" className="text-sm">
                 Title <span className="font-normal text-destructive">*</span>
               </Label>
               <Input
@@ -590,7 +592,7 @@ export function EditorRevisionForm({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="abstract" className="text-xs">
+              <Label htmlFor="abstract" className="text-sm">
                 Abstract <span className="font-normal text-destructive">*</span>
               </Label>
               <Textarea
@@ -602,40 +604,37 @@ export function EditorRevisionForm({
                 maxLength={5000}
                 rows={5}
                 disabled={isDisabled}
+                className="max-h-48 overflow-y-auto"
               />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="itemType" className="text-xs">
+                <Label htmlFor="itemType" className="text-sm">
                   Item type <span className="font-normal text-destructive">*</span>
                 </Label>
-                <select
+                <AnimatedSelect
                   id="itemType"
                   name="itemType"
                   required
                   value={selectedItemType}
-                  onChange={(event) => {
-                    const nextType = event.target.value;
+                  onChange={(nextType) => {
                     setSelectedItemType(nextType);
                     if (!JOURNAL_ELIGIBLE_TYPES.has(nextType)) {
                       setSelectedJournalId("");
                     }
                   }}
                   disabled={isDisabled}
-                  className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
-                >
-                  <option value="">Select type…</option>
-                  {RESEARCH_TYPE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Select type..."
+                  options={RESEARCH_TYPE_OPTIONS.map((option) => ({
+                    value: option.value,
+                    label: option.label,
+                  }))}
+                />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="publicationYear" className="text-xs">
+                <Label htmlFor="publicationYear" className="text-sm">
                   Publication year <span className="font-normal text-destructive">*</span>
                 </Label>
                 <Input
@@ -653,29 +652,26 @@ export function EditorRevisionForm({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="departmentId" className="text-xs">
+                <Label htmlFor="departmentId" className="text-sm">
                   Department <span className="font-normal text-destructive">*</span>
                 </Label>
-                <select
+                <AnimatedSelect
                   id="departmentId"
                   name="departmentId"
                   required
-                  defaultValue={item.departmentId}
+                  value={selectedDepartmentId}
+                  onChange={setSelectedDepartmentId}
                   disabled={isDisabled}
-                  className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
-                >
-                  <option value="">Select department…</option>
-                  {departments.map((department) => (
-                    <option key={department.id} value={department.id}>
-                      {department.name}
-                      {department.archivedAt ? " (Archived)" : ""}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Select department..."
+                  options={departments.map((department) => ({
+                    value: department.id,
+                    label: `${department.name}${department.archivedAt ? " (Archived)" : ""}`,
+                  }))}
+                />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="publicationDate" className="text-xs">
+                <Label htmlFor="publicationDate" className="text-sm">
                   Publication date
                 </Label>
                 <Input
@@ -740,7 +736,7 @@ export function EditorRevisionForm({
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1.5 sm:col-span-2">
-                        <Label htmlFor={`author-name-${index}`} className="text-xs">
+                        <Label htmlFor={`author-name-${index}`} className="text-sm">
                           Display name <span className="font-normal text-destructive">*</span>
                         </Label>
                         <Input
@@ -783,7 +779,7 @@ export function EditorRevisionForm({
                       </div>
 
                       <div className="space-y-1.5">
-                        <Label htmlFor={`author-affiliation-${index}`} className="text-xs">
+                        <Label htmlFor={`author-affiliation-${index}`} className="text-sm">
                           Affiliation
                         </Label>
                         <Input
@@ -796,7 +792,7 @@ export function EditorRevisionForm({
                       </div>
 
                       <div className="space-y-1.5">
-                        <Label htmlFor={`author-email-${index}`} className="text-xs">
+                        <Label htmlFor={`author-email-${index}`} className="text-sm">
                           Email
                         </Label>
                         <Input
@@ -810,7 +806,7 @@ export function EditorRevisionForm({
                       </div>
 
                       <div className="space-y-1.5">
-                        <Label htmlFor={`author-orcid-${index}`} className="text-xs">
+                        <Label htmlFor={`author-orcid-${index}`} className="text-sm">
                           ORCID
                         </Label>
                         <Input
@@ -885,7 +881,7 @@ export function EditorRevisionForm({
             <div className="grid gap-4 lg:grid-cols-2">
               <div className="space-y-2 rounded-xl border border-border/60 p-4">
                 <div>
-                  <Label className="text-xs">
+                  <Label className="text-sm">
                     Replace main PDF <span className="font-normal text-muted-foreground">(optional)</span>
                   </Label>
                   <p className="mt-1 text-[11px] text-muted-foreground">
@@ -955,7 +951,7 @@ export function EditorRevisionForm({
 
               <div className="space-y-2 rounded-xl border border-border/60 p-4">
                 <div>
-                  <Label className="text-xs">
+                  <Label className="text-sm">
                     Poster / thumbnail image{" "}
                     {item.coverImageFile ? (
                       <span className="font-normal text-muted-foreground">(replace optional)</span>
@@ -1033,7 +1029,7 @@ export function EditorRevisionForm({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="externalUrl" className="text-xs">
+                <Label htmlFor="externalUrl" className="text-sm">
                   Reference / external URL
                 </Label>
                 <Input
@@ -1050,7 +1046,7 @@ export function EditorRevisionForm({
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="doi" className="text-xs">
+                <Label htmlFor="doi" className="text-sm">
                   DOI
                 </Label>
                 <Input
@@ -1065,7 +1061,7 @@ export function EditorRevisionForm({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="changeSummary" className="text-xs">
+              <Label htmlFor="changeSummary" className="text-sm">
                 Change summary / version note
               </Label>
               <Textarea
@@ -1076,153 +1072,14 @@ export function EditorRevisionForm({
                 maxLength={1000}
                 rows={3}
                 disabled={isDisabled}
+                className="max-h-36 overflow-y-auto"
               />
             </div>
-
-            <button
-              type="button"
-              onClick={() => setShowAdditional((current) => !current)}
-              className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {showAdditional ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
-              Additional metadata
-            </button>
-
-            {showAdditional && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                transition={{ duration: 0.2 }}
-                className="space-y-4 overflow-hidden"
-              >
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="license" className="text-xs">
-                      License
-                    </Label>
-                    <Input
-                      id="license"
-                      name="license"
-                      placeholder="e.g. CC BY 4.0"
-                      defaultValue={item.license ?? ""}
-                      maxLength={160}
-                      disabled={isDisabled}
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="supervisorName" className="text-xs">
-                      Supervisor name
-                    </Label>
-                    <Input
-                      id="supervisorName"
-                      name="supervisorName"
-                      placeholder="Dr. Jane Smith"
-                      defaultValue={item.supervisorName ?? ""}
-                      maxLength={160}
-                      disabled={isDisabled}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="programName" className="text-xs">
-                      Program name
-                    </Label>
-                    <Input
-                      id="programName"
-                      name="programName"
-                      placeholder="M.Tech Computer Science"
-                      defaultValue={item.programName ?? ""}
-                      maxLength={160}
-                      disabled={isDisabled}
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="notesToAdmin" className="text-xs">
-                      Notes to admin
-                    </Label>
-                    <Textarea
-                      id="notesToAdmin"
-                      name="notesToAdmin"
-                      placeholder="Any additional context for the reviewer."
-                      defaultValue={item.notesToAdmin ?? ""}
-                      maxLength={1000}
-                      rows={3}
-                      disabled={isDisabled}
-                    />
-                  </div>
-                </div>
-
-                {eligibleForJournal && (
-                  <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4">
-                    <div>
-                      <h3 className="text-sm font-semibold tracking-tight">Journal assignment</h3>
-                      <p className="text-xs text-muted-foreground">
-                        Keep this item standalone, assign it online-first, or place it into a specific issue.
-                      </p>
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="journalId" className="text-xs">Journal</Label>
-                        <select
-                          id="journalId"
-                          name="journalId"
-                          value={selectedJournalId}
-                          onChange={(event) => setSelectedJournalId(event.target.value)}
-                          disabled={isDisabled}
-                          className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
-                        >
-                          <option value="">Standalone / no journal</option>
-                          {journals.map((journal) => (
-                            <option key={journal.id} value={journal.id}>{journal.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="journalIssueId" className="text-xs">Issue</Label>
-                        <select
-                          key={selectedJournalId}
-                          id="journalIssueId"
-                          name="journalIssueId"
-                          defaultValue={item.journalIssueId ?? ""}
-                          disabled={isDisabled || !selectedJournalId}
-                          className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
-                        >
-                          <option value="">Online first / no issue yet</option>
-                          {filteredJournalIssues.map((issue) => (
-                            <option key={issue.id} value={issue.id}>
-                              Vol. {issue.volumeNumber} ({issue.volumeYear}) - Issue {issue.issueNumber}
-                              {issue.issueTitle ? ` - ${issue.issueTitle}` : ""}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="pageRange" className="text-xs">Page range</Label>
-                        <Input id="pageRange" name="pageRange" defaultValue={item.pageRange ?? ""} placeholder="e.g. 12-28" maxLength={30} disabled={isDisabled} />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="articleNumber" className="text-xs">Article number</Label>
-                        <Input id="articleNumber" name="articleNumber" defaultValue={item.articleNumber ?? ""} placeholder="e2026-0004" maxLength={30} disabled={isDisabled} />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            )}
 
             {/* References */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="size-3.5 text-muted-foreground" />
-                  <Label className="text-xs">References</Label>
-                </div>
+                <Label className="text-sm">References</Label>
                 <Button
                   type="button"
                   variant="outline"
@@ -1277,6 +1134,142 @@ export function EditorRevisionForm({
                 </div>
               ))}
             </div>
+
+            <button
+              type="button"
+              onClick={() => setShowAdditional((current) => !current)}
+              className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {showAdditional ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+              Additional metadata
+            </button>
+
+            {showAdditional && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                transition={{ duration: 0.2 }}
+                className="space-y-4 overflow-hidden"
+              >
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="license" className="text-sm">
+                      License
+                    </Label>
+                    <Input
+                      id="license"
+                      name="license"
+                      placeholder="e.g. CC BY 4.0"
+                      defaultValue={item.license ?? ""}
+                      maxLength={160}
+                      disabled={isDisabled}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="supervisorName" className="text-sm">
+                      Supervisor name
+                    </Label>
+                    <Input
+                      id="supervisorName"
+                      name="supervisorName"
+                      placeholder="Dr. Jane Smith"
+                      defaultValue={item.supervisorName ?? ""}
+                      maxLength={160}
+                      disabled={isDisabled}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="programName" className="text-sm">
+                      Program name
+                    </Label>
+                    <Input
+                      id="programName"
+                      name="programName"
+                      placeholder="M.Tech Computer Science"
+                      defaultValue={item.programName ?? ""}
+                      maxLength={160}
+                      disabled={isDisabled}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="notesToAdmin" className="text-sm">
+                      Notes to admin
+                    </Label>
+                    <Textarea
+                      id="notesToAdmin"
+                      name="notesToAdmin"
+                      placeholder="Any additional context for the reviewer."
+                      defaultValue={item.notesToAdmin ?? ""}
+                      maxLength={1000}
+                      rows={3}
+                      disabled={isDisabled}
+                      className="max-h-36 overflow-y-auto"
+                    />
+                  </div>
+                </div>
+
+                {eligibleForJournal && (
+                  <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4">
+                    <div>
+                      <h3 className="text-sm font-semibold tracking-tight">Journal assignment</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Keep this item standalone, assign it online-first, or place it into a specific issue.
+                      </p>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="journalId" className="text-sm">Journal</Label>
+                        <AnimatedSelect
+                          id="journalId"
+                          name="journalId"
+                          value={selectedJournalId}
+                          onChange={(val) => {
+                            setSelectedJournalId(val);
+                            setSelectedJournalIssueId("");
+                          }}
+                          disabled={isDisabled}
+                          placeholder="Standalone / no journal"
+                          options={journals.map((journal) => ({
+                            value: journal.id,
+                            label: journal.name,
+                          }))}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="journalIssueId" className="text-sm">Issue</Label>
+                        <AnimatedSelect
+                          id="journalIssueId"
+                          name="journalIssueId"
+                          value={selectedJournalIssueId}
+                          onChange={setSelectedJournalIssueId}
+                          disabled={isDisabled || !selectedJournalId}
+                          placeholder="Online first / no issue yet"
+                          options={filteredJournalIssues.map((issue) => ({
+                            value: issue.id,
+                            label: `Vol. ${issue.volumeNumber} (${issue.volumeYear}) - Issue ${issue.issueNumber}${issue.issueTitle ? ` - ${issue.issueTitle}` : ""}`,
+                          }))}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="pageRange" className="text-sm">Page range</Label>
+                        <Input id="pageRange" name="pageRange" defaultValue={item.pageRange ?? ""} placeholder="e.g. 12-28" maxLength={30} disabled={isDisabled} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="articleNumber" className="text-sm">Article number</Label>
+                        <Input id="articleNumber" name="articleNumber" defaultValue={item.articleNumber ?? ""} placeholder="e2026-0004" maxLength={30} disabled={isDisabled} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
 
             <div className={isDraftItem ? "grid gap-3 sm:grid-cols-2" : "grid gap-3"}>
               {isDraftItem && (

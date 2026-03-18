@@ -1,5 +1,6 @@
 import { Suspense } from "react";
-import { BookCheck, ClipboardList, PenTool } from "lucide-react";
+import Link from "next/link";
+import { BookCheck, ChevronRight, ClipboardList, PenTool } from "lucide-react";
 
 import { requireRole } from "@/lib/auth/session";
 import {
@@ -9,6 +10,7 @@ import {
   listResearchItemsForEditor,
   listTags,
 } from "@/lib/db/queries";
+import { getPublicFileUrl } from "@/lib/storage/r2";
 import {
   Card,
   CardHeader,
@@ -55,24 +57,31 @@ export default async function EditorPage() {
 
       <SiteHeader role={appUser.role} />
 
-      <main className="relative z-10 mx-auto max-w-3xl px-6 pt-12 pb-24 md:px-12 md:pt-16">
+      <main className="relative z-10 mx-auto max-w-6xl px-6 pt-8 pb-24 md:px-12 md:pt-12 lg:px-20">
+        {/* Breadcrumb */}
+        <nav className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Link href="/" className="font-medium text-primary underline-offset-2 transition-colors hover:underline hover:text-primary/80">
+            Home
+          </Link>
+          <ChevronRight className="size-3.5 text-muted-foreground/50" />
+          <span className="font-medium text-foreground">Editor</span>
+        </nav>
+
         {/* Title section */}
         <div className="mb-10">
-          <div className="mb-4 flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-violet-600/10">
-              <PenTool className="size-4 text-violet-600" />
+          {/* <div className="mb-4 flex items-center gap-2">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+              <PenTool className="size-4 text-primary" />
             </div>
-            <span className="rounded-full bg-violet-600/10 px-2.5 py-0.5 text-xs font-medium text-violet-600">
+            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
               Editor Panel
             </span>
-          </div>
+          </div> */}
           <h1 className="font-sans text-3xl tracking-tight md:text-4xl">
             Editor workspace
           </h1>
           <p className="mt-2 text-base text-muted-foreground">
-            Submit research, track review status, and manage your items. Signed
-            in as{" "}
-            <span className="font-medium text-foreground">{appUser.name}</span>.
+            Submit research, track review status, and manage your items.
           </p>
         </div>
 
@@ -139,7 +148,14 @@ export default async function EditorPage() {
             <div className="h-32 animate-pulse rounded-xl border border-border/60 bg-muted/20" />
           }
         >
-          <EditorSubmissionsList items={submittedItems} />
+          <EditorSubmissionsList
+            items={submittedItems.map((item) => ({
+              ...item,
+              coverImageUrl: item.coverImageObjectKey
+                ? getPublicFileUrl(item.coverImageObjectKey)
+                : null,
+            }))}
+          />
         </Suspense>
       </main>
     </div>

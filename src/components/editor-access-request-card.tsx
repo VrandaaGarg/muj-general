@@ -114,7 +114,7 @@ export function EditorAccessRequestCard({
             You now have editor privileges. Visit the{" "}
             <a
               href="/editor"
-              className="font-medium text-foreground underline underline-offset-4 transition-colors hover:text-violet-600"
+              className="font-medium text-foreground underline underline-offset-4 transition-colors hover:text-primary"
             >
               Editor Panel
             </a>{" "}
@@ -232,8 +232,8 @@ export function EditorAccessRequestCard({
     <Card className="border-border/60">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-violet-600/10">
-            <PenTool className="size-4 text-violet-600" />
+          <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
+            <PenTool className="size-4 text-primary" />
           </div>
           <div>
             <CardTitle className="text-sm font-semibold tracking-tight">

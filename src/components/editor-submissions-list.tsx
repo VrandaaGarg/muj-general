@@ -3,12 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import {
-  ArrowRight,
   BookCheck,
   Clock,
-  Eye,
   FileText,
   MessageSquareWarning,
   Pencil,
@@ -21,19 +20,14 @@ import { toast } from "sonner";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 import { manageEditorResearchItemAction } from "@/lib/actions/research";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 interface SubmittedItem {
   id: string;
   slug: string;
   title: string;
+  abstract: string;
   status: string;
   itemType: string;
   publicationYear: number;
@@ -41,6 +35,7 @@ interface SubmittedItem {
   updatedAt: Date;
   departmentName: string | null;
   journalName: string | null;
+  coverImageUrl: string | null;
 }
 
 interface EditorSubmissionsListProps {
@@ -103,6 +98,16 @@ function formatDate(date: Date) {
     day: "numeric",
     year: "numeric",
   });
+}
+
+function truncateAbstract(text: string, maxLength = 160) {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength).trimEnd() + "...";
+}
+
+function getCardHref(item: SubmittedItem) {
+  if (item.status === "published") return `/research/${item.slug}`;
+  return `/editor/${item.slug}/revise`;
 }
 
 export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
@@ -190,11 +195,10 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {items.map((item, idx) => {
             const status = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.draft;
             const needsRevision = item.status === "changes_requested";
-            const isPublished = item.status === "published";
             const isDraft = item.status === "draft";
             const canWithdraw =
               item.status === "submitted" || item.status === "changes_requested";
@@ -207,137 +211,155 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.04, duration: 0.25 }}
               >
-                <Card
-                  className={`border-border/60 transition-colors ${
-                    needsRevision
-                      ? "border-orange-600/20 bg-orange-600/[0.02]"
-                      : ""
-                  }`}
-                >
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <CardTitle className="truncate text-sm font-semibold tracking-tight">
-                          {item.title}
-                        </CardTitle>
-                        <CardDescription className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                          <span>
-                            {TYPE_LABELS[item.itemType] ?? item.itemType}
-                          </span>
-                          <span className="text-border">&middot;</span>
-                          <span>{item.publicationYear}</span>
-                          {item.departmentName && (
-                            <>
-                              <span className="text-border">&middot;</span>
-                              <span>{item.departmentName}</span>
-                            </>
-                          )}
-                          {item.journalName && (
-                            <>
-                              <span className="text-border">&middot;</span>
-                              <span>{item.journalName}</span>
-                            </>
-                          )}
-                        </CardDescription>
-                      </div>
-                      <span
-                        className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${status.className}`}
-                      >
-                        {status.icon}
-                        {status.label}
-                      </span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-[10px] text-muted-foreground">
-                        Submitted {formatDate(item.createdAt)}
-                        {item.updatedAt > item.createdAt &&
-                          ` · Updated ${formatDate(item.updatedAt)}`}
-                      </p>
+                <Link href={getCardHref(item)} className="block group">
+                  <Card
+                    className={`border-border/60 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.01] ${
+                      needsRevision
+                        ? "border-orange-600/20 bg-orange-600/[0.02]"
+                        : ""
+                    }`}
+                  >
+                    <CardContent className="p-0">
+                      <div className="flex gap-0">
+                        {/* Cover image */}
+                        {item.coverImageUrl ? (
+                          <div className="relative hidden ml-4 w-36 shrink-0 rounded-lg overflow-hidden sm:block md:w-44">
+                            <Image
+                              src={item.coverImageUrl}
+                              alt=""
+                              fill
+                              className="object-cover"
+                              sizes="176px"
+                            />
+                          </div>
+                        ) : (
+                          <div className="relative hidden w-36 shrink-0 items-center justify-center overflow-hidden rounded-l-xl bg-muted/40 sm:flex md:w-44">
+                            <FileText className="size-8 text-muted-foreground/30" />
+                          </div>
+                        )}
 
-                      {/* Action links */}
-                      <div className="flex shrink-0 items-center gap-2">
-                        {needsRevision && (
-                          <Link
-                            href={`/editor/${item.slug}/revise`}
-                            className="inline-flex items-center gap-1 rounded-md bg-orange-600 px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm transition-colors hover:bg-orange-700"
-                          >
-                            <RefreshCw className="size-3" />
-                            Revise
-                            <ArrowRight className="size-2.5" />
-                          </Link>
-                        )}
-                        {isDraft && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              if (
-                                !window.confirm(
-                                  "Delete this draft permanently? This cannot be undone.",
-                                )
-                              ) {
-                                return;
-                              }
-                              void runItemAction(item.id, "delete_draft");
-                            }}
-                            disabled={isBusy}
-                            className="h-6 rounded-md border-border/60 px-2 py-1 text-[10px] font-medium"
-                          >
-                            <Trash2 className="size-3" />
-                            Delete
-                          </Button>
-                        )}
-                        {canWithdraw && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              if (
-                                !window.confirm(
-                                  "Withdraw this submission from review? It will move to archived status.",
-                                )
-                              ) {
-                                return;
-                              }
-                              void runItemAction(
-                                item.id,
-                                "withdraw",
-                                "Withdrawn by editor from workspace",
-                              );
-                            }}
-                            disabled={isBusy}
-                            className="h-6 rounded-md border-border/60 px-2 py-1 text-[10px] font-medium"
-                          >
-                            <Undo2 className="size-3" />
-                            Withdraw
-                          </Button>
-                        )}
-                        {isPublished && (
-                          <Link
-                            href={`/research/${item.slug}`}
-                            className="inline-flex items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                          >
-                            <Eye className="size-3" />
-                            View
-                          </Link>
-                        )}
-                        {!needsRevision && !isPublished && (
-                          <Link
-                            href={`/editor/${item.slug}/revise`}
-                            className="inline-flex items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                          >
-                            <Eye className="size-3" />
-                            {isDraft ? "Edit draft" : "Details"}
-                          </Link>
-                        )}
+                        {/* Content */}
+                        <div className="flex min-w-0 flex-1 flex-col justify-between p-4 sm:p-5">
+                          <div>
+                            {/* Top row: type + status */}
+                            <div className="mb-2 flex flex-wrap items-center gap-2">
+                              <span className="text-xs font-medium text-primary">
+                                {TYPE_LABELS[item.itemType] ?? item.itemType}
+                              </span>
+                              <span className="text-border">·</span>
+                              <span className="text-xs text-muted-foreground">
+                                {item.publicationYear}
+                              </span>
+                              {item.departmentName && (
+                                <>
+                                  <span className="text-border">·</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {item.departmentName}
+                                  </span>
+                                </>
+                              )}
+                              <span
+                                className={`ml-auto flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${status.className}`}
+                              >
+                                {status.icon}
+                                {status.label}
+                              </span>
+                            </div>
+
+                            {/* Title */}
+                            <h3 className="text-base font-semibold leading-snug tracking-tight text-foreground group-hover:text-primary group-hover:underline transition-colors line-clamp-2">
+                              {item.title}
+                            </h3>
+
+                            {/* Abstract */}
+                            <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground line-clamp-2">
+                              {truncateAbstract(item.abstract)}
+                            </p>
+                          </div>
+
+                          {/* Bottom row: dates + actions */}
+                          <div className="mt-3 flex items-center justify-between gap-3">
+                            <p className="text-xs text-muted-foreground">
+                              {formatDate(item.createdAt)}
+                              {item.updatedAt > item.createdAt &&
+                                ` · Updated ${formatDate(item.updatedAt)}`}
+                            </p>
+
+                            <div
+                              className="flex shrink-0 items-center gap-2"
+                              onClick={(e) => e.preventDefault()}
+                            >
+                              {needsRevision && (
+                                <Link
+                                  href={`/editor/${item.slug}/revise`}
+                                  className="inline-flex items-center gap-1 rounded-md bg-orange-600 px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm transition-colors hover:bg-orange-700"
+                                >
+                                  <RefreshCw className="size-3" />
+                                  Revise
+                                </Link>
+                              )}
+                              {isDraft && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    if (
+                                      !window.confirm(
+                                        "Delete this draft permanently? This cannot be undone.",
+                                      )
+                                    ) {
+                                      return;
+                                    }
+                                    void runItemAction(item.id, "delete_draft");
+                                  }}
+                                  disabled={isBusy}
+                                  className="h-6 rounded-md border-border/60 px-2 py-1 text-[10px] font-medium"
+                                >
+                                  <Trash2 className="size-3" />
+                                  Delete
+                                </Button>
+                              )}
+                              {canWithdraw && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    if (
+                                      !window.confirm(
+                                        "Withdraw this submission from review? It will move to archived status.",
+                                      )
+                                    ) {
+                                      return;
+                                    }
+                                    void runItemAction(
+                                      item.id,
+                                      "withdraw",
+                                      "Withdrawn by editor from workspace",
+                                    );
+                                  }}
+                                  disabled={isBusy}
+                                  className="h-6 rounded-md border-border/60 px-2 py-1 text-[10px] font-medium"
+                                >
+                                  <Undo2 className="size-3" />
+                                  Withdraw
+                                </Button>
+                              )}
+                              {item.journalName && (
+                                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                                  {item.journalName}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </Link>
               </motion.div>
             );
           })}

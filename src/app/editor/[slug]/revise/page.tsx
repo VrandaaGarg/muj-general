@@ -2,8 +2,8 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  ArrowLeft,
   Calendar,
+  ChevronRight,
   Clock,
   FileText,
   GitBranch,
@@ -125,21 +125,25 @@ export default async function RevisePage({ params }: RevisePageProps) {
 
       <SiteHeader role={appUser.role} />
 
-      <main className="relative z-10 mx-auto max-w-3xl px-6 pt-12 pb-24 md:px-12 md:pt-16">
-        {/* Back link */}
-        <Link
-          href="/editor"
-          className="mb-6 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="size-3" />
-          Back to editor
-        </Link>
+      <main className="relative z-10 mx-auto max-w-6xl px-6 pt-8 pb-24 md:px-12 md:pt-12 lg:px-20">
+        {/* Breadcrumb */}
+        <nav className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Link href="/" className="font-medium text-primary underline-offset-2 transition-colors hover:underline hover:text-primary/80">
+            Home
+          </Link>
+          <ChevronRight className="size-3.5 text-muted-foreground/50" />
+          <Link href="/editor" className="font-medium text-primary underline-offset-2 transition-colors hover:underline hover:text-primary/80">
+            Editor
+          </Link>
+          <ChevronRight className="size-3.5 text-muted-foreground/50" />
+          <span className="font-medium text-foreground">Revise</span>
+        </nav>
 
         {/* Title section */}
         <div className="mb-8">
           <div className="mb-4 flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-orange-600/10">
-              <RefreshCw className="size-4 text-orange-600" />
+            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+              <RefreshCw className="size-4 text-primary" />
             </div>
             <span
               className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusConfig.className}`}
@@ -234,7 +238,7 @@ export default async function RevisePage({ params }: RevisePageProps) {
                         <Clock className="size-3 shrink-0" />v
                         {version.versionNumber}
                         {idx === 0 && (
-                          <span className="rounded bg-violet-600/10 px-1.5 py-px text-[10px] font-medium text-violet-600">
+                          <span className="rounded bg-primary/10 px-1.5 py-px text-[10px] font-medium text-primary">
                             current
                           </span>
                         )}
@@ -415,9 +419,8 @@ export default async function RevisePage({ params }: RevisePageProps) {
               </p>
               <Link
                 href="/editor"
-                className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-violet-600 transition-colors hover:text-violet-700"
+                className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-primary transition-colors hover:text-primary/80"
               >
-                <ArrowLeft className="size-3" />
                 Return to editor
               </Link>
             </CardContent>

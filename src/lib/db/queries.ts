@@ -737,11 +737,12 @@ export async function reviewEditorAccessRequest(params: {
 }
 
 export async function listResearchItemsForEditor(userId: string) {
-  return db
+  const rows = await db
     .select({
       id: researchItems.id,
       slug: researchItems.slug,
       title: researchItems.title,
+      abstract: researchItems.abstract,
       status: researchItems.status,
       itemType: researchItems.itemType,
       publicationYear: researchItems.publicationYear,
@@ -758,6 +759,31 @@ export async function listResearchItemsForEditor(userId: string) {
     .leftJoin(journals, eq(journals.id, researchItems.journalId))
     .where(eq(researchItems.submittedByUserId, userId))
     .orderBy(desc(researchItems.updatedAt));
+
+  const itemIds = rows.map((r) => r.id);
+  if (itemIds.length === 0) return rows.map((r) => ({ ...r, coverImageObjectKey: null as string | null }));
+
+  const coverRows = await db
+    .select({
+      researchItemId: files.researchItemId,
+      objectKey: files.objectKey,
+    })
+    .from(files)
+    .innerJoin(researchItems, eq(researchItems.id, files.researchItemId))
+    .where(
+      and(
+        inArray(files.researchItemId, itemIds),
+        eq(files.fileKind, "cover_image"),
+        sql`${files.itemVersionId} = ${researchItems.currentVersionId}`,
+      ),
+    );
+
+  const coverMap = new Map(coverRows.map((r) => [r.researchItemId, r.objectKey]));
+
+  return rows.map((r) => ({
+    ...r,
+    coverImageObjectKey: coverMap.get(r.id) ?? null,
+  }));
 }
 
 export async function listPendingResearchModerationItems() {
