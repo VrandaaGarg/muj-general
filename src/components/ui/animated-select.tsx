@@ -60,7 +60,7 @@ export function AnimatedSelect({
       {required && !value && (
         <input
           tabIndex={-1}
-          className="absolute inset-0 opacity-0"
+          className="pointer-events-none absolute inset-0 opacity-0"
           required
           value=""
           onChange={() => {}}

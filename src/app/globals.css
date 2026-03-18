@@ -137,4 +137,27 @@
   [type="radio"] {
     cursor: pointer;
   }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 9999px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklch, var(--primary) 80%, black);
+  }
 }
