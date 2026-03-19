@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { ArrowLeft, Library, Shield } from "lucide-react";
+import { ChevronRight, Library, Shield } from "lucide-react";
 
 import { requireRole } from "@/lib/auth/session";
 import { listJournalAdminOverview } from "@/lib/db/queries";
@@ -28,21 +28,34 @@ export default async function AdminJournalsPage() {
 
       <SiteHeader role={session.appUser.role} />
 
-      <main className="relative z-10 mx-auto max-w-4xl px-6 pb-24 pt-12 md:px-12 md:pt-16">
-        <Link
-          href="/admin"
-          className="mb-6 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+      <main className="relative z-10 mx-auto max-w-6xl px-6 pb-24 pt-4 md:px-12 lg:px-20">
+        <nav
+          aria-label="Breadcrumb"
+          className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground"
         >
-          <ArrowLeft className="size-3" />
-          Back to Admin
-        </Link>
+          <Link
+            href="/"
+            className="font-medium text-primary underline-offset-2 transition-colors hover:text-primary/80 hover:underline"
+          >
+            Home
+          </Link>
+          <ChevronRight className="size-3.5 text-muted-foreground/50" />
+          <Link
+            href="/admin"
+            className="font-medium text-primary underline-offset-2 transition-colors hover:text-primary/80 hover:underline"
+          >
+            Admin
+          </Link>
+          <ChevronRight className="size-3.5 text-muted-foreground/50" />
+          <span className="font-medium text-foreground">Journals</span>
+        </nav>
 
         <div className="mb-10">
           <div className="mb-4 flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-rose-600/10">
-              <Shield className="size-4 text-rose-600" />
+            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+              <Shield className="size-4 text-primary" />
             </div>
-            <span className="rounded-full bg-rose-600/10 px-2.5 py-0.5 text-xs font-medium text-rose-600">
+            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
               Admin Panel
             </span>
             <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">

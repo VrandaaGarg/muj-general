@@ -73,6 +73,16 @@ export const createJournalSchema = z.object({
   name: z.string().trim().min(2).max(255),
   slug: slugSchema.max(280),
   description: z.string().trim().max(1000).optional().or(z.literal("")),
+  coverImageKey: z
+    .string()
+    .trim()
+    .max(2000)
+    .regex(
+      /^journal-covers\/[A-Za-z0-9._/-]+$/,
+      "Cover image key must start with journal-covers/",
+    )
+    .optional()
+    .or(z.literal("")),
   issn: z.string().trim().max(20).optional().or(z.literal("")),
   eissn: z.string().trim().max(20).optional().or(z.literal("")),
   aimAndScope: z.string().trim().max(5000).optional().or(z.literal("")),

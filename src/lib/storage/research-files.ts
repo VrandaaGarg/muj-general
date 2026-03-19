@@ -112,6 +112,18 @@ export function createPresignedResearchUploadKey(
   return `research-items/uploads/${userId}/${Date.now()}-${randomUUID()}${extension}`;
 }
 
+export function createPresignedJournalCoverUploadKey(
+  userId: string,
+  params: { fileName: string; contentType: string },
+) {
+  const extension = getResearchUploadExtension(
+    params.fileName,
+    params.contentType,
+  );
+
+  return `journal-covers/${userId}/${Date.now()}-${randomUUID()}${extension}`;
+}
+
 export async function createPresignedResearchUpload(params: {
   key: string;
   kind: ResearchUploadKind;

@@ -9,7 +9,6 @@ import {
   ChevronDown,
   ChevronUp,
   Layers3,
-  Library,
   Loader2,
   Pencil,
   Plus,
@@ -43,6 +42,52 @@ import { Textarea } from "@/components/ui/textarea";
 
 type StructuredSection = { heading: string; content: string };
 
+const STRUCTURED_SECTION_EXAMPLES: Record<
+  string,
+  { heading: string; content: string }
+> = {
+  ethicsPolicy: {
+    heading: "Research integrity",
+    content:
+      "All submissions must follow COPE ethics standards and include conflict-of-interest declarations.",
+  },
+  disclosuresPolicy: {
+    heading: "Conflict disclosures",
+    content:
+      "Authors, editors, and reviewers must disclose financial or personal conflicts related to the manuscript.",
+  },
+  rightsPermissions: {
+    heading: "Copyright and reuse",
+    content:
+      "Articles are published under CC BY 4.0 unless otherwise specified. Permission is required for third-party copyrighted material.",
+  },
+  contactInfo: {
+    heading: "Editorial office",
+    content:
+      "Email: journal@muj.edu.in | Support hours: Mon-Fri, 10:00 AM - 5:00 PM IST.",
+  },
+  submissionChecklist: {
+    heading: "Before you submit",
+    content:
+      "Ensure manuscript formatting, abstract, keywords, references, and ethical declarations are complete.",
+  },
+  submissionGuidelines: {
+    heading: "Manuscript format",
+    content:
+      "Submit in DOCX or LaTeX format, include structured abstract, and follow journal citation style.",
+  },
+  howToPublish: {
+    heading: "Publishing workflow",
+    content:
+      "Submit manuscript -> editorial screening -> peer review -> revisions -> acceptance -> publication.",
+  },
+  feesAndFunding: {
+    heading: "Article processing charges",
+    content:
+      "No APC for student submissions. Funded projects may include publication support as per grant terms.",
+  },
+};
+
 function slugifyJournalName(value: string) {
   return value
     .toLowerCase()
@@ -57,10 +102,19 @@ type JournalOverview = {
   name: string;
   slug: string;
   description: string | null;
+  coverImageKey: string | null;
   issn: string | null;
   eissn: string | null;
   aimAndScope: string | null;
+  topics: string | null;
+  contentTypes: string | null;
+  ethicsPolicy: StructuredSection[] | null;
+  disclosuresPolicy: StructuredSection[] | null;
+  rightsPermissions: StructuredSection[] | null;
+  contactInfo: StructuredSection[] | null;
+  submissionChecklist: StructuredSection[] | null;
   submissionGuidelines: StructuredSection[] | null;
+  howToPublish: StructuredSection[] | null;
   feesAndFunding: StructuredSection[] | null;
   status: "active" | "archived";
   createdAt: Date;
@@ -108,6 +162,61 @@ const JOURNAL_MESSAGES: Record<string, { text: string; type: "success" | "error"
   "invalid-board": { text: "Invalid board member data. Please review the form fields.", type: "error" },
 };
 
+type JournalCoverPresignResponse = {
+  uploadUrl: string;
+  objectKey: string;
+};
+
+async function uploadJournalCoverToR2(file: File) {
+  const presignRes = await fetch("/api/uploads/journals/presign", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fileName: file.name,
+      contentType: file.type,
+      sizeBytes: file.size,
+    }),
+  });
+
+  if (!presignRes.ok) {
+    const body = (await presignRes.json().catch(() => null)) as
+      | { error?: string }
+      | null;
+    throw new Error(
+      body?.error ?? `Failed to prepare cover upload (${presignRes.status})`,
+    );
+  }
+
+  const presign = (await presignRes.json()) as JournalCoverPresignResponse;
+
+  const uploadRes = await fetch(presign.uploadUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Type": file.type,
+      "Content-Length": String(file.size),
+    },
+    body: file,
+  });
+
+  if (!uploadRes.ok) {
+    throw new Error(
+      `Cover upload failed (${uploadRes.status}). Please try again.`,
+    );
+  }
+
+  return presign.objectKey;
+}
+
+async function appendUploadedJournalCoverKey(formData: FormData) {
+  const coverFile = formData.get("coverImageFile");
+  if (!(coverFile instanceof File) || coverFile.size === 0) {
+    return;
+  }
+
+  const objectKey = await uploadJournalCoverToR2(coverFile);
+  formData.set("coverImageKey", objectKey);
+}
+
 export function AdminJournalsList({ journals }: { journals: JournalOverview[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -127,6 +236,7 @@ export function AdminJournalsList({ journals }: { journals: JournalOverview[] })
   const [createName, setCreateName] = useState("");
   const [createSlug, setCreateSlug] = useState("");
   const [createSlugTouched, setCreateSlugTouched] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   function handleCreateNameChange(nextName: string) {
     setCreateName(nextName);
@@ -135,51 +245,110 @@ export function AdminJournalsList({ journals }: { journals: JournalOverview[] })
     }
   }
 
+  async function handleCreate(formData: FormData) {
+    setIsCreating(true);
+    try {
+      await appendUploadedJournalCoverKey(formData);
+      await createJournalAction(formData);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Could not create journal. Please try again.";
+      toast.error(message);
+      setIsCreating(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <Card className="border-border/60">
+      <Card className="border-border/60 py-4">
         <CardHeader>
-          <div className="flex size-9 items-center justify-center rounded-lg bg-rose-600/10">
-            <Library className="size-4 text-rose-600" />
-          </div>
-          <CardTitle className="text-sm font-semibold tracking-tight">Create Journal</CardTitle>
+          {/* <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
+            <Library className="size-4 text-primary" />
+          </div> */}
+          <CardTitle className="text-2xl font-semibold text-primary tracking-tight">Create Journal</CardTitle>
           <CardDescription>Start a new journal and configure its public profile.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={createJournalAction} className="grid gap-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field
-                label="Journal name"
-                name="name"
-                required
-                value={createName}
-                onChange={(event) => handleCreateNameChange(event.target.value)}
-              />
-              <Field
-                label="Slug"
-                name="slug"
-                required
-                value={createSlug}
-                onChange={(event) => {
-                  setCreateSlugTouched(true);
-                  setCreateSlug(event.target.value);
-                }}
-              />
-              <Field label="ISSN" name="issn" />
-              <Field label="E-ISSN" name="eissn" />
+          <form action={handleCreate} className="grid gap-4">
+            <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4">
+              <div>
+                <h3 className="text-xl font-semibold tracking-tight text-primary">Overview</h3>
+                <p className="text-sm text-muted-foreground">
+                  Core journal identity and metadata shown on the journal page.
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field
+                  label="Journal name"
+                  name="name"
+                  required
+                  value={createName}
+                  onChange={(event) => handleCreateNameChange(event.target.value)}
+                />
+                <Field
+                  label="Slug"
+                  name="slug"
+                  required
+                  value={createSlug}
+                  onChange={(event) => {
+                    setCreateSlugTouched(true);
+                    setCreateSlug(event.target.value);
+                  }}
+                />
+                <Field label="ISSN" name="issn" placeholder="1234-5678" />
+                <Field label="E-ISSN" name="eissn" placeholder="8765-4321" />
+              </div>
+              <Field label="Description" name="description" textarea />
+              <CoverImageUploadField idBase="create" disabled={isCreating} />
             </div>
-            <Field label="Description" name="description" textarea />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Aim and Scope" name="aimAndScope" textarea rows={4} className="sm:col-span-2" />
-              <Field label="Topics" name="topics" textarea rows={4} />
-              <Field label="Content Types" name="contentTypes" textarea rows={4} />
+
+            <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4">
+              <div>
+                <h3 className="text-xl font-semibold tracking-tight text-primary">Aim & Scope</h3>
+                <p className="text-sm text-muted-foreground">
+                  Define journal scope, topics, and accepted content formats.
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Aim and Scope" name="aimAndScope" textarea rows={4} className="sm:col-span-2" />
+                <Field label="Topics" name="topics" textarea rows={4} />
+                <Field label="Content Types" name="contentTypes" textarea rows={4} />
+              </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <StructuredSectionsEditor label="Submission Guidelines" name="submissionGuidelines" />
-              <StructuredSectionsEditor label="Fees & Funding" name="feesAndFunding" />
+
+            <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4">
+              <div>
+                <h3 className="text-xl font-semibold tracking-tight text-primary">Policies</h3>
+                <p className="text-sm text-muted-foreground">
+                  Public policies for ethics, disclosures, rights, and contact.
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <StructuredSectionsEditor label="Ethics Policy" name="ethicsPolicy" />
+                <StructuredSectionsEditor label="Disclosures Policy" name="disclosuresPolicy" />
+                <StructuredSectionsEditor label="Rights & Permissions" name="rightsPermissions" />
+                <StructuredSectionsEditor label="Contact Information" name="contactInfo" />
+              </div>
             </div>
-            <Button type="submit" className="w-full sm:w-auto bg-rose-600 text-white hover:bg-rose-700">
-              <Plus className="size-3.5" />
+
+            <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4">
+              <div>
+                <h3 className="text-xl font-semibold tracking-tight text-primary">For Authors</h3>
+                <p className="text-sm text-muted-foreground">
+                  Author-facing workflow, checklist, guidelines, and fees.
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <StructuredSectionsEditor label="Submission Checklist" name="submissionChecklist" />
+                <StructuredSectionsEditor label="Submission Guidelines" name="submissionGuidelines" />
+                <StructuredSectionsEditor label="How to Publish" name="howToPublish" />
+                <StructuredSectionsEditor label="Fees & Funding" name="feesAndFunding" />
+              </div>
+            </div>
+            <Button type="submit" disabled={isCreating} className="w-full sm:w-auto bg-primary text-white hover:bg-primary/90">
+              {isCreating ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
               Create journal
             </Button>
           </form>
@@ -211,8 +380,14 @@ function JournalCard({ journal, index }: { journal: JournalOverview; index: numb
   async function handleUpdate(formData: FormData) {
     setIsSaving(true);
     try {
+      await appendUploadedJournalCoverKey(formData);
       await updateJournalAction(formData);
-    } catch {
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Could not update journal. Please try again.";
+      toast.error(message);
       setIsSaving(false);
     }
   }
@@ -305,44 +480,96 @@ function JournalCard({ journal, index }: { journal: JournalOverview; index: numb
           {editing && (
             <form action={handleUpdate} className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4">
               <input type="hidden" name="journalId" value={journal.id} />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field
-                  label="Journal name"
-                  name="name"
-                  value={editName}
-                  required
+              <div className="space-y-4 rounded-xl border border-border/60 bg-background/60 p-4">
+                <div>
+                  <h3 className="text-xl font-semibold tracking-tight text-primary">Overview</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Core journal identity and metadata shown on the journal page.
+                  </p>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field
+                    label="Journal name"
+                    name="name"
+                    value={editName}
+                    required
+                    disabled={isSaving}
+                    onChange={(event) => handleEditNameChange(event.target.value)}
+                  />
+                  <Field
+                    label="Slug"
+                    name="slug"
+                    value={editSlug}
+                    required
+                    disabled={isSaving}
+                    onChange={(event) => {
+                      setEditSlugTouched(true);
+                      setEditSlug(event.target.value);
+                    }}
+                  />
+                  <Field label="ISSN" name="issn" defaultValue={journal.issn ?? ""} disabled={isSaving} placeholder="1234-5678" />
+                  <Field label="E-ISSN" name="eissn" defaultValue={journal.eissn ?? ""} disabled={isSaving} placeholder="8765-4321" />
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`status-${journal.id}`} className="text-xs">Status</Label>
+                    <select id={`status-${journal.id}`} name="status" defaultValue={journal.status} disabled={isSaving} className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
+                      <option value="active">Active</option>
+                      <option value="archived">Archived</option>
+                    </select>
+                  </div>
+                </div>
+                <Field label="Description" name="description" defaultValue={journal.description ?? ""} textarea disabled={isSaving} />
+                <CoverImageUploadField
+                  idBase={journal.id}
+                  defaultKey={journal.coverImageKey ?? ""}
                   disabled={isSaving}
-                  onChange={(event) => handleEditNameChange(event.target.value)}
                 />
-                <Field
-                  label="Slug"
-                  name="slug"
-                  value={editSlug}
-                  required
-                  disabled={isSaving}
-                  onChange={(event) => {
-                    setEditSlugTouched(true);
-                    setEditSlug(event.target.value);
-                  }}
-                />
-                <Field label="ISSN" name="issn" defaultValue={journal.issn ?? ""} disabled={isSaving} />
-                <Field label="E-ISSN" name="eissn" defaultValue={journal.eissn ?? ""} disabled={isSaving} />
-                <div className="space-y-1.5">
-                  <Label htmlFor={`status-${journal.id}`} className="text-xs">Status</Label>
-                  <select id={`status-${journal.id}`} name="status" defaultValue={journal.status} disabled={isSaving} className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
-                    <option value="active">Active</option>
-                    <option value="archived">Archived</option>
-                  </select>
+              </div>
+
+              <div className="space-y-4 rounded-xl border border-border/60 bg-background/60 p-4">
+                <div>
+                  <h3 className="text-xl font-semibold tracking-tight text-primary">Aim & Scope</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Define journal scope, topics, and accepted content formats.
+                  </p>
+                </div>
+                <Field label="Aim and Scope" name="aimAndScope" defaultValue={journal.aimAndScope ?? ""} textarea rows={4} disabled={isSaving} />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Topics" name="topics" defaultValue={journal.topics ?? ""} textarea rows={4} disabled={isSaving} />
+                  <Field label="Content Types" name="contentTypes" defaultValue={journal.contentTypes ?? ""} textarea rows={4} disabled={isSaving} />
                 </div>
               </div>
-              <Field label="Description" name="description" defaultValue={journal.description ?? ""} textarea disabled={isSaving} />
-              <Field label="Aim and Scope" name="aimAndScope" defaultValue={journal.aimAndScope ?? ""} textarea rows={4} disabled={isSaving} />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <StructuredSectionsEditor label="Submission Guidelines" name="submissionGuidelines" initialValue={journal.submissionGuidelines ?? undefined} disabled={isSaving} />
-                <StructuredSectionsEditor label="Fees & Funding" name="feesAndFunding" initialValue={journal.feesAndFunding ?? undefined} disabled={isSaving} />
+
+              <div className="space-y-4 rounded-xl border border-border/60 bg-background/60 p-4">
+                <div>
+                  <h3 className="text-xl font-semibold tracking-tight text-primary">Policies</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Public policies for ethics, disclosures, rights, and contact.
+                  </p>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <StructuredSectionsEditor label="Ethics Policy" name="ethicsPolicy" initialValue={journal.ethicsPolicy ?? undefined} disabled={isSaving} />
+                  <StructuredSectionsEditor label="Disclosures Policy" name="disclosuresPolicy" initialValue={journal.disclosuresPolicy ?? undefined} disabled={isSaving} />
+                  <StructuredSectionsEditor label="Rights & Permissions" name="rightsPermissions" initialValue={journal.rightsPermissions ?? undefined} disabled={isSaving} />
+                  <StructuredSectionsEditor label="Contact Information" name="contactInfo" initialValue={journal.contactInfo ?? undefined} disabled={isSaving} />
+                </div>
+              </div>
+
+              <div className="space-y-4 rounded-xl border border-border/60 bg-background/60 p-4">
+                <div>
+                  <h3 className="text-xl font-semibold tracking-tight text-primary">For Authors</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Author-facing workflow, checklist, guidelines, and fees.
+                  </p>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <StructuredSectionsEditor label="Submission Checklist" name="submissionChecklist" initialValue={journal.submissionChecklist ?? undefined} disabled={isSaving} />
+                  <StructuredSectionsEditor label="Submission Guidelines" name="submissionGuidelines" initialValue={journal.submissionGuidelines ?? undefined} disabled={isSaving} />
+                  <StructuredSectionsEditor label="How to Publish" name="howToPublish" initialValue={journal.howToPublish ?? undefined} disabled={isSaving} />
+                  <StructuredSectionsEditor label="Fees & Funding" name="feesAndFunding" initialValue={journal.feesAndFunding ?? undefined} disabled={isSaving} />
+                </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button type="submit" disabled={isSaving} className="bg-rose-600 text-white hover:bg-rose-700">
+                <Button type="submit" disabled={isSaving} className="bg-primary text-white hover:bg-primary/90">
                   {isSaving ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
                   Save journal
                 </Button>
@@ -464,7 +691,7 @@ function EditorialBoardSection({
     <div className="space-y-3 rounded-xl border border-border/60 p-4">
       <div>
         <div className="flex items-center gap-2">
-          <Users className="size-4 text-rose-600" />
+          <Users className="size-4 text-primary" />
           <h3 className="text-sm font-semibold tracking-tight">Editorial Board</h3>
           <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
             {journal.editorialBoard.length}
@@ -526,7 +753,7 @@ function BoardMemberRow({
     return (
       <form
         action={onUpdate}
-        className="space-y-3 rounded-lg border border-rose-600/20 bg-muted/20 p-3"
+        className="space-y-3 rounded-lg border border-primary/20 bg-muted/20 p-3"
       >
         <input type="hidden" name="boardMemberId" value={member.id} />
         <input type="hidden" name="journalId" value={member.journalId} />
@@ -539,7 +766,7 @@ function BoardMemberRow({
           <Field label="Display order" name="displayOrder" type="number" defaultValue={String(member.displayOrder)} required disabled={isSaving} />
         </div>
         <div className="flex items-center gap-2">
-          <Button type="submit" disabled={isSaving} className="bg-rose-600 text-white hover:bg-rose-700">
+          <Button type="submit" disabled={isSaving} className="bg-primary text-white hover:bg-primary/90">
             {isSaving ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
             Save
           </Button>
@@ -557,7 +784,7 @@ function BoardMemberRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="font-medium">{member.personName}</span>
-          <span className="rounded-full bg-rose-600/10 px-1.5 py-0.5 text-[10px] font-medium text-rose-700">
+          <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
             {member.role}
           </span>
         </div>
@@ -608,8 +835,14 @@ function StructuredSectionsEditor({
   initialValue?: StructuredSection[];
   disabled?: boolean;
 }) {
+  const example =
+    STRUCTURED_SECTION_EXAMPLES[name] ??
+    STRUCTURED_SECTION_EXAMPLES.submissionGuidelines;
+
   const [entries, setEntries] = useState<StructuredSection[]>(
-    initialValue ?? [],
+    initialValue && initialValue.length > 0
+      ? initialValue
+      : [{ heading: "", content: "" }],
   );
 
   function addEntry() {
@@ -617,7 +850,10 @@ function StructuredSectionsEditor({
   }
 
   function removeEntry(index: number) {
-    setEntries((prev) => prev.filter((_, i) => i !== index));
+    setEntries((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev.filter((_, i) => i !== index);
+    });
   }
 
   function updateEntry(
@@ -636,7 +872,20 @@ function StructuredSectionsEditor({
 
   return (
     <div className="space-y-2">
-      <Label className="text-xs">{label}</Label>
+      <div className="flex items-center justify-between">
+        <Label className="text-sm">{label}</Label>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={addEntry}
+          disabled={disabled}
+          className="h-6 text-xs"
+        >
+          <Plus className="size-4" />
+          Add item
+        </Button>
+      </div>
       <input type="hidden" name={name} value={serialized} />
       <div className="space-y-2">
         {entries.map((entry, index) => (
@@ -647,42 +896,31 @@ function StructuredSectionsEditor({
             <button
               type="button"
               onClick={() => removeEntry(index)}
-              disabled={disabled}
+              disabled={disabled || entries.length === 1}
               className="absolute right-2 top-2 rounded-md p-0.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
             >
               <X className="size-3.5" />
             </button>
             <div className="space-y-2">
               <Input
-                placeholder="Heading"
+                placeholder={`e.g. ${example.heading}`}
                 value={entry.heading}
                 onChange={(e) => updateEntry(index, "heading", e.target.value)}
                 disabled={disabled}
-                className="h-7 text-xs"
+                className="h-7 overflow-x-auto text-xs"
               />
               <Textarea
-                placeholder="Content"
+                placeholder={example.content}
                 value={entry.content}
                 onChange={(e) => updateEntry(index, "content", e.target.value)}
                 disabled={disabled}
                 rows={2}
-                className="text-xs"
+                className="max-h-28 overflow-y-auto text-xs"
               />
             </div>
           </div>
         ))}
       </div>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={addEntry}
-        disabled={disabled}
-        className="h-7 text-xs"
-      >
-        <Plus className="size-3" />
-        Add item
-      </Button>
     </div>
   );
 }
@@ -690,11 +928,11 @@ function StructuredSectionsEditor({
 function Stat({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: number }) {
   return (
     <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-3">
-      <div className="mb-2 flex size-8 items-center justify-center rounded-lg bg-rose-600/10">
-        <Icon className="size-4 text-rose-600" />
+      <div className="mb-2 flex size-8 items-center justify-center rounded-lg bg-primary/10">
+        <Icon className="size-4 text-primary" />
       </div>
-      <p className="text-lg font-semibold tracking-tight">{value}</p>
-      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="text-xl font-semibold tracking-tight">{value}</p>
+    <p className="text-[11px] text-muted-foreground">{label}</p>
     </div>
   );
 }
@@ -704,6 +942,7 @@ function Field({
   name,
   textarea = false,
   rows = 3,
+  className,
   ...props
 }: ComponentProps<typeof Input> & {
   label: string;
@@ -711,13 +950,64 @@ function Field({
   textarea?: boolean;
   rows?: number;
 }) {
+  const inputClassName = ["overflow-x-auto", className]
+    .filter(Boolean)
+    .join(" ");
+  const textareaClassName = ["max-h-44 overflow-y-auto", className]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <div className="space-y-1.5">
       <Label htmlFor={name} className="text-xs">{label}</Label>
       {textarea ? (
-        <Textarea id={name} name={name} rows={rows} {...(props as ComponentProps<typeof Textarea>)} />
+        <Textarea
+          id={name}
+          name={name}
+          rows={rows}
+          {...(props as ComponentProps<typeof Textarea>)}
+          className={textareaClassName}
+        />
       ) : (
-        <Input id={name} name={name} {...props} />
+        <Input id={name} name={name} {...props} className={inputClassName} />
+      )}
+    </div>
+  );
+}
+
+function CoverImageUploadField({
+  idBase,
+  defaultKey,
+  disabled,
+}: {
+  idBase: string;
+  defaultKey?: string;
+  disabled?: boolean;
+}) {
+  const fileInputId = `coverImageFile-${idBase}`;
+
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={fileInputId} className="text-xs">
+        Cover image
+      </Label>
+      <input type="hidden" name="coverImageKey" defaultValue={defaultKey ?? ""} />
+      <Input
+        id={fileInputId}
+        name="coverImageFile"
+        type="file"
+        className="cursor-pointer"
+        accept="image/png,image/jpeg,image/webp"
+        disabled={disabled}
+      />
+      <p className="text-[11px] text-muted-foreground">
+        Upload JPG, PNG, or WebP (max 5 MB)
+        {/* <span className="font-mono"> journal-covers/</span>. */}
+      </p>
+      {defaultKey && (
+        <p className="text-[11px] text-muted-foreground">
+          Current key: <span className="font-mono">{defaultKey}</span>
+        </p>
       )}
     </div>
   );
