@@ -389,6 +389,87 @@ export async function listJournalAdminOverview() {
   }));
 }
 
+export async function getJournalForAdminEdit(journalSlug: string) {
+  const [journal] = await db
+    .select({
+      id: journals.id,
+      name: journals.name,
+      slug: journals.slug,
+      description: journals.description,
+      coverImageKey: journals.coverImageKey,
+      issn: journals.issn,
+      eissn: journals.eissn,
+      aimAndScope: journals.aimAndScope,
+      topics: journals.topics,
+      contentTypes: journals.contentTypes,
+      ethicsPolicy: journals.ethicsPolicy,
+      disclosuresPolicy: journals.disclosuresPolicy,
+      rightsPermissions: journals.rightsPermissions,
+      contactInfo: journals.contactInfo,
+      submissionChecklist: journals.submissionChecklist,
+      submissionGuidelines: journals.submissionGuidelines,
+      howToPublish: journals.howToPublish,
+      feesAndFunding: journals.feesAndFunding,
+      status: journals.status,
+      createdAt: journals.createdAt,
+    })
+    .from(journals)
+    .where(eq(journals.slug, journalSlug))
+    .limit(1);
+
+  if (!journal) return null;
+
+  const [volumes, issues, editorialBoard] = await Promise.all([
+    db
+      .select({
+        id: journalVolumes.id,
+        journalId: journalVolumes.journalId,
+        volumeNumber: journalVolumes.volumeNumber,
+        title: journalVolumes.title,
+        year: journalVolumes.year,
+      })
+      .from(journalVolumes)
+      .where(eq(journalVolumes.journalId, journal.id))
+      .orderBy(desc(journalVolumes.year), desc(journalVolumes.volumeNumber)),
+    db
+      .select({
+        id: journalIssues.id,
+        journalId: journalIssues.journalId,
+        volumeId: journalIssues.volumeId,
+        issueNumber: journalIssues.issueNumber,
+        title: journalIssues.title,
+        publishedAt: journalIssues.publishedAt,
+      })
+      .from(journalIssues)
+      .where(eq(journalIssues.journalId, journal.id))
+      .orderBy(desc(journalIssues.publishedAt), desc(journalIssues.issueNumber)),
+    db
+      .select({
+        id: journalEditorialBoard.id,
+        journalId: journalEditorialBoard.journalId,
+        role: journalEditorialBoard.role,
+        personName: journalEditorialBoard.personName,
+        affiliation: journalEditorialBoard.affiliation,
+        email: journalEditorialBoard.email,
+        orcid: journalEditorialBoard.orcid,
+        displayOrder: journalEditorialBoard.displayOrder,
+      })
+      .from(journalEditorialBoard)
+      .where(eq(journalEditorialBoard.journalId, journal.id))
+      .orderBy(
+        asc(journalEditorialBoard.displayOrder),
+        asc(journalEditorialBoard.personName),
+      ),
+  ]);
+
+  return {
+    ...journal,
+    volumes,
+    issues,
+    editorialBoard,
+  };
+}
+
 export async function listPublicJournals() {
   return db
     .select({
