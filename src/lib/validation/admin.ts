@@ -31,6 +31,32 @@ const checkboxBooleanSchema = z.preprocess(
   z.boolean(),
 );
 
+const optionalEditorialBoardSchema = z.preprocess(
+  (value) => {
+    if (typeof value !== "string") return undefined;
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    try {
+      return JSON.parse(trimmed);
+    } catch {
+      return value;
+    }
+  },
+  z
+    .array(
+      z.object({
+        role: z.string().trim().min(2).max(100),
+        personName: z.string().trim().min(2).max(200),
+        affiliation: z.string().trim().max(500).optional().or(z.literal("")),
+        email: z.string().trim().email().max(255).optional().or(z.literal("")),
+        orcid: z.string().trim().max(40).optional().or(z.literal("")),
+        displayOrder: z.coerce.number().int().min(0).max(10000).default(0),
+      }),
+    )
+    .max(100)
+    .optional(),
+);
+
 export const updateUserAdminSchema = z.object({
   userId: z.string().min(1),
   role: z.enum(["reader", "editor", "admin"]),
@@ -88,6 +114,7 @@ export const createJournalSchema = z.object({
   submissionGuidelines: optionalMarkdownSchema,
   howToPublish: optionalMarkdownSchema,
   feesAndFunding: optionalMarkdownSchema,
+  boardMembersJson: optionalEditorialBoardSchema,
   editorialBoardCanReviewSubmissions: checkboxBooleanSchema.default(true),
 });
 

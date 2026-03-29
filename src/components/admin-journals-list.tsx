@@ -14,9 +14,11 @@ import {
   Layers3,
   Loader2,
   Pencil,
+  Plus,
   ScrollText,
   Shield,
   User,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -100,8 +102,17 @@ const JOURNAL_CREATE_STEPS = [
   { key: "scope", label: "Aim & Scope", icon: FileText },
   { key: "policies", label: "Policies", icon: Shield },
   { key: "authors", label: "For Authors", icon: User },
+  { key: "board", label: "Editorial Board", icon: Users },
   { key: "review", label: "Review", icon: CircleHelp },
 ] as const;
+
+type BoardDraft = {
+  personName: string;
+  role: string;
+  affiliation: string;
+  email: string;
+  orcid: string;
+};
 
 const JOURNAL_MESSAGES: Record<string, { text: string; type: "success" | "error" }> = {
   created: { text: "Journal created successfully.", type: "success" },
@@ -115,6 +126,8 @@ const JOURNAL_MESSAGES: Record<string, { text: string; type: "success" | "error"
   "board-updated": { text: "Board member updated successfully.", type: "success" },
   "board-deleted": { text: "Board member removed successfully.", type: "success" },
   "invalid-board": { text: "Invalid board member data. Please review the form fields.", type: "error" },
+  "slug-exists": { text: "This journal slug already exists. Choose a different slug.", type: "error" },
+  "name-exists": { text: "A journal with this name already exists.", type: "error" },
 };
 
 type JournalCoverPresignResponse = {
@@ -212,6 +225,7 @@ export function AdminJournalsList({
   const [submissionGuidelines, setSubmissionGuidelines] = useState("");
   const [howToPublish, setHowToPublish] = useState("");
   const [feesAndFunding, setFeesAndFunding] = useState("");
+  const [boardMembers, setBoardMembers] = useState<BoardDraft[]>([]);
 
   const createSteps = JOURNAL_CREATE_STEPS;
   const pageSize = 10;
@@ -238,6 +252,35 @@ export function AdminJournalsList({
       return;
     }
     setCreateStep(nextStep);
+  }
+
+  function addBoardMember() {
+    setBoardMembers((prev) => [
+      ...prev,
+      {
+        personName: "",
+        role: "",
+        affiliation: "",
+        email: "",
+        orcid: "",
+      },
+    ]);
+  }
+
+  function updateBoardMember(
+    index: number,
+    field: keyof BoardDraft,
+    value: string,
+  ) {
+    setBoardMembers((prev) =>
+      prev.map((member, i) =>
+        i === index ? { ...member, [field]: value } : member,
+      ),
+    );
+  }
+
+  function removeBoardMember(index: number) {
+    setBoardMembers((prev) => prev.filter((_, i) => i !== index));
   }
 
   async function handleCreate(formData: FormData) {
@@ -446,6 +489,47 @@ export function AdminJournalsList({
             </div>
 
             <div className={createStep === 4 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4" : "hidden"}>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-semibold tracking-tight text-foreground">Editorial Board</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Optional: add editorial board members now, or manage them later from journal edit.
+                  </p>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={addBoardMember}>
+                  <Plus className="size-3.5" />
+                  Add member
+                </Button>
+              </div>
+
+              {boardMembers.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-border/60 px-3 py-2 text-xs text-muted-foreground">
+                  No members added yet.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {boardMembers.map((member, index) => (
+                    <div key={`board-${index}`} className="rounded-xl border border-border/60 bg-background p-3">
+                      <div className="mb-2 flex items-center justify-between">
+                        <p className="text-xs font-semibold text-foreground">Member {index + 1}</p>
+                        <Button type="button" variant="ghost" size="xs" onClick={() => removeBoardMember(index)}>
+                          Remove
+                        </Button>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <Field label="Name" name={`board-name-${index}`} value={member.personName} onChange={(e) => updateBoardMember(index, "personName", e.target.value)} />
+                        <Field label="Role" name={`board-role-${index}`} value={member.role} onChange={(e) => updateBoardMember(index, "role", e.target.value)} />
+                        <Field label="Affiliation" name={`board-aff-${index}`} value={member.affiliation} onChange={(e) => updateBoardMember(index, "affiliation", e.target.value)} />
+                        <Field label="Email" name={`board-email-${index}`} type="email" value={member.email} onChange={(e) => updateBoardMember(index, "email", e.target.value)} />
+                        <Field label="ORCID" name={`board-orcid-${index}`} className="sm:col-span-2" value={member.orcid} onChange={(e) => updateBoardMember(index, "orcid", e.target.value)} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className={createStep === 5 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4" : "hidden"}>
               <div>
                 <h3 className="text-lg font-semibold tracking-tight text-foreground">Review</h3>
                 <p className="text-sm text-muted-foreground">Review core details before creating the journal.</p>
@@ -455,8 +539,27 @@ export function AdminJournalsList({
                 <div><span className="font-medium">Slug:</span> {createSlug || "-"}</div>
                 <div><span className="font-medium">Policies filled:</span> {[ethicsPolicy, disclosuresPolicy, rightsPermissions, contactInfo].filter((v) => v.trim().length > 0).length} / 4</div>
                 <div><span className="font-medium">Author guidance filled:</span> {[submissionChecklist, submissionGuidelines, howToPublish, feesAndFunding].filter((v) => v.trim().length > 0).length} / 4</div>
+                <div><span className="font-medium">Board members:</span> {boardMembers.filter((m) => m.personName.trim() && m.role.trim()).length}</div>
               </div>
             </div>
+
+            <input
+              type="hidden"
+              name="boardMembersJson"
+              value={JSON.stringify(
+                boardMembers
+                  .filter((m) => m.personName.trim() && m.role.trim())
+                  .map((member, index) => ({
+                    personName: member.personName.trim(),
+                    role: member.role.trim(),
+                    affiliation: member.affiliation.trim(),
+                    email: member.email.trim(),
+                    orcid: member.orcid.trim(),
+                    displayOrder: index,
+                  })),
+              )}
+              readOnly
+            />
 
             <div className="flex items-center justify-between border-t border-border/40 pt-5">
               <Button

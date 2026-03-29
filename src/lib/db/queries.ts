@@ -909,6 +909,10 @@ export async function listResearchItemsForEditor(userId: string) {
   }));
 }
 
+export async function listResearchItemsForSubmitter(userId: string) {
+  return listResearchItemsForEditor(userId);
+}
+
 export async function listDepartmentResearchItemsForReview(userId: string) {
   const appUserRecord = await getAppUserById(userId);
   if (!appUserRecord) {
@@ -937,21 +941,11 @@ export async function listDepartmentResearchItemsForReview(userId: string) {
 
   const departmentFlowFilter =
     appUserRecord.role === "admin"
-      ? and(
-          workflowFilter,
-          or(
-            isNull(researchItems.journalId),
-            eq(journals.editorialBoardCanReviewSubmissions, false),
-          ),
-        )
+      ? workflowFilter
       : appUserRecord.departmentId
         ? and(
             workflowFilter,
             eq(researchItems.departmentId, appUserRecord.departmentId),
-            or(
-              isNull(researchItems.journalId),
-              eq(journals.editorialBoardCanReviewSubmissions, false),
-            ),
           )
         : sql`false`;
 

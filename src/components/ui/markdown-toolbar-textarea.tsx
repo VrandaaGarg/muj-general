@@ -40,6 +40,7 @@ export function MarkdownToolbarTextarea({
   disabled,
 }: MarkdownToolbarTextareaProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isEditing, setIsEditing] = useState(false);
 
   function withSelection(handler: (start: number, end: number) => void) {
@@ -121,13 +122,17 @@ export function MarkdownToolbarTextarea({
       <Label htmlFor={name} className="text-sm">
         {label}
       </Label>
-      <div className="rounded-lg border overflow-hidden border-border/60 bg-background">
+      <div
+        ref={containerRef}
+        className="rounded-lg border overflow-hidden border-border/60 bg-background"
+      >
         <div className="flex flex-wrap items-center gap-1 bg-white border-b border-border/60 px-2 py-1.5">
           <Button
             type="button"
             variant="ghost"
             size="icon-xs"
             disabled={disabled}
+            onMouseDown={(event) => event.preventDefault()}
             onClick={() => applyWrapped("**")}
             title="Bold"
             aria-label="Bold"
@@ -139,6 +144,7 @@ export function MarkdownToolbarTextarea({
             variant="ghost"
             size="icon-xs"
             disabled={disabled}
+            onMouseDown={(event) => event.preventDefault()}
             onClick={() => applyWrapped("*")}
             title="Italic"
             aria-label="Italic"
@@ -150,6 +156,7 @@ export function MarkdownToolbarTextarea({
             variant="ghost"
             size="icon-xs"
             disabled={disabled}
+            onMouseDown={(event) => event.preventDefault()}
             onClick={applyHeading}
             title="Heading"
             aria-label="Heading"
@@ -161,6 +168,7 @@ export function MarkdownToolbarTextarea({
             variant="ghost"
             size="icon-xs"
             disabled={disabled}
+            onMouseDown={(event) => event.preventDefault()}
             onClick={() => applyLinePrefix("- ")}
             title="Bullet list"
             aria-label="Bullet list"
@@ -172,6 +180,7 @@ export function MarkdownToolbarTextarea({
             variant="ghost"
             size="icon-xs"
             disabled={disabled}
+            onMouseDown={(event) => event.preventDefault()}
             onClick={() => applyLinePrefix("", true)}
             title="Numbered list"
             aria-label="Numbered list"
@@ -189,13 +198,22 @@ export function MarkdownToolbarTextarea({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           onFocus={() => setIsEditing(true)}
-          onBlur={() => setIsEditing(false)}
+          onBlur={(event) => {
+            const next = event.relatedTarget;
+            if (
+              next instanceof Node &&
+              containerRef.current?.contains(next)
+            ) {
+              return;
+            }
+            setIsEditing(false);
+          }}
           disabled={disabled}
           rows={rows}
           placeholder={placeholder}
           className={`min-h-36 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 ${
             isEditing ? "block" : "hidden"
-          }`}
+          } max-h-72 overflow-y-auto`}
         />
         {!isEditing && (
           <button
@@ -205,7 +223,7 @@ export function MarkdownToolbarTextarea({
               requestAnimationFrame(() => textareaRef.current?.focus());
             }}
             disabled={disabled}
-            className="block min-h-36 w-full px-3 py-2 text-left"
+            className="block min-h-36 max-h-72 w-full overflow-y-auto px-3 py-2 text-left"
           >
             {value.trim().length > 0 ? (
               <MarkdownContent content={value} className="text-sm" />

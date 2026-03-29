@@ -3,6 +3,8 @@
 import { type ComponentProps, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  ArrowLeft,
+  ArrowRight,
   Check,
   ChevronDown,
   ChevronUp,
@@ -157,10 +159,28 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
   const [feesAndFunding, setFeesAndFunding] = useState(
     journal.feesAndFunding ?? "",
   );
+  const [editStep, setEditStep] = useState(0);
+  const editSteps = ["Overview", "Aim & Scope", "Policies", "For Authors", "Review"] as const;
 
   function handleEditNameChange(nextName: string) {
     setEditName(nextName);
     if (!editSlugTouched) setEditSlug(slugifyJournalName(nextName));
+  }
+
+  function canAdvanceFromEditStep(step: number) {
+    if (step === 0) {
+      return editName.trim().length >= 2 && editSlug.trim().length >= 2;
+    }
+    return true;
+  }
+
+  function goToEditStep(nextStep: number) {
+    if (nextStep < 0 || nextStep >= editSteps.length) return;
+    if (nextStep > editStep && !canAdvanceFromEditStep(editStep)) {
+      toast.error("Journal name and slug are required before continuing.");
+      return;
+    }
+    setEditStep(nextStep);
   }
 
   async function handleUpdate(formData: FormData) {
@@ -248,8 +268,51 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
       <form action={handleUpdate} className="space-y-5">
         <input type="hidden" name="journalId" value={journal.id} />
 
+        <div className="hidden sm:flex items-center rounded-xl border border-border/60 bg-muted/20 p-3">
+          {editSteps.map((step, index) => (
+            <div key={step} className="flex flex-1 items-center">
+              <button
+                type="button"
+                onClick={() => goToEditStep(index)}
+                className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  editStep === index
+                    ? "bg-primary/10 text-primary"
+                    : index < editStep
+                      ? "text-foreground"
+                      : "text-muted-foreground"
+                }`}
+              >
+                {step}
+              </button>
+              {index < editSteps.length - 1 && (
+                <div className={`mx-1 h-px flex-1 ${index < editStep ? "bg-primary/30" : "bg-border"}`} />
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="flex sm:hidden items-center gap-1 rounded-xl border border-border/60 bg-muted/20 p-2">
+          {editSteps.map((step, index) => (
+            <button
+              key={step}
+              type="button"
+              onClick={() => goToEditStep(index)}
+              className="flex-1"
+            >
+              <div
+                className={`h-1.5 rounded-full ${
+                  index === editStep
+                    ? "bg-primary"
+                    : index < editStep
+                      ? "bg-primary/40"
+                      : "bg-muted"
+                }`}
+              />
+            </button>
+          ))}
+        </div>
+
         {/* Overview */}
-        <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-5">
+        <div className={editStep === 0 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-5" : "hidden"}>
           <div>
             <h3 className="text-xl font-semibold tracking-tight text-primary">Overview</h3>
             <p className="text-sm text-muted-foreground">Core journal identity and metadata.</p>
@@ -309,7 +372,7 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
         </div>
 
         {/* Aim & Scope */}
-        <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-5">
+        <div className={editStep === 1 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-5" : "hidden"}>
           <div>
             <h3 className="text-xl font-semibold tracking-tight text-primary">Aim & Scope</h3>
             <p className="text-sm text-muted-foreground">Define journal scope, topics, and accepted content formats.</p>
@@ -343,7 +406,7 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
         </div>
 
         {/* Policies */}
-        <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-5">
+        <div className={editStep === 2 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-5" : "hidden"}>
           <div>
             <h3 className="text-xl font-semibold tracking-tight text-primary">Policies</h3>
             <p className="text-sm text-muted-foreground">Public policies for ethics, disclosures, rights, and contact.</p>
@@ -357,7 +420,7 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
         </div>
 
         {/* For Authors */}
-        <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-5">
+        <div className={editStep === 3 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-5" : "hidden"}>
           <div>
             <h3 className="text-xl font-semibold tracking-tight text-primary">For Authors</h3>
             <p className="text-sm text-muted-foreground">Author-facing workflow, checklist, guidelines, and fees.</p>
@@ -383,10 +446,36 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
         <input type="hidden" name="howToPublish" value={howToPublish} readOnly />
         <input type="hidden" name="feesAndFunding" value={feesAndFunding} readOnly />
 
-        <Button type="submit" disabled={isSaving} className="bg-primary text-white hover:bg-primary/90">
-          {isSaving ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
-          Save journal
-        </Button>
+        <div className={editStep === 4 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-5" : "hidden"}>
+          <div>
+            <h3 className="text-lg font-semibold tracking-tight text-foreground">Review</h3>
+            <p className="text-sm text-muted-foreground">Confirm updates and save changes.</p>
+          </div>
+          <div className="grid gap-3 rounded-lg border border-border/50 bg-background p-3 text-sm">
+            <div><span className="font-medium">Journal name:</span> {editName || "-"}</div>
+            <div><span className="font-medium">Slug:</span> {editSlug || "-"}</div>
+            <div><span className="font-medium">Policies filled:</span> {[ethicsPolicy, disclosuresPolicy, rightsPermissions, contactInfo].filter((v) => v.trim().length > 0).length} / 4</div>
+            <div><span className="font-medium">Author guidance filled:</span> {[submissionChecklist, submissionGuidelines, howToPublish, feesAndFunding].filter((v) => v.trim().length > 0).length} / 4</div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between border-t border-border/40 pt-5">
+          <Button type="button" variant="ghost" onClick={() => goToEditStep(editStep - 1)} disabled={editStep === 0 || isSaving}>
+            <ArrowLeft className="size-3.5" />
+            Back
+          </Button>
+          {editStep < editSteps.length - 1 ? (
+            <Button type="button" onClick={() => goToEditStep(editStep + 1)} disabled={isSaving}>
+              Next
+              <ArrowRight className="size-3.5" />
+            </Button>
+          ) : (
+            <Button type="submit" disabled={isSaving} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              {isSaving ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+              Save journal
+            </Button>
+          )}
+        </div>
       </form>
 
       {/* Structure: Volumes, Issues, Editorial Board */}

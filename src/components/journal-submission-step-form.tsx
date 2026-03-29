@@ -89,9 +89,11 @@ interface AuthorDraft {
 interface JournalSubmissionStepFormProps {
   departments: Department[];
   tags: TagOption[];
-  journal: JournalInfo;
+  journal?: JournalInfo;
+  journals?: JournalInfo[];
   journalIssues: JournalIssueOption[];
   basePath: string;
+  itemTypeOptions?: ReadonlyArray<{ value: string; label: string }>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -295,8 +297,10 @@ export function JournalSubmissionStepForm({
   departments,
   tags,
   journal,
+  journals,
   journalIssues,
   basePath,
+  itemTypeOptions,
 }: JournalSubmissionStepFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -323,6 +327,7 @@ export function JournalSubmissionStepForm({
   /* ---- Kickoff state ---- */
   const [hasStarted, setHasStarted] = useState(false);
   const [selectedItemType, setSelectedItemType] = useState("");
+  const [selectedJournalId, setSelectedJournalId] = useState(journal?.id ?? "");
 
   /* ---- Step state ---- */
   const [currentStep, setCurrentStep] = useState(0);
@@ -372,6 +377,15 @@ export function JournalSubmissionStepForm({
   const [activeIntent, setActiveIntent] = useState<"submit" | "save_draft">(
     "submit",
   );
+
+  const isJournalLocked = Boolean(journal);
+  const availableJournals = journal ? [journal] : journals ?? [];
+  const availableItemTypes = itemTypeOptions ?? JOURNAL_ELIGIBLE_TYPES;
+  const selectedJournal =
+    availableJournals.find((entry) => entry.id === selectedJournalId) ?? null;
+  const filteredJournalIssues = selectedJournalId
+    ? journalIssues.filter((issue) => issue.journalId === selectedJournalId)
+    : [];
 
   /* ---- Author search ---- */
   const authorSearchTimeoutsRef = useRef<
@@ -664,7 +678,9 @@ export function JournalSubmissionStepForm({
     formData.set("abstract", abstract);
     formData.set("publicationYear", publicationYear);
     formData.set("departmentId", selectedDepartmentId);
-    formData.set("journalId", journal.id);
+    if (selectedJournalId) {
+      formData.set("journalId", selectedJournalId);
+    }
     if (selectedJournalIssueId) {
       formData.set("journalIssueId", selectedJournalIssueId);
     }
@@ -741,7 +757,7 @@ export function JournalSubmissionStepForm({
   if (visitedSteps.has(3)) completedSteps.add(3);
 
   const itemTypeLabel =
-    JOURNAL_ELIGIBLE_TYPES.find((t) => t.value === selectedItemType)?.label ??
+    availableItemTypes.find((t) => t.value === selectedItemType)?.label ??
     selectedItemType;
 
   /* ================================================================== */
@@ -766,7 +782,7 @@ export function JournalSubmissionStepForm({
                 New manuscript
               </h2>
               <p className="text-xs text-muted-foreground">
-                {journal.name}
+                {selectedJournal?.name ?? "General Submission"}
               </p>
             </div>
           </div>
@@ -778,19 +794,19 @@ export function JournalSubmissionStepForm({
           </p>
 
           <div className="space-y-1.5 mb-6">
-            <Label className="text-sm">
-              Article type{" "}
-              <span className="font-normal text-destructive">*</span>
-            </Label>
-            <AnimatedSelect
-              value={selectedItemType}
-              onChange={setSelectedItemType}
-              placeholder="Select article type..."
-              options={JOURNAL_ELIGIBLE_TYPES.map((t) => ({
-                value: t.value,
-                label: t.label,
-              }))}
-            />
+              <Label className="text-sm">
+                Article type{" "}
+                <span className="font-normal text-destructive">*</span>
+              </Label>
+              <AnimatedSelect
+                value={selectedItemType}
+                onChange={setSelectedItemType}
+                placeholder="Select article type..."
+                options={availableItemTypes.map((t) => ({
+                  value: t.value,
+                  label: t.label,
+                }))}
+              />
           </div>
 
           <Button
@@ -1072,7 +1088,23 @@ export function JournalSubmissionStepForm({
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label className="text-sm">Journal</Label>
-                    <Input value={journal.name} disabled />
+                    {isJournalLocked ? (
+                      <Input value={selectedJournal?.name ?? "No journal selected"} disabled />
+                    ) : (
+                      <AnimatedSelect
+                        value={selectedJournalId}
+                        onChange={(value) => {
+                          setSelectedJournalId(value);
+                          setSelectedJournalIssueId("");
+                        }}
+                        disabled={isSubmitting}
+                        placeholder="No journal selected"
+                        options={availableJournals.map((entry) => ({
+                          value: entry.id,
+                          label: entry.name,
+                        }))}
+                      />
+                    )}
                   </div>
 
                   <div className="space-y-1.5">
@@ -1080,9 +1112,9 @@ export function JournalSubmissionStepForm({
                     <AnimatedSelect
                       value={selectedJournalIssueId}
                       onChange={setSelectedJournalIssueId}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || !selectedJournalId}
                       placeholder="Online first / no issue yet"
-                      options={journalIssues.map((issue) => ({
+                      options={filteredJournalIssues.map((issue) => ({
                         value: issue.id,
                         label: `Vol. ${issue.volumeNumber} (${issue.volumeYear}) – Issue ${issue.issueNumber}${issue.issueTitle ? ` – ${issue.issueTitle}` : ""}`,
                       }))}
@@ -1578,7 +1610,7 @@ export function JournalSubmissionStepForm({
                     <div>
                       <dt className="text-muted-foreground">Journal</dt>
                       <dd className="mt-0.5 font-medium text-foreground">
-                        {journal.name}
+                        {selectedJournal?.name ?? "No journal selected"}
                       </dd>
                     </div>
                     <div>

@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight,
   ChevronDown,
+  FileText,
   LogOut,
   PenTool,
   Settings,
@@ -182,6 +183,14 @@ export function SiteHeader({ role }: SiteHeaderProps) {
                         Editor Panel
                       </Link>
                     )}
+                    <Link
+                      href="/my-submissions"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
+                    >
+                      <FileText className="size-4 text-muted-foreground" />
+                      My Submissions
+                    </Link>
                     <Link
                       href="/settings"
                       onClick={() => setMenuOpen(false)}

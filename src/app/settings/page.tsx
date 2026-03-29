@@ -9,8 +9,12 @@ import {
 } from "lucide-react";
 
 import { requireAppSession } from "@/lib/auth/session";
-import { listPendingSubmitterConfirmations } from "@/lib/db/queries";
+import {
+  getLatestEditorAccessRequestForUser,
+  listPendingSubmitterConfirmations,
+} from "@/lib/db/queries";
 import { getTypeLabel, getTypeColor } from "@/lib/research-types";
+import { EditorAccessRequestCard } from "@/components/editor-access-request-card";
 import { SiteHeader } from "@/components/site-header";
 import { SettingsSignOut } from "@/components/settings-sign-out";
 
@@ -32,8 +36,10 @@ export default async function SettingsPage({
   const session = await requireAppSession("/settings");
   const { appUser } = session;
 
-  const [pendingConfirmations, resolvedParams] = await Promise.all([
+  const [pendingConfirmations, latestEditorAccessRequest, resolvedParams] =
+    await Promise.all([
     listPendingSubmitterConfirmations(appUser.id),
+    getLatestEditorAccessRequestForUser(appUser.id),
     searchParams,
   ]);
 
@@ -175,6 +181,32 @@ export default async function SettingsPage({
               </p>
             )}
           </section>
+
+          {(appUser.role === "reader" || latestEditorAccessRequest) && (
+            <section className="rounded-xl border border-border/60 p-6">
+              <h2 className="mb-4 text-lg font-bold text-primary">
+                Editor Access
+              </h2>
+              <EditorAccessRequestCard
+                requestStatus={latestEditorAccessRequest?.status ?? null}
+                requestMessage={latestEditorAccessRequest?.message ?? null}
+                rejectionReason={
+                  latestEditorAccessRequest?.rejectionReason ?? null
+                }
+                requestCreatedAt={
+                  latestEditorAccessRequest?.createdAt
+                    ? latestEditorAccessRequest.createdAt.toISOString()
+                    : null
+                }
+                reviewedAt={
+                  latestEditorAccessRequest?.reviewedAt
+                    ? latestEditorAccessRequest.reviewedAt.toISOString()
+                    : null
+                }
+                emailVerified={appUser.emailVerified}
+              />
+            </section>
+          )}
 
           {/* Peer Reviews */}
           <section className="rounded-xl border border-border/60 p-6">
