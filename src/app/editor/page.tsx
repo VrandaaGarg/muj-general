@@ -1,12 +1,14 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { BookCheck, ChevronRight, ClipboardList, PenTool } from "lucide-react";
+import { BookCheck, ChevronRight, ClipboardList, Eye } from "lucide-react";
 
 import { requireRole } from "@/lib/auth/session";
 import {
   listDepartments,
+  listDepartmentResearchItemsForReview,
   listJournalIssueOptions,
   listJournalOptions,
+  listPeerReviewInvitesForResearchItems,
   listResearchItemsForEditor,
   listTags,
 } from "@/lib/db/queries";
@@ -21,6 +23,7 @@ import {
 import { SiteHeader } from "@/components/site-header";
 import { EditorSubmissionForm } from "@/components/editor-submission-form";
 import { EditorSubmissionsList } from "@/components/editor-submissions-list";
+import { EditorDepartmentReviewList } from "@/components/editor-department-review-list";
 
 export default async function EditorPage() {
   const session = await requireRole(["editor", "admin"], {
@@ -28,16 +31,23 @@ export default async function EditorPage() {
   });
   const { appUser } = session;
 
-  const [departments, tags, submittedItems, journals, journalIssues] = await Promise.all([
+  const [departments, tags, submittedItems, journals, journalIssues, departmentReviewItems] = await Promise.all([
     listDepartments(),
     listTags(),
     listResearchItemsForEditor(appUser.id),
     listJournalOptions(),
     listJournalIssueOptions(),
+    listDepartmentResearchItemsForReview(appUser.id),
   ]);
 
+  const peerInvitesMap = await listPeerReviewInvitesForResearchItems(
+    departmentReviewItems.map((item) => item.id),
+  );
+
   const pendingCount = submittedItems.filter(
-    (i) => i.status === "submitted",
+    (i) =>
+      i.workflowStage === "editor_forwarded_to_admin" ||
+      i.workflowStage === "ready_to_publish",
   ).length;
   const publishedCount = submittedItems.filter(
     (i) => i.status === "published",
@@ -86,7 +96,26 @@ export default async function EditorPage() {
         </div>
 
         {/* Stats cards */}
-        <div className="mb-8 grid gap-4 sm:grid-cols-2">
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Card className="border-border/60">
+            <CardHeader className="pb-2">
+              <div className="flex size-9 items-center justify-center rounded-lg bg-muted">
+                <Eye className="size-4 text-muted-foreground" />
+              </div>
+              <CardTitle className="text-sm font-semibold tracking-tight">
+                Department Queue
+              </CardTitle>
+              <CardDescription>
+                Submissions awaiting your department review
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-semibold tracking-tight text-foreground">
+                {departmentReviewItems.length}
+              </p>
+            </CardContent>
+          </Card>
+
           <Card className="border-border/60">
             <CardHeader className="pb-2">
               <div className="flex size-9 items-center justify-center rounded-lg bg-muted">
@@ -96,7 +125,7 @@ export default async function EditorPage() {
                 Pending Reviews
               </CardTitle>
               <CardDescription>
-                Submissions awaiting admin review
+                Your submissions awaiting admin review
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -124,6 +153,17 @@ export default async function EditorPage() {
               </p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Department review queue */}
+        <div className="mb-10">
+          <Suspense
+            fallback={
+              <div className="h-32 animate-pulse rounded-xl border border-border/60 bg-muted/20" />
+            }
+          >
+            <EditorDepartmentReviewList items={departmentReviewItems} peerInvitesMap={peerInvitesMap} />
+          </Suspense>
         </div>
 
         {/* Submission form */}

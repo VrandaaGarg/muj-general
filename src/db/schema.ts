@@ -63,6 +63,49 @@ export const editorAccessRequestStatusEnum = pgEnum(
 
 export const journalStatusEnum = pgEnum("journal_status", ["active", "archived"]);
 
+export const researchItemWorkflowStageEnum = pgEnum(
+  "research_item_workflow_stage",
+  [
+    "draft",
+    "submitted",
+    "editor_review",
+    "peer_review",
+    "editor_revision_requested",
+    "editor_forwarded_to_admin",
+    "admin_review",
+    "awaiting_submitter_confirmation",
+    "ready_to_publish",
+    "published",
+    "declined_by_submitter",
+    "archived",
+  ],
+);
+
+export const submitterConfirmationStatusEnum = pgEnum(
+  "submitter_confirmation_status",
+  [
+    "not_requested",
+    "pending",
+    "confirmed",
+    "revision_requested",
+    "declined_by_submitter",
+  ],
+);
+
+export const peerReviewStatusEnum = pgEnum("peer_review_status", [
+  "pending",
+  "accepted",
+  "declined",
+  "completed",
+  "expired",
+  "revoked",
+]);
+
+export const peerReviewRecommendationEnum = pgEnum(
+  "peer_review_recommendation",
+  ["accept", "minor_revision", "major_revision", "reject"],
+);
+
 type JournalStructuredSection = {
   heading: string;
   content: string;
@@ -287,6 +330,11 @@ export const journals = pgTable(
     submissionGuidelines: jsonb("submission_guidelines").$type<JournalStructuredSection[]>(),
     howToPublish: jsonb("how_to_publish").$type<JournalStructuredSection[]>(),
     feesAndFunding: jsonb("fees_and_funding").$type<JournalStructuredSection[]>(),
+    editorialBoardCanReviewSubmissions: boolean(
+      "editorial_board_can_review_submissions",
+    )
+      .notNull()
+      .default(true),
     status: journalStatusEnum("status").notNull().default("active"),
     ...timestamps,
   },
@@ -394,6 +442,35 @@ export const researchItems = pgTable(
       .references(() => appUsers.id, { onDelete: "restrict" }),
     currentVersionId: uuid("current_version_id"),
     status: researchItemStatusEnum("status").notNull().default("draft"),
+    workflowStage: researchItemWorkflowStageEnum("workflow_stage")
+      .notNull()
+      .default("draft"),
+    handlingEditorUserId: text("handling_editor_user_id").references(
+      () => appUsers.id,
+      {
+        onDelete: "set null",
+      },
+    ),
+    submitterConfirmationStatus: submitterConfirmationStatusEnum(
+      "submitter_confirmation_status",
+    )
+      .notNull()
+      .default("not_requested"),
+    submitterConfirmationNote: text("submitter_confirmation_note"),
+    submitterConfirmationRequestedAt: timestamp(
+      "submitter_confirmation_requested_at",
+      {
+        withTimezone: true,
+        mode: "date",
+      },
+    ),
+    submitterConfirmationRespondedAt: timestamp(
+      "submitter_confirmation_responded_at",
+      {
+        withTimezone: true,
+        mode: "date",
+      },
+    ),
     license: varchar("license", { length: 160 }),
     externalUrl: text("external_url"),
     doi: varchar("doi", { length: 255 }),
@@ -426,6 +503,10 @@ export const researchItems = pgTable(
     index("research_items_journal_id_idx").on(table.journalId),
     index("research_items_journal_issue_id_idx").on(table.journalIssueId),
     index("research_items_submitted_by_user_id_idx").on(table.submittedByUserId),
+    index("research_items_workflow_stage_idx").on(table.workflowStage),
+    index("research_items_handling_editor_user_id_idx").on(
+      table.handlingEditorUserId,
+    ),
     foreignKey({
       columns: [table.journalIssueId, table.journalId],
       foreignColumns: [journalIssues.id, journalIssues.journalId],
@@ -530,6 +611,53 @@ export const moderationDecisions = pgTable(
       .notNull(),
   },
   (table) => [index("moderation_decisions_item_id_idx").on(table.researchItemId)],
+);
+
+export const researchItemPeerReviews = pgTable(
+  "research_item_peer_reviews",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    researchItemId: uuid("research_item_id")
+      .notNull()
+      .references(() => researchItems.id, { onDelete: "cascade" }),
+    invitedByUserId: text("invited_by_user_id")
+      .notNull()
+      .references(() => appUsers.id, { onDelete: "restrict" }),
+    inviteeUserId: text("invitee_user_id").references(() => appUsers.id, {
+      onDelete: "set null",
+    }),
+    inviteeEmail: varchar("invitee_email", { length: 255 }).notNull(),
+    inviteeName: varchar("invitee_name", { length: 200 }),
+    status: peerReviewStatusEnum("status").notNull().default("pending"),
+    inviteToken: varchar("invite_token", { length: 255 }),
+    inviteExpiresAt: timestamp("invite_expires_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    respondedAt: timestamp("responded_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    recommendation: peerReviewRecommendationEnum("recommendation"),
+    reviewComment: text("review_comment"),
+    confidentialComment: text("confidential_comment"),
+    reviewSubmittedAt: timestamp("review_submitted_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    ...timestamps,
+  },
+  (table) => [
+    index("research_item_peer_reviews_item_id_idx").on(table.researchItemId),
+    index("research_item_peer_reviews_invitee_user_id_idx").on(
+      table.inviteeUserId,
+    ),
+    index("research_item_peer_reviews_status_idx").on(table.status),
+    uniqueIndex("research_item_peer_reviews_item_email_unique").on(
+      table.researchItemId,
+      table.inviteeEmail,
+    ),
+  ],
 );
 
 export const activityLogs = pgTable(
@@ -647,6 +775,15 @@ export const appUsersRelations = relations(appUsers, ({ one, many }) => ({
   reviewedEditorAccessRequests: many(editorAccessRequests, {
     relationName: "editorAccessRequestsReviewedByUser",
   }),
+  handlingResearchItems: many(researchItems, {
+    relationName: "researchItemsHandlingEditor",
+  }),
+  invitedPeerReviews: many(researchItemPeerReviews, {
+    relationName: "researchItemPeerReviewsInvitedByUser",
+  }),
+  assignedPeerReviews: many(researchItemPeerReviews, {
+    relationName: "researchItemPeerReviewsInviteeUser",
+  }),
 }));
 
 export const editorAccessRequestsRelations = relations(
@@ -732,6 +869,11 @@ export const researchItemsRelations = relations(researchItems, ({ one, many }) =
     fields: [researchItems.submittedByUserId],
     references: [appUsers.id],
   }),
+  handlingEditorUser: one(appUsers, {
+    fields: [researchItems.handlingEditorUserId],
+    references: [appUsers.id],
+    relationName: "researchItemsHandlingEditor",
+  }),
   currentVersion: one(itemVersions, {
     fields: [researchItems.currentVersionId],
     references: [itemVersions.id],
@@ -742,7 +884,28 @@ export const researchItemsRelations = relations(researchItems, ({ one, many }) =
   researchItemAuthors: many(researchItemAuthors),
   researchItemTags: many(researchItemTags),
   researchItemReferences: many(researchItemReferences),
+  peerReviews: many(researchItemPeerReviews),
 }));
+
+export const researchItemPeerReviewsRelations = relations(
+  researchItemPeerReviews,
+  ({ one }) => ({
+    researchItem: one(researchItems, {
+      fields: [researchItemPeerReviews.researchItemId],
+      references: [researchItems.id],
+    }),
+    invitedByUser: one(appUsers, {
+      fields: [researchItemPeerReviews.invitedByUserId],
+      references: [appUsers.id],
+      relationName: "researchItemPeerReviewsInvitedByUser",
+    }),
+    inviteeUser: one(appUsers, {
+      fields: [researchItemPeerReviews.inviteeUserId],
+      references: [appUsers.id],
+      relationName: "researchItemPeerReviewsInviteeUser",
+    }),
+  }),
+);
 
 export const itemVersionsRelations = relations(itemVersions, ({ one, many }) => ({
   researchItem: one(researchItems, {

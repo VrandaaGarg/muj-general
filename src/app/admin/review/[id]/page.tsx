@@ -6,6 +6,7 @@ import {
   BookOpen,
   Building2,
   Calendar,
+  Check,
   ExternalLink,
   FileText,
   Globe,
@@ -15,11 +16,16 @@ import {
   ScrollText,
   Tag,
   User,
+  UserPlus,
   Users,
 } from "lucide-react";
 
 import { requireRole } from "@/lib/auth/session";
-import { getResearchItemForAdminReview, getResearchItemVersionDiff } from "@/lib/db/queries";
+import {
+  getResearchItemForAdminReview,
+  getResearchItemVersionDiff,
+  listPeerReviewInvitesForResearchItem,
+} from "@/lib/db/queries";
 import { getPublicFileUrl } from "@/lib/storage/r2";
 import { getTypeLabel, getTypeColor } from "@/lib/research-types";
 import { SiteHeader } from "@/components/site-header";
@@ -49,6 +55,13 @@ function formatDate(date: Date) {
   });
 }
 
+function formatStageLabel(stage: string) {
+  return stage
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 export default async function AdminReviewPage({
   params,
 }: AdminReviewPageProps) {
@@ -58,9 +71,10 @@ export default async function AdminReviewPage({
   });
 
   const { id } = await params;
-  const [item, versionDiff] = await Promise.all([
+  const [item, versionDiff, peerInvites] = await Promise.all([
     getResearchItemForAdminReview(id),
     getResearchItemVersionDiff(id),
+    listPeerReviewInvitesForResearchItem({ researchItemId: id }),
   ]);
 
   if (!item) notFound();
@@ -89,7 +103,7 @@ export default async function AdminReviewPage({
             {getTypeLabel(item.itemType)}
           </span>
           <span className="rounded-full bg-amber-600/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-600">
-            {item.status}
+            {formatStageLabel(item.workflowStage ?? item.status)}
           </span>
           <span className="text-[11px] text-muted-foreground">
             Submitted {formatDate(item.createdAt)}
@@ -314,9 +328,19 @@ export default async function AdminReviewPage({
             />
           )}
 
+          {/* Peer reviews */}
+          {peerInvites.length > 0 && (
+            <PeerReviewSummary invites={peerInvites} />
+          )}
+
           {/* Moderation actions */}
           <div className="border-t border-border/60 pt-6">
-            <AdminReviewActions researchItemId={item.id} status={item.status} />
+            <AdminReviewActions
+              researchItemId={item.id}
+              status={item.status}
+              workflowStage={item.workflowStage}
+              submitterConfirmationStatus={item.submitterConfirmationStatus}
+            />
           </div>
         </div>
       </main>
@@ -344,4 +368,89 @@ function DetailSection({
   );
 }
 
+const PEER_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+  pending: { label: "Pending", className: "bg-amber-600/10 text-amber-600" },
+  accepted: { label: "Accepted", className: "bg-blue-600/10 text-blue-600" },
+  declined: { label: "Declined", className: "bg-muted text-muted-foreground" },
+  completed: { label: "Completed", className: "bg-emerald-600/10 text-emerald-600" },
+  expired: { label: "Expired", className: "bg-muted text-muted-foreground" },
+  revoked: { label: "Revoked", className: "bg-muted text-muted-foreground" },
+};
+
+const PEER_REC_LABELS: Record<string, string> = {
+  accept: "Accept",
+  minor_revision: "Minor Revision",
+  major_revision: "Major Revision",
+  reject: "Reject",
+};
+
+type PeerInviteRow = Awaited<
+  ReturnType<typeof listPeerReviewInvitesForResearchItem>
+>[number];
+
+function PeerReviewSummary({ invites }: { invites: PeerInviteRow[] }) {
+  return (
+    <div className="rounded-xl border border-border/60 bg-card/50 p-5">
+      <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <UserPlus className="size-3.5" />
+        Peer Reviews ({invites.length})
+      </h3>
+      <div className="space-y-3">
+        {invites.map((invite) => {
+          const statusCfg =
+            PEER_STATUS_CONFIG[invite.status] ?? PEER_STATUS_CONFIG.pending;
+          return (
+            <div
+              key={invite.id}
+              className="rounded-lg border border-border/40 bg-background px-3 py-2.5"
+            >
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                <span className="font-medium">
+                  {invite.inviteeName || invite.inviteeEmail}
+                </span>
+                {invite.inviteeName && (
+                  <span className="text-xs text-muted-foreground">
+                    {invite.inviteeEmail}
+                  </span>
+                )}
+                <span
+                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${statusCfg.className}`}
+                >
+                  {statusCfg.label}
+                </span>
+                {invite.recommendation && (
+                  <span className="flex items-center gap-0.5 text-xs font-semibold text-primary">
+                    <Check className="size-3" />
+                    {PEER_REC_LABELS[invite.recommendation] ??
+                      invite.recommendation}
+                  </span>
+                )}
+              </div>
+              {invite.reviewSubmittedAt && (
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Reviewed {formatDate(invite.reviewSubmittedAt)}
+                </p>
+              )}
+              {invite.reviewComment && (
+                <p className="mt-1.5 text-sm leading-relaxed text-foreground/85 line-clamp-3">
+                  {invite.reviewComment}
+                </p>
+              )}
+              {invite.confidentialComment && (
+                <div className="mt-2 rounded border border-amber-600/20 bg-amber-600/5 px-2.5 py-1.5">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-amber-700">
+                    Confidential note
+                  </p>
+                  <p className="mt-0.5 text-sm leading-relaxed text-foreground/85">
+                    {invite.confidentialComment}
+                  </p>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 

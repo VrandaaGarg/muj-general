@@ -95,3 +95,66 @@ MUJ General`;
     }<p>Thanks,<br />MUJ General</p>`,
   });
 }
+
+export async function sendSubmitterConfirmationRequestEmail(params: {
+  to: string;
+  name: string;
+  researchTitle: string;
+  researchItemId: string;
+  comment?: string | null;
+  appUrl: string;
+}) {
+  const confirmUrl = `${params.appUrl.replace(/\/$/, "")}/submissions/confirm/${params.researchItemId}`;
+  const subject = `Final confirmation required for your MUJ General submission`;
+
+  const text = `Hi ${params.name},
+
+Your submission "${params.researchTitle}" has reached final review.
+
+Please confirm one of the following:
+- Confirm publication
+- Request revisions
+- Decline publication
+
+Review and respond here: ${confirmUrl}${params.comment ? `
+
+Admin note: ${params.comment}` : ""}
+
+Thanks,
+MUJ General`;
+
+  await sendEmail({
+    to: params.to,
+    subject,
+    text,
+    html: `<p>Hi ${params.name},</p><p>Your submission <strong>${params.researchTitle}</strong> has reached final review.</p><p>Please confirm one of the following: confirm publication, request revisions, or decline publication.</p>${params.comment ? `<p><strong>Admin note:</strong> ${params.comment}</p>` : ""}<p><a href="${confirmUrl}">Review and submit your confirmation</a></p><p>Thanks,<br />MUJ General</p>`,
+  });
+}
+
+export async function sendPeerReviewInviteEmail(params: {
+  to: string;
+  name: string;
+  invitedByName: string;
+  researchTitle: string;
+  reviewUrl: string;
+}) {
+  const subject = `Peer review invitation for MUJ General`;
+
+  const text = `Hi ${params.name},
+
+${params.invitedByName} invited you to provide a peer review for "${params.researchTitle}".
+
+Open your review dashboard: ${params.reviewUrl}
+
+If you do not have an account, sign up with this same email and verify it to access the review.
+
+Thanks,
+MUJ General`;
+
+  await sendEmail({
+    to: params.to,
+    subject,
+    text,
+    html: `<p>Hi ${params.name},</p><p>${params.invitedByName} invited you to provide a peer review for <strong>${params.researchTitle}</strong>.</p><p><a href="${params.reviewUrl}">Open review dashboard</a></p><p>If you do not have an account, sign up with this same email and verify it to access the review.</p><p>Thanks,<br />MUJ General</p>`,
+  });
+}

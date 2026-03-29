@@ -49,6 +49,7 @@ type JournalEditData = {
   submissionGuidelines: StructuredSection[] | null;
   howToPublish: StructuredSection[] | null;
   feesAndFunding: StructuredSection[] | null;
+  editorialBoardCanReviewSubmissions: boolean;
   status: "active" | "archived";
   createdAt: Date;
   volumes: Array<{
@@ -272,6 +273,16 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
             </div>
           </div>
           <Field label="Description" name="description" defaultValue={journal.description ?? ""} textarea disabled={isSaving} />
+          <label className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
+            <input
+              type="checkbox"
+              name="editorialBoardCanReviewSubmissions"
+              defaultChecked={journal.editorialBoardCanReviewSubmissions}
+              disabled={isSaving}
+              className="size-4 rounded border-input"
+            />
+            Editorial board can review submissions
+          </label>
           <CoverImageUploadField defaultKey={journal.coverImageKey ?? ""} disabled={isSaving} />
         </div>
 

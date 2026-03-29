@@ -88,6 +88,9 @@ interface EditorSubmissionFormProps {
   tags: TagOption[];
   journals: JournalOption[];
   journalIssues: JournalIssueOption[];
+  basePath?: string;
+  initialJournalId?: string;
+  lockJournalSelection?: boolean;
 }
 
 const JOURNAL_ELIGIBLE_TYPES = new Set([
@@ -153,6 +156,9 @@ export function EditorSubmissionForm({
   tags,
   journals,
   journalIssues,
+  basePath = "/editor",
+  initialJournalId,
+  lockJournalSelection = false,
 }: EditorSubmissionFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -171,8 +177,8 @@ export function EditorSubmissionForm({
     } else {
       toast.error(msg.text);
     }
-    router.replace("/editor", { scroll: false });
-  }, [submissionParam, router]);
+    router.replace(basePath, { scroll: false });
+  }, [submissionParam, router, basePath]);
 
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -181,7 +187,7 @@ export function EditorSubmissionForm({
   const [activeIntent, setActiveIntent] = useState<"submit" | "save_draft">("submit");
   const [selectedItemType, setSelectedItemType] = useState("");
   const [selectedDepartmentId, setSelectedDepartmentId] = useState("");
-  const [selectedJournalId, setSelectedJournalId] = useState("");
+  const [selectedJournalId, setSelectedJournalId] = useState(initialJournalId ?? "");
   const [selectedJournalIssueId, setSelectedJournalIssueId] = useState("");
   const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
   const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
@@ -492,6 +498,7 @@ export function EditorSubmissionForm({
         </CardHeader>
         <CardContent>
           <form action={handleSubmit} className="space-y-6">
+            <input type="hidden" name="returnTo" value={basePath} readOnly />
             <input type="hidden" name="authors" value={JSON.stringify(authors)} readOnly />
             {selectedTagIds.map((tagId) => (
               <input key={tagId} type="hidden" name="tagIds" value={tagId} readOnly />
@@ -1089,21 +1096,35 @@ export function EditorSubmissionForm({
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1.5">
                         <Label htmlFor="journalId" className="text-sm">Journal</Label>
-                        <AnimatedSelect
-                          id="journalId"
-                          name="journalId"
-                          value={selectedJournalId}
-                          onChange={(val) => {
-                            setSelectedJournalId(val);
-                            setSelectedJournalIssueId("");
-                          }}
-                          disabled={isSubmitting}
-                          placeholder="Standalone / no journal"
-                          options={journals.map((journal) => ({
-                            value: journal.id,
-                            label: journal.name,
-                          }))}
-                        />
+                        {lockJournalSelection ? (
+                          <>
+                            <input type="hidden" name="journalId" value={selectedJournalId} readOnly />
+                            <Input
+                              id="journalId"
+                              value={
+                                journals.find((journal) => journal.id === selectedJournalId)
+                                  ?.name ?? "Selected journal"
+                              }
+                              disabled
+                            />
+                          </>
+                        ) : (
+                          <AnimatedSelect
+                            id="journalId"
+                            name="journalId"
+                            value={selectedJournalId}
+                            onChange={(val) => {
+                              setSelectedJournalId(val);
+                              setSelectedJournalIssueId("");
+                            }}
+                            disabled={isSubmitting}
+                            placeholder="Standalone / no journal"
+                            options={journals.map((journal) => ({
+                              value: journal.id,
+                              label: journal.name,
+                            }))}
+                          />
+                        )}
                       </div>
                       <div className="space-y-1.5">
                         <Label htmlFor="journalIssueId" className="text-sm">Issue</Label>

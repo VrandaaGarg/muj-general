@@ -39,6 +39,11 @@ const optionalDateSchema = z.preprocess(
   z.date().optional(),
 );
 
+const checkboxBooleanSchema = z.preprocess(
+  (value) => value === "on" || value === "true" || value === true,
+  z.boolean(),
+);
+
 export const updateUserAdminSchema = z.object({
   userId: z.string().min(1),
   role: z.enum(["reader", "editor", "admin"]),
@@ -96,6 +101,7 @@ export const createJournalSchema = z.object({
   submissionGuidelines: optionalStructuredSectionsSchema,
   howToPublish: optionalStructuredSectionsSchema,
   feesAndFunding: optionalStructuredSectionsSchema,
+  editorialBoardCanReviewSubmissions: checkboxBooleanSchema.default(true),
 });
 
 export const updateJournalSchema = createJournalSchema.extend({

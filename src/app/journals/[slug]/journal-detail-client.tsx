@@ -6,6 +6,7 @@ import { motion, type Variants } from "framer-motion";
 import {
   ChevronDown,
   ChevronRight,
+  FileUp,
   Mail,
   User,
 } from "lucide-react";
@@ -271,6 +272,16 @@ export function JournalDetailClient({ journal }: { journal: JournalData }) {
               {journal.name}
             </button>
           </h1>
+
+          <div className="mt-4">
+            <Link
+              href={`/journals/${journal.slug}/new/submission`}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              <FileUp className="size-4" />
+              Upload your manuscript
+            </Link>
+          </div>
 
           {/* Quick stats grid */}
           <div className="mt-5 grid gap-x-8 gap-y-3.5 sm:grid-cols-2">

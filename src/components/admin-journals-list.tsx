@@ -104,6 +104,7 @@ type JournalOverview = {
   submissionGuidelines: StructuredSection[] | null;
   howToPublish: StructuredSection[] | null;
   feesAndFunding: StructuredSection[] | null;
+  editorialBoardCanReviewSubmissions: boolean;
   status: "active" | "archived";
   createdAt: Date;
   volumeCount: number;
@@ -289,6 +290,15 @@ export function AdminJournalsList({ journals }: { journals: JournalOverview[] })
                 <Field label="E-ISSN" name="eissn" placeholder="8765-4321" />
               </div>
               <Field label="Description" name="description" textarea />
+              <label className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
+                <input
+                  type="checkbox"
+                  name="editorialBoardCanReviewSubmissions"
+                  defaultChecked
+                  className="size-4 rounded border-input"
+                />
+                Editorial board can review submissions
+              </label>
               <CoverImageUploadField idBase="create" disabled={isCreating} />
             </div>
 

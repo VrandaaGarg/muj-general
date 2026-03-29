@@ -448,6 +448,9 @@ export async function createJournalAction(formData: FormData) {
     submissionGuidelines: formData.get("submissionGuidelines"),
     howToPublish: formData.get("howToPublish"),
     feesAndFunding: formData.get("feesAndFunding"),
+    editorialBoardCanReviewSubmissions: formData.get(
+      "editorialBoardCanReviewSubmissions",
+    ),
   });
 
   if (!parsed.success) {
@@ -474,6 +477,8 @@ export async function createJournalAction(formData: FormData) {
       submissionGuidelines: parsed.data.submissionGuidelines,
       howToPublish: parsed.data.howToPublish,
       feesAndFunding: parsed.data.feesAndFunding,
+      editorialBoardCanReviewSubmissions:
+        parsed.data.editorialBoardCanReviewSubmissions,
     })
     .returning({ id: journals.id, slug: journals.slug });
 
@@ -516,6 +521,9 @@ export async function updateJournalAction(formData: FormData) {
     submissionGuidelines: formData.get("submissionGuidelines"),
     howToPublish: formData.get("howToPublish"),
     feesAndFunding: formData.get("feesAndFunding"),
+    editorialBoardCanReviewSubmissions: formData.get(
+      "editorialBoardCanReviewSubmissions",
+    ),
     status: formData.get("status"),
   });
 
@@ -543,6 +551,8 @@ export async function updateJournalAction(formData: FormData) {
       submissionGuidelines: parsed.data.submissionGuidelines,
       howToPublish: parsed.data.howToPublish,
       feesAndFunding: parsed.data.feesAndFunding,
+      editorialBoardCanReviewSubmissions:
+        parsed.data.editorialBoardCanReviewSubmissions,
       status: parsed.data.status,
       updatedAt: new Date(),
     })

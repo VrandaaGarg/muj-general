@@ -79,6 +79,10 @@ const MODERATION_MESSAGES: Record<
     text: "Changes have been requested from the editor.",
     type: "info",
   },
+  "confirmation-requested": {
+    text: "Final confirmation request has been sent to the submitter.",
+    type: "success",
+  },
   archived: {
     text: "Research item has been archived.",
     type: "success",
