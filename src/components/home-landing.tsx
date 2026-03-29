@@ -11,6 +11,10 @@ import {
 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
+import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
+import remarkGfm from "remark-gfm";
+
 import { SiteHeader } from "@/components/site-header";
 
 interface Journal {
@@ -166,9 +170,11 @@ export function HomeLanding({ journals, recentResearch, departments }: HomeLandi
                       {journal.name}
                     </h3>
                     {journal.description && (
-                      <p className="mb-4 line-clamp-3 flex-1 text-md leading-relaxed text-muted-foreground">
-                        {journal.description}
-                      </p>
+                      <div className="mb-4 line-clamp-3 flex-1 text-md leading-relaxed text-muted-foreground [&_p]:m-0 [&_strong]:font-semibold [&_em]:italic [&_a]:text-primary [&_a]:underline">
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                          {journal.description}
+                        </ReactMarkdown>
+                      </div>
                     )}
                     <div className="mt-auto border-t border-border/40 pt-4">
                       <p className="text-xs text-muted-foreground">

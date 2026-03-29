@@ -308,7 +308,7 @@ function HistoryCard({ entry }: { entry: ModerationEntry }) {
             <div className="min-w-0">
               <CardTitle className="truncate text-sm font-semibold tracking-tight">
                 <Link
-                  href={`/admin/review/${entry.researchItemId}`}
+                  href={`/submissions/${entry.researchItemId}`}
                   className="transition-colors hover:text-primary"
                 >
                   {entry.researchTitle}

@@ -1165,8 +1165,14 @@ export async function getResearchItemForAdminReview(researchItemId: string) {
       departmentName: departments.name,
       departmentSlug: departments.slug,
       currentVersionId: researchItems.currentVersionId,
+      submittedByUserId: researchItems.submittedByUserId,
       submittedByName: user.name,
       submittedByEmail: user.email,
+      submitterConfirmationNote: researchItems.submitterConfirmationNote,
+      submitterConfirmationRequestedAt:
+        researchItems.submitterConfirmationRequestedAt,
+      submitterConfirmationRespondedAt:
+        researchItems.submitterConfirmationRespondedAt,
       supervisorName: itemVersions.supervisorName,
       programName: itemVersions.programName,
       notesToAdmin: itemVersions.notesToAdmin,
@@ -1242,6 +1248,35 @@ export async function getResearchItemForAdminReview(researchItemId: string) {
     pdfFile: currentFiles.find((f) => f.fileKind === "main_pdf") ?? null,
     coverImageFile: currentFiles.find((f) => f.fileKind === "cover_image") ?? null,
   };
+}
+
+export async function getPeerReviewInviteForResearchItemForUser(params: {
+  researchItemId: string;
+  userId: string;
+  userEmail: string;
+}) {
+  const [invite] = await db
+    .select({
+      id: researchItemPeerReviews.id,
+      status: researchItemPeerReviews.status,
+      recommendation: researchItemPeerReviews.recommendation,
+      reviewSubmittedAt: researchItemPeerReviews.reviewSubmittedAt,
+    })
+    .from(researchItemPeerReviews)
+    .where(
+      and(
+        eq(researchItemPeerReviews.researchItemId, params.researchItemId),
+        or(
+          eq(researchItemPeerReviews.inviteeUserId, params.userId),
+          sql`lower(${researchItemPeerReviews.inviteeEmail}) = lower(${params.userEmail})`,
+        ),
+        inArray(researchItemPeerReviews.status, ["pending", "accepted", "completed"]),
+      ),
+    )
+    .orderBy(desc(researchItemPeerReviews.updatedAt))
+    .limit(1);
+
+  return invite ?? null;
 }
 
 export async function getResearchItemVersionDiff(researchItemId: string) {

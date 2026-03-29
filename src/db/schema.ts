@@ -283,7 +283,10 @@ export const authors = pgTable(
     }),
     ...timestamps,
   },
-  (table) => [index("authors_linked_user_id_idx").on(table.linkedUserId)],
+  (table) => [
+    index("authors_linked_user_id_idx").on(table.linkedUserId),
+    index("authors_display_name_idx").on(table.displayName),
+  ],
 );
 
 export const tags = pgTable(
@@ -337,6 +340,7 @@ export const journals = pgTable(
     uniqueIndex("journals_slug_unique").on(table.slug),
     uniqueIndex("journals_name_unique").on(table.name),
     index("journals_status_idx").on(table.status),
+    index("journals_status_name_idx").on(table.status, table.name),
   ],
 );
 
@@ -499,6 +503,10 @@ export const researchItems = pgTable(
     index("research_items_journal_issue_id_idx").on(table.journalIssueId),
     index("research_items_submitted_by_user_id_idx").on(table.submittedByUserId),
     index("research_items_workflow_stage_idx").on(table.workflowStage),
+    index("research_items_workflow_stage_updated_at_idx").on(
+      table.workflowStage,
+      table.updatedAt,
+    ),
     index("research_items_handling_editor_user_id_idx").on(
       table.handlingEditorUserId,
     ),
@@ -549,6 +557,10 @@ export const itemVersions = pgTable(
       table.versionNumber,
     ),
     index("item_versions_research_item_id_idx").on(table.researchItemId),
+    index("item_versions_research_item_created_at_idx").on(
+      table.researchItemId,
+      table.createdAt,
+    ),
   ],
 );
 
@@ -576,6 +588,7 @@ export const files = pgTable(
   },
   (table) => [
     index("files_research_item_id_idx").on(table.researchItemId),
+    index("files_item_version_id_idx").on(table.itemVersionId),
     uniqueIndex("files_bucket_object_key_unique").on(
       table.storageBucket,
       table.objectKey,
@@ -644,6 +657,10 @@ export const researchItemPeerReviews = pgTable(
   },
   (table) => [
     index("research_item_peer_reviews_item_id_idx").on(table.researchItemId),
+    index("research_item_peer_reviews_item_status_idx").on(
+      table.researchItemId,
+      table.status,
+    ),
     index("research_item_peer_reviews_invitee_user_id_idx").on(
       table.inviteeUserId,
     ),
@@ -691,6 +708,7 @@ export const researchItemAuthors = pgTable(
   (table) => [
     primaryKey({ columns: [table.researchItemId, table.authorId] }),
     index("research_item_authors_item_id_idx").on(table.researchItemId),
+    index("research_item_authors_author_id_idx").on(table.authorId),
   ],
 );
 
@@ -707,6 +725,7 @@ export const researchItemTags = pgTable(
   (table) => [
     primaryKey({ columns: [table.researchItemId, table.tagId] }),
     index("research_item_tags_item_id_idx").on(table.researchItemId),
+    index("research_item_tags_tag_id_idx").on(table.tagId),
   ],
 );
 

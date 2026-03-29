@@ -289,7 +289,7 @@ function ModerationReviewCard({ item }: { item: PendingResearchItem }) {
 
         <div className="flex items-center gap-2 pt-1">
           <Link
-            href={`/admin/review/${item.id}`}
+            href={`/submissions/${item.id}`}
             className={buttonVariants({ variant: "secondary", size: "sm" })}
           >
             <Eye className="size-3.5" />

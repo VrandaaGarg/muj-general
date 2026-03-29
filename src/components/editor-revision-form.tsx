@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -16,7 +16,6 @@ import {
   Loader2,
   Plus,
   RefreshCw,
-  Upload,
   Users,
   X,
 } from "lucide-react";
@@ -39,6 +38,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { FileDropzone } from "@/components/ui/file-dropzone";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -419,10 +419,6 @@ function toAuthorDraft(author: RevisionItem["authors"][number]): AuthorDraft {
   };
 }
 
-function formatFileSize(sizeBytes: number) {
-  return `${(sizeBytes / (1024 * 1024)).toFixed(2)} MB`;
-}
-
 export function EditorRevisionForm({
   item,
   departments,
@@ -435,8 +431,6 @@ export function EditorRevisionForm({
   const revisionParam = searchParams.get("revision");
   const handledRevisionParamRef = useRef<string | null>(null);
 
-  const pdfInputRef = useRef<HTMLInputElement>(null);
-  const coverInputRef = useRef<HTMLInputElement>(null);
   const revisionDraftStorageKey = `editor-revision-draft:${item.slug}`;
   const storedDraft = useMemo(() => {
     if (typeof window === "undefined") return null;
@@ -803,27 +797,7 @@ export function EditorRevisionForm({
     );
   }
 
-  function handlePdfChange(event: ChangeEvent<HTMLInputElement>) {
-    setSelectedPdfFile(event.target.files?.[0] ?? null);
-  }
 
-  function handleCoverChange(event: ChangeEvent<HTMLInputElement>) {
-    setSelectedCoverFile(event.target.files?.[0] ?? null);
-  }
-
-  function removeSelectedPdf() {
-    setSelectedPdfFile(null);
-    if (pdfInputRef.current) {
-      pdfInputRef.current.value = "";
-    }
-  }
-
-  function removeSelectedCover() {
-    setSelectedCoverFile(null);
-    if (coverInputRef.current) {
-      coverInputRef.current.value = "";
-    }
-  }
 
   function getNormalizedAuthors() {
     return authors
@@ -1077,95 +1051,39 @@ export function EditorRevisionForm({
                       </p>
                     </div>
                     <div className="grid gap-4 lg:grid-cols-2">
-                      <div className="space-y-2 rounded-xl border border-border/60 p-4">
-                        <div>
-                          <Label className="text-sm">Main PDF</Label>
-                          <p className="mt-1 text-[11px] text-muted-foreground">Leave empty to keep the current PDF.</p>
-                        </div>
-                        {item.pdfFile && !selectedPdfFile && (
-                          <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2">
-                            <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted">
-                              <FileUp className="size-3.5 text-muted-foreground" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-xs text-muted-foreground">Current: <span className="font-medium text-foreground">{item.pdfFile.originalName}</span></p>
-                              <p className="text-[10px] text-muted-foreground">{formatFileSize(item.pdfFile.sizeBytes)}</p>
-                            </div>
-                          </div>
-                        )}
-                        {selectedPdfFile ? (
-                          <div className="flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5">
-                            <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                              <FileUp className="size-4 text-primary" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-xs font-medium">{selectedPdfFile.name}</p>
-                              <p className="text-[10px] text-muted-foreground">{formatFileSize(selectedPdfFile.size)} · will replace current PDF</p>
-                            </div>
-                            <Button type="button" variant="ghost" size="icon-xs" onClick={removeSelectedPdf} disabled={isDisabled}>
-                              <X className="size-3" />
-                            </Button>
-                          </div>
-                        ) : (
-                          !isResubmitted && (
-                            <label htmlFor="revision-pdf" className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-border/80 bg-muted/20 py-6 text-center transition-colors hover:border-primary/40 hover:bg-primary/5">
-                              <div className="flex size-10 items-center justify-center rounded-full bg-muted">
-                                <Upload className="size-4 text-muted-foreground" />
-                              </div>
-                              <div>
-                                <p className="text-xs font-medium">Click to upload a new PDF</p>
-                                <p className="text-[10px] text-muted-foreground">PDF only, up to 10 MB.</p>
-                              </div>
-                            </label>
-                          )
-                        )}
-                        <input ref={pdfInputRef} id="revision-pdf" name="pdf" type="file" accept="application/pdf" className="sr-only" onChange={handlePdfChange} disabled={isDisabled} />
-                      </div>
+                      <FileDropzone
+                        id="revision-pdf"
+                        name="pdf"
+                        accept="application/pdf"
+                        maxSizeBytes={10 * 1024 * 1024}
+                        file={selectedPdfFile}
+                        existingFile={item.pdfFile ? { originalName: item.pdfFile.originalName, sizeBytes: item.pdfFile.sizeBytes } : null}
+                        fileIcon={<FileUp className="size-4 text-primary" />}
+                        headerLabel={<Label className="text-sm">Main PDF</Label>}
+                        description="Leave empty to keep the current PDF."
+                        label="Click or drag to upload a new PDF"
+                        sublabel="PDF only, up to 10 MB."
+                        disabled={isDisabled}
+                        onFileChange={setSelectedPdfFile}
+                        onRemove={() => setSelectedPdfFile(null)}
+                      />
 
-                      <div className="space-y-2 rounded-xl border border-border/60 p-4">
-                        <div>
-                          <Label className="text-sm">Poster / thumbnail image {item.coverImageFile ? <span className="font-normal text-muted-foreground">(replace optional)</span> : <span className="text-destructive">*</span>}</Label>
-                          <p className="mt-1 text-[11px] text-muted-foreground">{item.coverImageFile ? "Leave empty to keep the current image." : "A cover image is required. JPG, PNG, or WEBP up to 5 MB."}</p>
-                        </div>
-                        {item.coverImageFile && !selectedCoverFile && (
-                          <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2">
-                            <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted">
-                              <FileImage className="size-3.5 text-muted-foreground" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-xs text-muted-foreground">Current: <span className="font-medium text-foreground">{item.coverImageFile.originalName}</span></p>
-                              <p className="text-[10px] text-muted-foreground">{formatFileSize(item.coverImageFile.sizeBytes)}</p>
-                            </div>
-                          </div>
-                        )}
-                        {selectedCoverFile ? (
-                          <div className="flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5">
-                            <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                              <FileImage className="size-4 text-primary" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-xs font-medium">{selectedCoverFile.name}</p>
-                              <p className="text-[10px] text-muted-foreground">{formatFileSize(selectedCoverFile.size)} · will replace current image</p>
-                            </div>
-                            <Button type="button" variant="ghost" size="icon-xs" onClick={removeSelectedCover} disabled={isDisabled}>
-                              <X className="size-3" />
-                            </Button>
-                          </div>
-                        ) : (
-                          !isResubmitted && (
-                            <label htmlFor="revision-cover-image" className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-border/80 bg-muted/20 py-6 text-center transition-colors hover:border-primary/40 hover:bg-primary/5">
-                              <div className="flex size-10 items-center justify-center rounded-full bg-muted">
-                                <Upload className="size-4 text-muted-foreground" />
-                              </div>
-                              <div>
-                                <p className="text-xs font-medium">Click to upload a new poster / thumbnail</p>
-                                <p className="text-[10px] text-muted-foreground">JPG, PNG, or WEBP up to 5 MB.</p>
-                              </div>
-                            </label>
-                          )
-                        )}
-                        <input ref={coverInputRef} id="revision-cover-image" name="coverImage" type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={handleCoverChange} disabled={isDisabled} />
-                      </div>
+                      <FileDropzone
+                        id="revision-cover-image"
+                        name="coverImage"
+                        accept="image/jpeg,image/png,image/webp"
+                        maxSizeBytes={5 * 1024 * 1024}
+                        file={selectedCoverFile}
+                        existingFile={item.coverImageFile ? { originalName: item.coverImageFile.originalName, sizeBytes: item.coverImageFile.sizeBytes } : null}
+                        fileIcon={<FileImage className="size-4 text-primary" />}
+                        headerLabel={<Label className="text-sm">Poster / thumbnail image {item.coverImageFile ? <span className="font-normal text-muted-foreground">(replace optional)</span> : <span className="text-destructive">*</span>}</Label>}
+                        description={item.coverImageFile ? "Leave empty to keep the current image." : "A cover image is required. JPG, PNG, or WEBP up to 5 MB."}
+                        label="Click or drag to upload a new poster / thumbnail"
+                        sublabel="JPG, PNG, or WEBP up to 5 MB."
+                        disabled={isDisabled}
+                        onFileChange={setSelectedCoverFile}
+                        onRemove={() => setSelectedCoverFile(null)}
+                      />
                     </div>
                   </div>
                 )}

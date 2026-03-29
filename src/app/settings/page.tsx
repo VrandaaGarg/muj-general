@@ -94,7 +94,7 @@ export default async function SettingsPage({
                 {pendingConfirmations.map((item) => (
                   <Link
                     key={item.id}
-                    href={`/submissions/confirm/${item.id}`}
+                    href={`/submissions/${item.id}`}
                     className="group block rounded-lg border border-border/60 p-4 transition-colors hover:border-primary/30 hover:bg-muted/30"
                   >
                     <div className="mb-2 flex flex-wrap items-center gap-2">

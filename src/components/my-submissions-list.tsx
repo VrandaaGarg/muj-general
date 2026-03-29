@@ -250,7 +250,7 @@ export function MySubmissionsList({ items }: { items: SubmissionItem[] }) {
                     )}
                     {needsConfirmation && (
                       <Link
-                        href={`/submissions/confirm/${item.id}`}
+                        href={`/submissions/${item.id}`}
                         className="font-medium text-primary underline-offset-2 hover:underline"
                       >
                         Submit final confirmation

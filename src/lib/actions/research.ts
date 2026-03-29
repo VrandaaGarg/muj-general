@@ -27,7 +27,6 @@ import {
   createPeerReviewInvite,
   countPendingResearchModerationItems,
   getAppUserById,
-  listDepartmentResearchItemsForReview,
   getOwnedResearchItemForRevision,
   getSubmitterConfirmationItem,
   respondToPeerReviewInvite,
@@ -60,6 +59,7 @@ import {
   sendSubmitterConfirmationRequestEmail,
 } from "@/lib/notifications";
 import { env } from "@/lib/env";
+import { resolveSubmissionAccessContext } from "@/lib/submission-access";
 
 type StoredResearchFile = {
   bucketName: string;
@@ -655,6 +655,15 @@ export async function reviewResearchSubmissionAction(formData: FormData) {
     }
   }
 
+  const access = await resolveSubmissionAccessContext({
+    submissionId: parsed.data.researchItemId,
+    session,
+  });
+
+  if (!access || !access.canAdminModerate) {
+    redirect("/admin?moderation=invalid");
+  }
+
   const reviewedItem = await reviewResearchSubmission({
     researchItemId: parsed.data.researchItemId,
     reviewerUserId: session.appUser.id,
@@ -727,6 +736,15 @@ export async function submitPublicationConfirmationAction(formData: FormData) {
 
   if (!parsed.success) {
     redirect("/settings?confirmation=invalid");
+  }
+
+  const access = await resolveSubmissionAccessContext({
+    submissionId: parsed.data.researchItemId,
+    session,
+  });
+
+  if (!access || !access.canSubmitterConfirm) {
+    redirect("/settings?confirmation=missing");
   }
 
   const item = await getSubmitterConfirmationItem({
@@ -826,9 +844,13 @@ export async function reviewDepartmentResearchSubmissionAction(formData: FormDat
     redirect("/editor?review=invalid");
   }
 
-  const pending = await listDepartmentResearchItemsForReview(session.appUser.id);
-  if (pending.length === 0) {
-    redirect("/editor?review=empty");
+  const access = await resolveSubmissionAccessContext({
+    submissionId: parsed.data.researchItemId,
+    session,
+  });
+
+  if (!access || !access.canDepartmentReview) {
+    redirect("/editor?review=forbidden");
   }
 
   const reviewedItem = await reviewDepartmentResearchSubmission({
@@ -882,9 +904,12 @@ export async function invitePeerReviewerAction(formData: FormData) {
     redirect("/editor?peer=invalid");
   }
 
-  const queue = await listDepartmentResearchItemsForReview(session.appUser.id);
-  const targetItem = queue.find((item) => item.id === parsed.data.researchItemId);
-  if (!targetItem) {
+  const access = await resolveSubmissionAccessContext({
+    submissionId: parsed.data.researchItemId,
+    session,
+  });
+
+  if (!access || !access.canDepartmentReview) {
     redirect("/editor?peer=forbidden");
   }
 
@@ -906,7 +931,7 @@ export async function invitePeerReviewerAction(formData: FormData) {
       to: parsed.data.inviteeEmail,
       name: parsed.data.inviteeName || parsed.data.inviteeEmail,
       invitedByName: session.appUser.name,
-      researchTitle: targetItem.title,
+      researchTitle: access.item.title,
       reviewUrl: `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/reviews`,
     });
   } catch (error) {
@@ -915,7 +940,7 @@ export async function invitePeerReviewerAction(formData: FormData) {
 
   revalidatePath("/editor");
   revalidatePath("/reviews");
-  revalidatePath(`/research/${targetItem.slug}`);
+  revalidatePath(`/research/${access.item.slug}`);
   redirect("/editor?peer=invited");
 }
 

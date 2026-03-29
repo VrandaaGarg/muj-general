@@ -110,7 +110,7 @@ export async function sendSubmitterConfirmationRequestEmail(params: {
   comment?: string | null;
   appUrl: string;
 }) {
-  const confirmUrl = `${params.appUrl.replace(/\/$/, "")}/submissions/confirm/${params.researchItemId}`;
+  const confirmUrl = `${params.appUrl.replace(/\/$/, "")}/submissions/${params.researchItemId}`;
   const subject = `Final confirmation required for your MUJ General submission`;
 
   const template = {

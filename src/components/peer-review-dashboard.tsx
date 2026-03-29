@@ -280,7 +280,7 @@ function PendingInviteCard({ invite }: { invite: PeerReviewInvite }) {
       <CardContent>
         <div className="flex flex-wrap items-center gap-2">
           <Link
-            href={`/reviews/${invite.id}`}
+            href={`/submissions/${invite.researchItemId}`}
             className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
           >
             <ExternalLink className="size-3.5" />
@@ -366,7 +366,7 @@ function AcceptedInviteCard({ invite }: { invite: PeerReviewInvite }) {
       <CardContent className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <Link
-            href={`/reviews/${invite.id}`}
+            href={`/submissions/${invite.researchItemId}`}
             className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
           >
             <ExternalLink className="size-3.5" />
@@ -508,7 +508,7 @@ function CompletedInviteCard({ invite }: { invite: PeerReviewInvite }) {
           </div>
         )}
         <Link
-          href={`/reviews/${invite.id}`}
+          href={`/submissions/${invite.researchItemId}`}
           className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
         >
           <ExternalLink className="size-3.5" />

@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -16,7 +16,6 @@ import {
   Loader2,
   Plus,
   Send,
-  Upload,
   Users,
   X,
 } from "lucide-react";
@@ -31,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { AnimatedSelect } from "@/components/ui/animated-select";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { FileDropzone } from "@/components/ui/file-dropzone";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -332,8 +332,6 @@ export function JournalSubmissionStepForm({
   }, [submissionParam, router, basePath]);
 
   /* ---- Refs ---- */
-  const pdfInputRef = useRef<HTMLInputElement>(null);
-  const coverInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   /* ---- Kickoff state ---- */
@@ -565,21 +563,7 @@ export function JournalSubmissionStepForm({
     );
   }
 
-  /* ---- Files ---- */
-  function handlePdfChange(event: ChangeEvent<HTMLInputElement>) {
-    setSelectedPdfFile(event.target.files?.[0] ?? null);
-  }
-  function handleCoverChange(event: ChangeEvent<HTMLInputElement>) {
-    setSelectedCoverFile(event.target.files?.[0] ?? null);
-  }
-  function removeSelectedPdf() {
-    setSelectedPdfFile(null);
-    if (pdfInputRef.current) pdfInputRef.current.value = "";
-  }
-  function removeSelectedCover() {
-    setSelectedCoverFile(null);
-    if (coverInputRef.current) coverInputRef.current.value = "";
-  }
+
 
   function getNormalizedAuthors() {
     return authors
@@ -908,137 +892,37 @@ export function JournalSubmissionStepForm({
                 </div>
 
                 <div className="grid gap-5 lg:grid-cols-2">
-                  {/* PDF */}
-                  <div className="space-y-2 rounded-xl border border-border/60 p-4">
-                    <div>
-                      <Label className="text-sm">
-                        Main PDF{" "}
-                        <span className="font-normal text-destructive">*</span>
-                      </Label>
-                      <p className="mt-1 text-[11px] text-muted-foreground">
-                        PDF only, up to 10 MB.
-                      </p>
-                    </div>
+                  <FileDropzone
+                    id="pdf"
+                    name="pdf"
+                    accept="application/pdf"
+                    maxSizeBytes={10 * 1024 * 1024}
+                    file={selectedPdfFile}
+                    fileIcon={<FileUp className="size-4 text-primary" />}
+                    headerLabel={<Label className="text-sm">Main PDF <span className="font-normal text-destructive">*</span></Label>}
+                    description="PDF only, up to 10 MB."
+                    label="Click or drag to upload PDF"
+                    sublabel="The main full-text document for review."
+                    disabled={isSubmitting}
+                    onFileChange={setSelectedPdfFile}
+                    onRemove={() => setSelectedPdfFile(null)}
+                  />
 
-                    {selectedPdfFile ? (
-                      <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
-                        <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                          <FileUp className="size-4 text-primary" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-medium">
-                            {selectedPdfFile.name}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">
-                            {formatFileSize(selectedPdfFile.size)}
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-xs"
-                          onClick={removeSelectedPdf}
-                          disabled={isSubmitting}
-                        >
-                          <X className="size-3" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <label
-                        htmlFor="pdf"
-                        className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-border/80 bg-muted/20 py-8 text-center transition-colors hover:border-primary/40 hover:bg-primary/5"
-                      >
-                        <div className="flex size-10 items-center justify-center rounded-full bg-muted">
-                          <Upload className="size-4 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium">
-                            Click to upload PDF
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">
-                            The main full-text document for review.
-                          </p>
-                        </div>
-                      </label>
-                    )}
-
-                    <input
-                      ref={pdfInputRef}
-                      id="pdf"
-                      name="pdf"
-                      type="file"
-                      accept="application/pdf"
-                      className="sr-only"
-                      onChange={handlePdfChange}
-                      disabled={isSubmitting}
-                    />
-                  </div>
-
-                  {/* Cover */}
-                  <div className="space-y-2 rounded-xl border border-border/60 p-4">
-                    <div>
-                      <Label className="text-sm">
-                        Poster / thumbnail{" "}
-                        <span className="font-normal text-destructive">*</span>
-                      </Label>
-                      <p className="mt-1 text-[11px] text-muted-foreground">
-                        JPG, PNG, or WEBP up to 5 MB.
-                      </p>
-                    </div>
-
-                    {selectedCoverFile ? (
-                      <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
-                        <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                          <FileImage className="size-4 text-primary" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-medium">
-                            {selectedCoverFile.name}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">
-                            {formatFileSize(selectedCoverFile.size)}
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-xs"
-                          onClick={removeSelectedCover}
-                          disabled={isSubmitting}
-                        >
-                          <X className="size-3" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <label
-                        htmlFor="cover-image"
-                        className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-border/80 bg-muted/20 py-8 text-center transition-colors hover:border-primary/40 hover:bg-primary/5"
-                      >
-                        <div className="flex size-10 items-center justify-center rounded-full bg-muted">
-                          <Upload className="size-4 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium">
-                            Click to upload cover image
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">
-                            Shown as the cover on the detail page.
-                          </p>
-                        </div>
-                      </label>
-                    )}
-
-                    <input
-                      ref={coverInputRef}
-                      id="cover-image"
-                      name="coverImage"
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      className="sr-only"
-                      onChange={handleCoverChange}
-                      disabled={isSubmitting}
-                    />
-                  </div>
+                  <FileDropzone
+                    id="cover-image"
+                    name="coverImage"
+                    accept="image/jpeg,image/png,image/webp"
+                    maxSizeBytes={5 * 1024 * 1024}
+                    file={selectedCoverFile}
+                    fileIcon={<FileImage className="size-4 text-primary" />}
+                    headerLabel={<Label className="text-sm">Poster / thumbnail <span className="font-normal text-destructive">*</span></Label>}
+                    description="JPG, PNG, or WEBP up to 5 MB."
+                    label="Click or drag to upload cover image"
+                    sublabel="Shown as the cover on the detail page."
+                    disabled={isSubmitting}
+                    onFileChange={setSelectedCoverFile}
+                    onRemove={() => setSelectedCoverFile(null)}
+                  />
                 </div>
               </div>
             )}

@@ -420,7 +420,7 @@ function DepartmentReviewCard({
 
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <Link
-            href={`/editor/review/${item.id}`}
+            href={`/submissions/${item.id}`}
             className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
           >
             <Eye className="size-3.5" />
