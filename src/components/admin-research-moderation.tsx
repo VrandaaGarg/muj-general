@@ -9,6 +9,7 @@ import {
   BookCheck,
   Building2,
   CheckCircle2,
+  ClipboardCheck,
   Clock,
   Eye,
   Loader2,
@@ -36,6 +37,8 @@ interface PendingResearchItem {
   slug: string;
   title: string;
   itemType: string;
+  workflowStage: string;
+  submitterConfirmationStatus: string;
   publicationYear: number;
   createdAt: Date;
   updatedAt: Date;
@@ -195,9 +198,14 @@ export function AdminResearchModeration({
 
 function ModerationReviewCard({ item }: { item: PendingResearchItem }) {
   const [showRequestChanges, setShowRequestChanges] = useState(false);
+  const [showConfirmationRequest, setShowConfirmationRequest] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isRequesting, setIsRequesting] = useState(false);
-  const isBusy = isPublishing || isRequesting;
+  const [isRequestingConfirmation, setIsRequestingConfirmation] = useState(false);
+  const isBusy = isPublishing || isRequesting || isRequestingConfirmation;
+  const canPublish =
+    item.workflowStage === "ready_to_publish" &&
+    item.submitterConfirmationStatus === "confirmed";
 
   async function handlePublish() {
     setIsPublishing(true);
@@ -219,6 +227,17 @@ function ModerationReviewCard({ item }: { item: PendingResearchItem }) {
       await reviewResearchSubmissionAction(formData);
     } catch {
       setIsRequesting(false);
+    }
+  }
+
+  async function handleRequestConfirmation(formData: FormData) {
+    setIsRequestingConfirmation(true);
+    formData.set("researchItemId", item.id);
+    formData.set("decision", "request_submitter_confirmation");
+    try {
+      await reviewResearchSubmissionAction(formData);
+    } catch {
+      setIsRequestingConfirmation(false);
     }
   }
 
@@ -276,24 +295,50 @@ function ModerationReviewCard({ item }: { item: PendingResearchItem }) {
             <Eye className="size-3.5" />
             View Details
           </Link>
-          <Button
-            size="sm"
-            onClick={handlePublish}
-            disabled={isBusy}
-            className="bg-emerald-600 text-white hover:bg-emerald-700"
-          >
-            {isPublishing ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <CheckCircle2 className="size-3.5" />
-            )}
-            {isPublishing ? "Publishing..." : "Publish"}
-          </Button>
+          {canPublish ? (
+            <Button
+              size="sm"
+              onClick={handlePublish}
+              disabled={isBusy}
+              className="bg-emerald-600 text-white hover:bg-emerald-700"
+            >
+              {isPublishing ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <CheckCircle2 className="size-3.5" />
+              )}
+              {isPublishing ? "Publishing..." : "Publish"}
+            </Button>
+          ) : !showConfirmationRequest ? (
+            <Button
+              size="sm"
+              onClick={() => {
+                setShowConfirmationRequest(true);
+                setShowRequestChanges(false);
+              }}
+              disabled={isBusy}
+            >
+              <ClipboardCheck className="size-3.5" />
+              Request final confirmation
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowConfirmationRequest(false)}
+              disabled={isBusy}
+            >
+              Cancel
+            </Button>
+          )}
           {!showRequestChanges ? (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowRequestChanges(true)}
+              onClick={() => {
+                setShowRequestChanges(true);
+                setShowConfirmationRequest(false);
+              }}
               disabled={isBusy}
             >
               <MessageSquareWarning className="size-3.5" />
@@ -310,6 +355,53 @@ function ModerationReviewCard({ item }: { item: PendingResearchItem }) {
             </Button>
           )}
         </div>
+
+        {!canPublish && (
+          <p className="text-xs text-muted-foreground">
+            Once the submitter confirms everything is correct, this item returns here ready to publish.
+          </p>
+        )}
+
+        {showConfirmationRequest && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <form action={handleRequestConfirmation} className="space-y-2 pt-1">
+              <div className="space-y-1.5">
+                <Label htmlFor={`confirm-${item.id}`} className="text-xs">
+                  Note for the submitter
+                </Label>
+                <Textarea
+                  id={`confirm-${item.id}`}
+                  name="comment"
+                  placeholder="Ask the author to confirm that everything looks correct before publication..."
+                  maxLength={1000}
+                  rows={3}
+                  disabled={isBusy}
+                  className="text-sm"
+                />
+              </div>
+              <Button
+                type="submit"
+                variant="outline"
+                size="sm"
+                disabled={isBusy}
+              >
+                {isRequestingConfirmation ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <ClipboardCheck className="size-3.5" />
+                )}
+                {isRequestingConfirmation
+                  ? "Sending..."
+                  : "Send confirmation request"}
+              </Button>
+            </form>
+          </motion.div>
+        )}
 
         {showRequestChanges && (
           <motion.div

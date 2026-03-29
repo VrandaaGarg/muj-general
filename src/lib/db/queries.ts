@@ -1106,6 +1106,8 @@ export async function listPendingResearchModerationItems() {
       slug: researchItems.slug,
       title: researchItems.title,
       itemType: researchItems.itemType,
+      workflowStage: researchItems.workflowStage,
+      submitterConfirmationStatus: researchItems.submitterConfirmationStatus,
       publicationYear: researchItems.publicationYear,
       createdAt: researchItems.createdAt,
       updatedAt: researchItems.updatedAt,
