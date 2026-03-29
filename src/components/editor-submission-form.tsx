@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -11,7 +11,6 @@ import {
   Loader2,
   Plus,
   Send,
-  Upload,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -25,6 +24,7 @@ import {
 import { AnimatedSelect } from "@/components/ui/animated-select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { FileDropzone } from "@/components/ui/file-dropzone";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -88,6 +88,9 @@ interface EditorSubmissionFormProps {
   tags: TagOption[];
   journals: JournalOption[];
   journalIssues: JournalIssueOption[];
+  basePath?: string;
+  initialJournalId?: string;
+  lockJournalSelection?: boolean;
 }
 
 const JOURNAL_ELIGIBLE_TYPES = new Set([
@@ -134,6 +137,101 @@ const SUBMISSION_MESSAGES: Record<
   },
 };
 
+const SUBMISSION_DRAFT_STORAGE_KEY = "editor-submission-draft:v1";
+
+type SubmissionDraftState = {
+  title: string;
+  abstract: string;
+  itemType: string;
+  publicationYear: string;
+  departmentId: string;
+  publicationDate: string;
+  selectedTagIds: string[];
+  authors: AuthorDraft[];
+  references: ReferenceDraft[];
+  externalUrl: string;
+  doi: string;
+  changeSummary: string;
+  showAdditional: boolean;
+  license: string;
+  supervisorName: string;
+  programName: string;
+  notesToAdmin: string;
+  journalId: string;
+  journalIssueId: string;
+  pageRange: string;
+  articleNumber: string;
+};
+
+function parseSubmissionDraftState(value: string): SubmissionDraftState | null {
+  try {
+    const parsed = JSON.parse(value) as Partial<SubmissionDraftState>;
+    if (!parsed || typeof parsed !== "object") return null;
+    return {
+      title: typeof parsed.title === "string" ? parsed.title : "",
+      abstract: typeof parsed.abstract === "string" ? parsed.abstract : "",
+      itemType: typeof parsed.itemType === "string" ? parsed.itemType : "",
+      publicationYear:
+        typeof parsed.publicationYear === "string" ? parsed.publicationYear : "",
+      departmentId:
+        typeof parsed.departmentId === "string" ? parsed.departmentId : "",
+      publicationDate:
+        typeof parsed.publicationDate === "string" ? parsed.publicationDate : "",
+      selectedTagIds: Array.isArray(parsed.selectedTagIds)
+        ? parsed.selectedTagIds.filter(
+            (value): value is string => typeof value === "string",
+          )
+        : [],
+      authors: Array.isArray(parsed.authors)
+        ? parsed.authors
+            .filter((author) => author && typeof author === "object")
+            .map((author) => ({
+              id: typeof author.id === "string" ? author.id : undefined,
+              displayName:
+                typeof author.displayName === "string" ? author.displayName : "",
+              email: typeof author.email === "string" ? author.email : "",
+              affiliation:
+                typeof author.affiliation === "string" ? author.affiliation : "",
+              orcid: typeof author.orcid === "string" ? author.orcid : "",
+              isCorresponding: Boolean(author.isCorresponding),
+            }))
+        : [createEmptyAuthor(true)],
+      references: Array.isArray(parsed.references)
+        ? parsed.references
+            .filter((reference) => reference && typeof reference === "object")
+            .map((reference) => ({
+              citationText:
+                typeof reference.citationText === "string"
+                  ? reference.citationText
+                  : "",
+              url: typeof reference.url === "string" ? reference.url : "",
+            }))
+        : [{ citationText: "", url: "" }],
+      externalUrl:
+        typeof parsed.externalUrl === "string" ? parsed.externalUrl : "",
+      doi: typeof parsed.doi === "string" ? parsed.doi : "",
+      changeSummary:
+        typeof parsed.changeSummary === "string" ? parsed.changeSummary : "",
+      showAdditional: Boolean(parsed.showAdditional),
+      license: typeof parsed.license === "string" ? parsed.license : "",
+      supervisorName:
+        typeof parsed.supervisorName === "string" ? parsed.supervisorName : "",
+      programName:
+        typeof parsed.programName === "string" ? parsed.programName : "",
+      notesToAdmin:
+        typeof parsed.notesToAdmin === "string" ? parsed.notesToAdmin : "",
+      journalId: typeof parsed.journalId === "string" ? parsed.journalId : "",
+      journalIssueId:
+        typeof parsed.journalIssueId === "string" ? parsed.journalIssueId : "",
+      pageRange: typeof parsed.pageRange === "string" ? parsed.pageRange : "",
+      articleNumber:
+        typeof parsed.articleNumber === "string" ? parsed.articleNumber : "",
+    };
+  } catch {
+    return null;
+  }
+}
+
 function createEmptyAuthor(isCorresponding = false): AuthorDraft {
   return {
     displayName: "",
@@ -144,20 +242,149 @@ function createEmptyAuthor(isCorresponding = false): AuthorDraft {
   };
 }
 
-function formatFileSize(sizeBytes: number) {
-  return `${(sizeBytes / (1024 * 1024)).toFixed(2)} MB`;
-}
-
 export function EditorSubmissionForm({
   departments,
   tags,
   journals,
   journalIssues,
+  basePath = "/editor",
+  initialJournalId,
+  lockJournalSelection = false,
 }: EditorSubmissionFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const submissionParam = searchParams.get("submission");
   const handledSubmissionParamRef = useRef<string | null>(null);
+
+  const storedDraft = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    const rawDraft = window.localStorage.getItem(SUBMISSION_DRAFT_STORAGE_KEY);
+    return rawDraft ? parseSubmissionDraftState(rawDraft) : null;
+  }, []);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadPhase, setUploadPhase] = useState<"idle" | "uploading" | "saving">("idle");
+  const [activeIntent, setActiveIntent] = useState<"submit" | "save_draft">("submit");
+  const [selectedItemType, setSelectedItemType] = useState(storedDraft?.itemType ?? "");
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState(
+    storedDraft?.departmentId ?? "",
+  );
+  const [selectedJournalId, setSelectedJournalId] = useState(
+    storedDraft?.journalId ?? initialJournalId ?? "",
+  );
+  const [selectedJournalIssueId, setSelectedJournalIssueId] = useState(
+    storedDraft?.journalIssueId ?? "",
+  );
+  const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
+  const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
+  const [authors, setAuthors] = useState<AuthorDraft[]>(
+    storedDraft?.authors.length
+      ? storedDraft.authors
+      : [createEmptyAuthor(true)],
+  );
+  const [authorMatches, setAuthorMatches] = useState<
+    Record<number, AuthorSuggestion[]>
+  >({});
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
+    storedDraft?.selectedTagIds ?? [],
+  );
+  const [references, setReferences] = useState<ReferenceDraft[]>(
+    storedDraft?.references.length
+      ? storedDraft.references
+      : [{ citationText: "", url: "" }],
+  );
+  const [title, setTitle] = useState(storedDraft?.title ?? "");
+  const [abstract, setAbstract] = useState(storedDraft?.abstract ?? "");
+  const [publicationYear, setPublicationYear] = useState(
+    storedDraft?.publicationYear ?? "",
+  );
+  const [publicationDate, setPublicationDate] = useState(
+    storedDraft?.publicationDate ?? "",
+  );
+  const [externalUrl, setExternalUrl] = useState(storedDraft?.externalUrl ?? "");
+  const [doi, setDoi] = useState(storedDraft?.doi ?? "");
+  const [changeSummary, setChangeSummary] = useState(
+    storedDraft?.changeSummary ?? "",
+  );
+  const [showAdditional, setShowAdditional] = useState(
+    storedDraft?.showAdditional ?? false,
+  );
+  const [license, setLicense] = useState(storedDraft?.license ?? "");
+  const [supervisorName, setSupervisorName] = useState(
+    storedDraft?.supervisorName ?? "",
+  );
+  const [programName, setProgramName] = useState(storedDraft?.programName ?? "");
+  const [notesToAdmin, setNotesToAdmin] = useState(
+    storedDraft?.notesToAdmin ?? "",
+  );
+  const [pageRange, setPageRange] = useState(storedDraft?.pageRange ?? "");
+  const [articleNumber, setArticleNumber] = useState(
+    storedDraft?.articleNumber ?? "",
+  );
+  const [pendingAuthorConfirm, setPendingAuthorConfirm] = useState<{
+    index: number;
+    suggestion: AuthorSuggestion;
+  } | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const timeout = window.setTimeout(() => {
+      const draft: SubmissionDraftState = {
+        title,
+        abstract,
+        itemType: selectedItemType,
+        publicationYear,
+        departmentId: selectedDepartmentId,
+        publicationDate,
+        selectedTagIds,
+        authors,
+        references,
+        externalUrl,
+        doi,
+        changeSummary,
+        showAdditional,
+        license,
+        supervisorName,
+        programName,
+        notesToAdmin,
+        journalId: selectedJournalId,
+        journalIssueId: selectedJournalIssueId,
+        pageRange,
+        articleNumber,
+      };
+
+      window.localStorage.setItem(
+        SUBMISSION_DRAFT_STORAGE_KEY,
+        JSON.stringify(draft),
+      );
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [
+    title,
+    abstract,
+    selectedItemType,
+    publicationYear,
+    selectedDepartmentId,
+    publicationDate,
+    selectedTagIds,
+    authors,
+    references,
+    externalUrl,
+    doi,
+    changeSummary,
+    showAdditional,
+    license,
+    supervisorName,
+    programName,
+    notesToAdmin,
+    selectedJournalId,
+    selectedJournalIssueId,
+    pageRange,
+    articleNumber,
+  ]);
 
   useEffect(() => {
     if (!submissionParam) return;
@@ -171,35 +398,14 @@ export function EditorSubmissionForm({
     } else {
       toast.error(msg.text);
     }
-    router.replace("/editor", { scroll: false });
-  }, [submissionParam, router]);
+    if (submissionParam === "submitted") {
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(SUBMISSION_DRAFT_STORAGE_KEY);
+      }
+    }
+    router.replace(basePath, { scroll: false });
+  }, [submissionParam, router, basePath]);
 
-  const pdfInputRef = useRef<HTMLInputElement>(null);
-  const coverInputRef = useRef<HTMLInputElement>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadPhase, setUploadPhase] = useState<"idle" | "uploading" | "saving">("idle");
-  const [activeIntent, setActiveIntent] = useState<"submit" | "save_draft">("submit");
-  const [selectedItemType, setSelectedItemType] = useState("");
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState("");
-  const [selectedJournalId, setSelectedJournalId] = useState("");
-  const [selectedJournalIssueId, setSelectedJournalIssueId] = useState("");
-  const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
-  const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
-  const [authors, setAuthors] = useState<AuthorDraft[]>([
-    createEmptyAuthor(true),
-  ]);
-  const [authorMatches, setAuthorMatches] = useState<
-    Record<number, AuthorSuggestion[]>
-  >({});
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [references, setReferences] = useState<ReferenceDraft[]>([
-    { citationText: "", url: "" },
-  ]);
-  const [showAdditional, setShowAdditional] = useState(false);
-  const [pendingAuthorConfirm, setPendingAuthorConfirm] = useState<{
-    index: number;
-    suggestion: AuthorSuggestion;
-  } | null>(null);
   const eligibleForJournal = JOURNAL_ELIGIBLE_TYPES.has(selectedItemType);
   const filteredJournalIssues = journalIssues.filter(
     (issue) => issue.journalId === selectedJournalId,
@@ -391,27 +597,7 @@ export function EditorSubmissionForm({
     );
   }
 
-  function handlePdfChange(event: ChangeEvent<HTMLInputElement>) {
-    setSelectedPdfFile(event.target.files?.[0] ?? null);
-  }
 
-  function handleCoverChange(event: ChangeEvent<HTMLInputElement>) {
-    setSelectedCoverFile(event.target.files?.[0] ?? null);
-  }
-
-  function removeSelectedPdf() {
-    setSelectedPdfFile(null);
-    if (pdfInputRef.current) {
-      pdfInputRef.current.value = "";
-    }
-  }
-
-  function removeSelectedCover() {
-    setSelectedCoverFile(null);
-    if (coverInputRef.current) {
-      coverInputRef.current.value = "";
-    }
-  }
 
   async function handleSubmit(formData: FormData) {
     const workflowIntent =
@@ -492,6 +678,7 @@ export function EditorSubmissionForm({
         </CardHeader>
         <CardContent>
           <form action={handleSubmit} className="space-y-6">
+            <input type="hidden" name="returnTo" value={basePath} readOnly />
             <input type="hidden" name="authors" value={JSON.stringify(authors)} readOnly />
             {selectedTagIds.map((tagId) => (
               <input key={tagId} type="hidden" name="tagIds" value={tagId} readOnly />
@@ -504,6 +691,8 @@ export function EditorSubmissionForm({
               <Input
                 id="title"
                 name="title"
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
                 placeholder="e.g. Machine Learning in Healthcare: A Systematic Review"
                 required
                 minLength={5}
@@ -519,6 +708,8 @@ export function EditorSubmissionForm({
               <Textarea
                 id="abstract"
                 name="abstract"
+                value={abstract}
+                onChange={(event) => setAbstract(event.target.value)}
                 placeholder="Provide a concise summary of the research (minimum 50 characters)."
                 required
                 minLength={50}
@@ -543,6 +734,9 @@ export function EditorSubmissionForm({
                     setSelectedItemType(nextType);
                     if (!JOURNAL_ELIGIBLE_TYPES.has(nextType)) {
                       setSelectedJournalId("");
+                      setSelectedJournalIssueId("");
+                      setPageRange("");
+                      setArticleNumber("");
                     }
                   }}
                   disabled={isSubmitting}
@@ -562,6 +756,8 @@ export function EditorSubmissionForm({
                   id="publicationYear"
                   name="publicationYear"
                   type="number"
+                  value={publicationYear}
+                  onChange={(event) => setPublicationYear(event.target.value)}
                   placeholder={new Date().getFullYear().toString()}
                   required
                   min={1900}
@@ -599,6 +795,8 @@ export function EditorSubmissionForm({
                   id="publicationDate"
                   name="publicationDate"
                   type="date"
+                  value={publicationDate}
+                  onChange={(event) => setPublicationDate(event.target.value)}
                   disabled={isSubmitting}
                 />
               </div>
@@ -793,110 +991,38 @@ export function EditorSubmissionForm({
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
-              <div className="space-y-2 rounded-xl border border-border/60 p-4">
-                <div>
-                  <Label className="text-sm">
-                    Main PDF <span className="font-normal text-destructive">*</span>
-                  </Label>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    PDF only, up to 10 MB.
-                  </p>
-                </div>
+              <FileDropzone
+                id="pdf"
+                name="pdf"
+                accept="application/pdf"
+                maxSizeBytes={10 * 1024 * 1024}
+                file={selectedPdfFile}
+                fileIcon={<FileUp className="size-4 text-primary" />}
+                headerLabel={<Label className="text-sm">Main PDF <span className="font-normal text-destructive">*</span></Label>}
+                description="PDF only, up to 10 MB."
+                label="Click or drag to upload PDF"
+                sublabel="The main full-text document for review."
+                required
+                disabled={isSubmitting}
+                onFileChange={setSelectedPdfFile}
+                onRemove={() => setSelectedPdfFile(null)}
+              />
 
-                {selectedPdfFile ? (
-                  <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
-                    <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                      <FileUp className="size-4 text-primary" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-medium">{selectedPdfFile.name}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {formatFileSize(selectedPdfFile.size)}
-                      </p>
-                    </div>
-                    <Button type="button" variant="ghost" size="icon-xs" onClick={removeSelectedPdf} disabled={isSubmitting}>
-                      <X className="size-3" />
-                    </Button>
-                  </div>
-                ) : (
-                  <label
-                    htmlFor="pdf"
-                    className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-border/80 bg-muted/20 py-6 text-center transition-colors hover:border-primary/40 hover:bg-primary/5"
-                  >
-                    <div className="flex size-10 items-center justify-center rounded-full bg-muted">
-                      <Upload className="size-4 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium">Click to upload PDF</p>
-                      <p className="text-[10px] text-muted-foreground">The main full-text document for review.</p>
-                    </div>
-                  </label>
-                )}
-
-                <input
-                  ref={pdfInputRef}
-                  id="pdf"
-                  name="pdf"
-                  type="file"
-                  accept="application/pdf"
-                  required
-                  className="sr-only"
-                  onChange={handlePdfChange}
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              <div className="space-y-2 rounded-xl border border-border/60 p-4">
-                <div>
-                  <Label className="text-sm">
-                    Poster / thumbnail image <span className="text-destructive">*</span>
-                  </Label>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    JPG, PNG, or WEBP up to 5 MB. This will be shown as the cover on the detail page.
-                  </p>
-                </div>
-
-                {selectedCoverFile ? (
-                  <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
-                    <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                      <FileImage className="size-4 text-primary" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-medium">{selectedCoverFile.name}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {formatFileSize(selectedCoverFile.size)}
-                      </p>
-                    </div>
-                    <Button type="button" variant="ghost" size="icon-xs" onClick={removeSelectedCover} disabled={isSubmitting}>
-                      <X className="size-3" />
-                    </Button>
-                  </div>
-                ) : (
-                  <label
-                    htmlFor="cover-image"
-                    className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-border/80 bg-muted/20 py-6 text-center transition-colors hover:border-primary/40 hover:bg-primary/5"
-                  >
-                    <div className="flex size-10 items-center justify-center rounded-full bg-muted">
-                      <Upload className="size-4 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium">Click to upload poster / thumbnail</p>
-                      <p className="text-[10px] text-muted-foreground">Useful for posters, presentations, and visual previews.</p>
-                    </div>
-                  </label>
-                )}
-
-                <input
-                  ref={coverInputRef}
-                  id="cover-image"
-                  name="coverImage"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="sr-only"
-                  onChange={handleCoverChange}
-                  disabled={isSubmitting}
-                />
-              </div>
+              <FileDropzone
+                id="cover-image"
+                name="coverImage"
+                accept="image/jpeg,image/png,image/webp"
+                maxSizeBytes={5 * 1024 * 1024}
+                file={selectedCoverFile}
+                fileIcon={<FileImage className="size-4 text-primary" />}
+                headerLabel={<Label className="text-sm">Poster / thumbnail image <span className="text-destructive">*</span></Label>}
+                description="JPG, PNG, or WEBP up to 5 MB. This will be shown as the cover on the detail page."
+                label="Click or drag to upload poster / thumbnail"
+                sublabel="Useful for posters, presentations, and visual previews."
+                disabled={isSubmitting}
+                onFileChange={setSelectedCoverFile}
+                onRemove={() => setSelectedCoverFile(null)}
+              />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -908,6 +1034,8 @@ export function EditorSubmissionForm({
                   id="externalUrl"
                   name="externalUrl"
                   type="url"
+                  value={externalUrl}
+                  onChange={(event) => setExternalUrl(event.target.value)}
                   placeholder="https://example.com/paper"
                   disabled={isSubmitting}
                 />
@@ -923,6 +1051,8 @@ export function EditorSubmissionForm({
                 <Input
                   id="doi"
                   name="doi"
+                  value={doi}
+                  onChange={(event) => setDoi(event.target.value)}
                   placeholder="10.1000/xyz123"
                   maxLength={255}
                   disabled={isSubmitting}
@@ -937,6 +1067,8 @@ export function EditorSubmissionForm({
               <Textarea
                 id="changeSummary"
                 name="changeSummary"
+                value={changeSummary}
+                onChange={(event) => setChangeSummary(event.target.value)}
                 placeholder="Summarize what this version contains or what makes it important."
                 maxLength={1000}
                 rows={3}
@@ -1028,6 +1160,8 @@ export function EditorSubmissionForm({
                     <Input
                       id="license"
                       name="license"
+                      value={license}
+                      onChange={(event) => setLicense(event.target.value)}
                       placeholder="e.g. CC BY 4.0"
                       maxLength={160}
                       disabled={isSubmitting}
@@ -1041,6 +1175,8 @@ export function EditorSubmissionForm({
                     <Input
                       id="supervisorName"
                       name="supervisorName"
+                      value={supervisorName}
+                      onChange={(event) => setSupervisorName(event.target.value)}
                       placeholder="Dr. Jane Smith"
                       maxLength={160}
                       disabled={isSubmitting}
@@ -1056,6 +1192,8 @@ export function EditorSubmissionForm({
                     <Input
                       id="programName"
                       name="programName"
+                      value={programName}
+                      onChange={(event) => setProgramName(event.target.value)}
                       placeholder="M.Tech Computer Science"
                       maxLength={160}
                       disabled={isSubmitting}
@@ -1069,6 +1207,8 @@ export function EditorSubmissionForm({
                     <Textarea
                       id="notesToAdmin"
                       name="notesToAdmin"
+                      value={notesToAdmin}
+                      onChange={(event) => setNotesToAdmin(event.target.value)}
                       placeholder="Any additional context for the reviewer."
                       maxLength={1000}
                       rows={3}
@@ -1089,21 +1229,42 @@ export function EditorSubmissionForm({
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1.5">
                         <Label htmlFor="journalId" className="text-sm">Journal</Label>
-                        <AnimatedSelect
-                          id="journalId"
-                          name="journalId"
-                          value={selectedJournalId}
-                          onChange={(val) => {
-                            setSelectedJournalId(val);
-                            setSelectedJournalIssueId("");
-                          }}
-                          disabled={isSubmitting}
-                          placeholder="Standalone / no journal"
-                          options={journals.map((journal) => ({
-                            value: journal.id,
-                            label: journal.name,
-                          }))}
-                        />
+                        {lockJournalSelection ? (
+                          <>
+                            <input type="hidden" name="journalId" value={selectedJournalId} readOnly />
+                            <Input
+                              id="journalId"
+                              value={
+                                journals.find((journal) => journal.id === selectedJournalId)
+                                  ?.name ?? "Selected journal"
+                              }
+                              disabled
+                            />
+                          </>
+                        ) : (
+                          <AnimatedSelect
+                            id="journalId"
+                            name="journalId"
+                            value={selectedJournalId}
+                            onChange={(val) => {
+                              setSelectedJournalId(val);
+                              setSelectedJournalIssueId("");
+                              if (!val) {
+                                setPageRange("");
+                                setArticleNumber("");
+                              }
+                            }}
+                            disabled={isSubmitting}
+                            placeholder="Standalone / no journal"
+                            options={[
+                              { value: "", label: "None / standalone" },
+                              ...journals.map((journal) => ({
+                                value: journal.id,
+                                label: journal.name,
+                              })),
+                            ]}
+                          />
+                        )}
                       </div>
                       <div className="space-y-1.5">
                         <Label htmlFor="journalIssueId" className="text-sm">Issue</Label>
@@ -1124,11 +1285,27 @@ export function EditorSubmissionForm({
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1.5">
                         <Label htmlFor="pageRange" className="text-sm">Page range</Label>
-                        <Input id="pageRange" name="pageRange" placeholder="e.g. 12-28" maxLength={30} disabled={isSubmitting} />
+                        <Input
+                          id="pageRange"
+                          name="pageRange"
+                          value={pageRange}
+                          onChange={(event) => setPageRange(event.target.value)}
+                          placeholder="e.g. 12-28"
+                          maxLength={30}
+                          disabled={isSubmitting || !selectedJournalId}
+                        />
                       </div>
                       <div className="space-y-1.5">
                         <Label htmlFor="articleNumber" className="text-sm">Article number</Label>
-                        <Input id="articleNumber" name="articleNumber" placeholder="e2026-0004" maxLength={30} disabled={isSubmitting} />
+                        <Input
+                          id="articleNumber"
+                          name="articleNumber"
+                          value={articleNumber}
+                          onChange={(event) => setArticleNumber(event.target.value)}
+                          placeholder="e2026-0004"
+                          maxLength={30}
+                          disabled={isSubmitting || !selectedJournalId}
+                        />
                       </div>
                     </div>
                   </div>

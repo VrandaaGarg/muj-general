@@ -1,16 +1,12 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { BookCheck, ChevronRight, ClipboardList, PenTool } from "lucide-react";
+import { Clock3, ChevronRight, Eye } from "lucide-react";
 
 import { requireRole } from "@/lib/auth/session";
 import {
-  listDepartments,
-  listJournalIssueOptions,
-  listJournalOptions,
-  listResearchItemsForEditor,
-  listTags,
+  listDepartmentResearchItemsForReview,
+  listPeerReviewInvitesForResearchItems,
 } from "@/lib/db/queries";
-import { getPublicFileUrl } from "@/lib/storage/r2";
 import {
   Card,
   CardHeader,
@@ -19,8 +15,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { SiteHeader } from "@/components/site-header";
-import { EditorSubmissionForm } from "@/components/editor-submission-form";
-import { EditorSubmissionsList } from "@/components/editor-submissions-list";
+import { EditorDepartmentReviewList } from "@/components/editor-department-review-list";
 
 export default async function EditorPage() {
   const session = await requireRole(["editor", "admin"], {
@@ -28,19 +23,20 @@ export default async function EditorPage() {
   });
   const { appUser } = session;
 
-  const [departments, tags, submittedItems, journals, journalIssues] = await Promise.all([
-    listDepartments(),
-    listTags(),
-    listResearchItemsForEditor(appUser.id),
-    listJournalOptions(),
-    listJournalIssueOptions(),
-  ]);
+  const departmentReviewItems = await listDepartmentResearchItemsForReview(appUser.id);
 
-  const pendingCount = submittedItems.filter(
-    (i) => i.status === "submitted",
+  const peerInvitesMap = await listPeerReviewInvitesForResearchItems(
+    departmentReviewItems.map((item) => item.id),
+  );
+
+  const pendingReviewCount = departmentReviewItems.filter(
+    (item) =>
+      item.workflowStage === "submitted" ||
+      item.workflowStage === "editor_review" ||
+      item.workflowStage === "editor_revision_requested",
   ).length;
-  const publishedCount = submittedItems.filter(
-    (i) => i.status === "published",
+  const peerReviewCount = departmentReviewItems.filter(
+    (item) => item.workflowStage === "peer_review",
   ).length;
 
   return (
@@ -81,27 +77,29 @@ export default async function EditorPage() {
             Editor workspace
           </h1>
           <p className="mt-2 text-base text-muted-foreground">
-            Submit research, track review status, and manage your items.
+            Review only submissions routed to your department or journals where
+            you are on the editorial board, then forward finalized decisions to
+            admin.
           </p>
         </div>
 
         {/* Stats cards */}
-        <div className="mb-8 grid gap-4 sm:grid-cols-2">
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Card className="border-border/60">
             <CardHeader className="pb-2">
               <div className="flex size-9 items-center justify-center rounded-lg bg-muted">
-                <ClipboardList className="size-4 text-muted-foreground" />
+                <Eye className="size-4 text-muted-foreground" />
               </div>
               <CardTitle className="text-sm font-semibold tracking-tight">
-                Pending Reviews
+                Department Queue
               </CardTitle>
               <CardDescription>
-                Submissions awaiting admin review
+                Submissions awaiting your department review
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-semibold tracking-tight text-foreground">
-                {pendingCount}
+                {departmentReviewItems.length}
               </p>
             </CardContent>
           </Card>
@@ -109,54 +107,52 @@ export default async function EditorPage() {
           <Card className="border-border/60">
             <CardHeader className="pb-2">
               <div className="flex size-9 items-center justify-center rounded-lg bg-muted">
-                <BookCheck className="size-4 text-muted-foreground" />
+                <Clock3 className="size-4 text-muted-foreground" />
               </div>
               <CardTitle className="text-sm font-semibold tracking-tight">
-                Published Items
+                Pending Review
               </CardTitle>
               <CardDescription>
-                Approved and publicly visible research
+                Items waiting for your editor decision
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-semibold tracking-tight text-foreground">
-                {publishedCount}
+                {pendingReviewCount}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/60">
+            <CardHeader className="pb-2">
+              <div className="flex size-9 items-center justify-center rounded-lg bg-muted">
+                <Clock3 className="size-4 text-muted-foreground" />
+              </div>
+              <CardTitle className="text-sm font-semibold tracking-tight">
+                Peer Review Stage
+              </CardTitle>
+              <CardDescription>
+                Items currently in external peer review
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-semibold tracking-tight text-foreground">
+                {peerReviewCount}
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Submission form */}
+        {/* Department review queue */}
         <div className="mb-10">
           <Suspense
             fallback={
-              <div className="h-64 animate-pulse rounded-xl border border-border/60 bg-muted/20" />
+              <div className="h-32 animate-pulse rounded-xl border border-border/60 bg-muted/20" />
             }
           >
-            <EditorSubmissionForm
-              departments={departments}
-              tags={tags}
-              journals={journals}
-              journalIssues={journalIssues}
-            />
+            <EditorDepartmentReviewList items={departmentReviewItems} peerInvitesMap={peerInvitesMap} />
           </Suspense>
         </div>
-
-        {/* Submissions list */}
-        <Suspense
-          fallback={
-            <div className="h-32 animate-pulse rounded-xl border border-border/60 bg-muted/20" />
-          }
-        >
-          <EditorSubmissionsList
-            items={submittedItems.map((item) => ({
-              ...item,
-              coverImageUrl: item.coverImageObjectKey
-                ? getPublicFileUrl(item.coverImageObjectKey)
-                : null,
-            }))}
-          />
-        </Suspense>
       </main>
     </div>
   );

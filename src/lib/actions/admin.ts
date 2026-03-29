@@ -39,6 +39,51 @@ import {
 } from "@/lib/validation/admin";
 import { eq, sql } from "drizzle-orm";
 
+function getErrorCode(error: unknown): string | null {
+  if (typeof error !== "object" || error === null) return null;
+  if ("code" in error && typeof error.code === "string") return error.code;
+  if (
+    "cause" in error &&
+    typeof error.cause === "object" &&
+    error.cause !== null &&
+    "code" in error.cause &&
+    typeof error.cause.code === "string"
+  ) {
+    return error.cause.code;
+  }
+  return null;
+}
+
+function getConstraintName(error: unknown): string | null {
+  if (typeof error !== "object" || error === null) return null;
+  if (
+    "constraint" in error &&
+    typeof error.constraint === "string" &&
+    error.constraint.length > 0
+  ) {
+    return error.constraint;
+  }
+  if (
+    "cause" in error &&
+    typeof error.cause === "object" &&
+    error.cause !== null &&
+    "constraint" in error.cause &&
+    typeof error.cause.constraint === "string" &&
+    error.cause.constraint.length > 0
+  ) {
+    return error.cause.constraint;
+  }
+
+  const message =
+    "message" in error && typeof error.message === "string"
+      ? error.message
+      : null;
+  if (!message) return null;
+  if (message.includes("journals_slug_unique")) return "journals_slug_unique";
+  if (message.includes("journals_name_unique")) return "journals_name_unique";
+  return null;
+}
+
 export async function updateUserAdminAction(formData: FormData) {
   const session = await requireRole(["admin"], {
     returnTo: "/admin/users",
@@ -434,6 +479,7 @@ export async function createJournalAction(formData: FormData) {
     name: formData.get("name"),
     slug: formData.get("slug"),
     description: formData.get("description"),
+    coverImageKey: formData.get("coverImageKey"),
     issn: formData.get("issn"),
     eissn: formData.get("eissn"),
     aimAndScope: formData.get("aimAndScope"),
@@ -447,33 +493,56 @@ export async function createJournalAction(formData: FormData) {
     submissionGuidelines: formData.get("submissionGuidelines"),
     howToPublish: formData.get("howToPublish"),
     feesAndFunding: formData.get("feesAndFunding"),
+    boardMembersJson: formData.get("boardMembersJson"),
+    editorialBoardCanReviewSubmissions: formData.get(
+      "editorialBoardCanReviewSubmissions",
+    ),
   });
 
   if (!parsed.success) {
     redirect("/admin/journals?op=invalid");
   }
 
-  const [journal] = await db
-    .insert(journals)
-    .values({
-      name: parsed.data.name,
-      slug: parsed.data.slug,
-      description: parsed.data.description || null,
-      issn: parsed.data.issn || null,
-      eissn: parsed.data.eissn || null,
-      aimAndScope: parsed.data.aimAndScope || null,
-      topics: parsed.data.topics || null,
-      contentTypes: parsed.data.contentTypes || null,
-      ethicsPolicy: parsed.data.ethicsPolicy,
-      disclosuresPolicy: parsed.data.disclosuresPolicy,
-      rightsPermissions: parsed.data.rightsPermissions,
-      contactInfo: parsed.data.contactInfo,
-      submissionChecklist: parsed.data.submissionChecklist,
-      submissionGuidelines: parsed.data.submissionGuidelines,
-      howToPublish: parsed.data.howToPublish,
-      feesAndFunding: parsed.data.feesAndFunding,
-    })
-    .returning({ id: journals.id, slug: journals.slug });
+  let journal: { id: string; slug: string };
+  try {
+    const [inserted] = await db
+      .insert(journals)
+      .values({
+        name: parsed.data.name,
+        slug: parsed.data.slug,
+        description: parsed.data.description || null,
+        coverImageKey: parsed.data.coverImageKey || null,
+        issn: parsed.data.issn || null,
+        eissn: parsed.data.eissn || null,
+        aimAndScope: parsed.data.aimAndScope || null,
+        topics: parsed.data.topics || null,
+        contentTypes: parsed.data.contentTypes || null,
+        ethicsPolicy: parsed.data.ethicsPolicy,
+        disclosuresPolicy: parsed.data.disclosuresPolicy,
+        rightsPermissions: parsed.data.rightsPermissions,
+        contactInfo: parsed.data.contactInfo,
+        submissionChecklist: parsed.data.submissionChecklist,
+        submissionGuidelines: parsed.data.submissionGuidelines,
+        howToPublish: parsed.data.howToPublish,
+        feesAndFunding: parsed.data.feesAndFunding,
+        editorialBoardCanReviewSubmissions:
+          parsed.data.editorialBoardCanReviewSubmissions,
+      })
+      .returning({ id: journals.id, slug: journals.slug });
+    journal = inserted;
+  } catch (error) {
+    if (getErrorCode(error) === "23505") {
+      const constraint = getConstraintName(error);
+      if (constraint === "journals_slug_unique") {
+        redirect("/admin/journals?op=slug-exists");
+      }
+      if (constraint === "journals_name_unique") {
+        redirect("/admin/journals?op=name-exists");
+      }
+      redirect("/admin/journals?op=invalid");
+    }
+    throw error;
+  }
 
   await db.insert(activityLogs).values({
     actorUserId: session.appUser.id,
@@ -482,6 +551,22 @@ export async function createJournalAction(formData: FormData) {
     action: "journal_created",
     metadata: JSON.stringify({ journalId: journal.id, slug: journal.slug }),
   });
+
+  if (parsed.data.boardMembersJson && parsed.data.boardMembersJson.length > 0) {
+    await db.insert(journalEditorialBoard).values(
+      parsed.data.boardMembersJson.map((member, index) => ({
+        journalId: journal.id,
+        role: member.role,
+        personName: member.personName,
+        affiliation: member.affiliation || null,
+        email: member.email || null,
+        orcid: member.orcid || null,
+        displayOrder: Number.isFinite(member.displayOrder)
+          ? member.displayOrder
+          : index,
+      })),
+    );
+  }
 
   revalidatePath("/admin/journals");
   revalidatePath("/journals");
@@ -500,6 +585,7 @@ export async function updateJournalAction(formData: FormData) {
     name: formData.get("name"),
     slug: formData.get("slug"),
     description: formData.get("description"),
+    coverImageKey: formData.get("coverImageKey"),
     issn: formData.get("issn"),
     eissn: formData.get("eissn"),
     aimAndScope: formData.get("aimAndScope"),
@@ -513,6 +599,9 @@ export async function updateJournalAction(formData: FormData) {
     submissionGuidelines: formData.get("submissionGuidelines"),
     howToPublish: formData.get("howToPublish"),
     feesAndFunding: formData.get("feesAndFunding"),
+    editorialBoardCanReviewSubmissions: formData.get(
+      "editorialBoardCanReviewSubmissions",
+    ),
     status: formData.get("status"),
   });
 
@@ -520,29 +609,46 @@ export async function updateJournalAction(formData: FormData) {
     redirect("/admin/journals?op=invalid");
   }
 
-  await db
-    .update(journals)
-    .set({
-      name: parsed.data.name,
-      slug: parsed.data.slug,
-      description: parsed.data.description || null,
-      issn: parsed.data.issn || null,
-      eissn: parsed.data.eissn || null,
-      aimAndScope: parsed.data.aimAndScope || null,
-      topics: parsed.data.topics || null,
-      contentTypes: parsed.data.contentTypes || null,
-      ethicsPolicy: parsed.data.ethicsPolicy,
-      disclosuresPolicy: parsed.data.disclosuresPolicy,
-      rightsPermissions: parsed.data.rightsPermissions,
-      contactInfo: parsed.data.contactInfo,
-      submissionChecklist: parsed.data.submissionChecklist,
-      submissionGuidelines: parsed.data.submissionGuidelines,
-      howToPublish: parsed.data.howToPublish,
-      feesAndFunding: parsed.data.feesAndFunding,
-      status: parsed.data.status,
-      updatedAt: new Date(),
-    })
-    .where(eq(journals.id, parsed.data.journalId));
+  try {
+    await db
+      .update(journals)
+      .set({
+        name: parsed.data.name,
+        slug: parsed.data.slug,
+        description: parsed.data.description || null,
+        coverImageKey: parsed.data.coverImageKey || null,
+        issn: parsed.data.issn || null,
+        eissn: parsed.data.eissn || null,
+        aimAndScope: parsed.data.aimAndScope || null,
+        topics: parsed.data.topics || null,
+        contentTypes: parsed.data.contentTypes || null,
+        ethicsPolicy: parsed.data.ethicsPolicy,
+        disclosuresPolicy: parsed.data.disclosuresPolicy,
+        rightsPermissions: parsed.data.rightsPermissions,
+        contactInfo: parsed.data.contactInfo,
+        submissionChecklist: parsed.data.submissionChecklist,
+        submissionGuidelines: parsed.data.submissionGuidelines,
+        howToPublish: parsed.data.howToPublish,
+        feesAndFunding: parsed.data.feesAndFunding,
+        editorialBoardCanReviewSubmissions:
+          parsed.data.editorialBoardCanReviewSubmissions,
+        status: parsed.data.status,
+        updatedAt: new Date(),
+      })
+      .where(eq(journals.id, parsed.data.journalId));
+  } catch (error) {
+    if (getErrorCode(error) === "23505") {
+      const constraint = getConstraintName(error);
+      if (constraint === "journals_slug_unique") {
+        redirect("/admin/journals?op=slug-exists");
+      }
+      if (constraint === "journals_name_unique") {
+        redirect("/admin/journals?op=name-exists");
+      }
+      redirect("/admin/journals?op=invalid");
+    }
+    throw error;
+  }
 
   await db.insert(activityLogs).values({
     actorUserId: session.appUser.id,

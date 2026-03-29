@@ -25,7 +25,7 @@ export async function POST(request: Request) {
 
   const appUser = await getAppUserById(session.user.id);
 
-  if (!appUser || (appUser.role !== "editor" && appUser.role !== "admin")) {
+  if (!appUser || !appUser.emailVerified) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

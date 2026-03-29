@@ -6,7 +6,32 @@ const slugSchema = z
   .min(2)
   .regex(/^[a-z0-9-]+$/, "Slug must use lowercase letters, numbers, and hyphens");
 
-const optionalStructuredSectionsSchema = z.preprocess(
+const optionalMarkdownSchema = z.preprocess(
+  (value) => {
+    if (typeof value !== "string") return undefined;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  },
+  z.string().max(20000).optional(),
+);
+
+const optionalDateSchema = z.preprocess(
+  (value) => {
+    if (typeof value !== "string") return undefined;
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    const date = new Date(`${trimmed}T00:00:00.000Z`);
+    return Number.isNaN(date.getTime()) ? value : date;
+  },
+  z.date().optional(),
+);
+
+const checkboxBooleanSchema = z.preprocess(
+  (value) => value === "on" || value === "true" || value === true,
+  z.boolean(),
+);
+
+const optionalEditorialBoardSchema = z.preprocess(
   (value) => {
     if (typeof value !== "string") return undefined;
     const trimmed = value.trim();
@@ -20,23 +45,16 @@ const optionalStructuredSectionsSchema = z.preprocess(
   z
     .array(
       z.object({
-        heading: z.string().trim().min(1).max(200),
-        content: z.string().trim().min(1).max(5000),
+        role: z.string().trim().min(2).max(100),
+        personName: z.string().trim().min(2).max(200),
+        affiliation: z.string().trim().max(500).optional().or(z.literal("")),
+        email: z.string().trim().email().max(255).optional().or(z.literal("")),
+        orcid: z.string().trim().max(40).optional().or(z.literal("")),
+        displayOrder: z.coerce.number().int().min(0).max(10000).default(0),
       }),
     )
-    .max(30)
+    .max(100)
     .optional(),
-);
-
-const optionalDateSchema = z.preprocess(
-  (value) => {
-    if (typeof value !== "string") return undefined;
-    const trimmed = value.trim();
-    if (!trimmed) return undefined;
-    const date = new Date(`${trimmed}T00:00:00.000Z`);
-    return Number.isNaN(date.getTime()) ? value : date;
-  },
-  z.date().optional(),
 );
 
 export const updateUserAdminSchema = z.object({
@@ -72,20 +90,32 @@ export const updateTagSchema = z.object({
 export const createJournalSchema = z.object({
   name: z.string().trim().min(2).max(255),
   slug: slugSchema.max(280),
-  description: z.string().trim().max(1000).optional().or(z.literal("")),
+  description: z.string().trim().max(5000).optional().or(z.literal("")),
+  coverImageKey: z
+    .string()
+    .trim()
+    .max(2000)
+    .regex(
+      /^journal-covers\/[A-Za-z0-9._/-]+$/,
+      "Cover image key must start with journal-covers/",
+    )
+    .optional()
+    .or(z.literal("")),
   issn: z.string().trim().max(20).optional().or(z.literal("")),
   eissn: z.string().trim().max(20).optional().or(z.literal("")),
   aimAndScope: z.string().trim().max(5000).optional().or(z.literal("")),
   topics: z.string().trim().max(5000).optional().or(z.literal("")),
   contentTypes: z.string().trim().max(5000).optional().or(z.literal("")),
-  ethicsPolicy: optionalStructuredSectionsSchema,
-  disclosuresPolicy: optionalStructuredSectionsSchema,
-  rightsPermissions: optionalStructuredSectionsSchema,
-  contactInfo: optionalStructuredSectionsSchema,
-  submissionChecklist: optionalStructuredSectionsSchema,
-  submissionGuidelines: optionalStructuredSectionsSchema,
-  howToPublish: optionalStructuredSectionsSchema,
-  feesAndFunding: optionalStructuredSectionsSchema,
+  ethicsPolicy: optionalMarkdownSchema,
+  disclosuresPolicy: optionalMarkdownSchema,
+  rightsPermissions: optionalMarkdownSchema,
+  contactInfo: optionalMarkdownSchema,
+  submissionChecklist: optionalMarkdownSchema,
+  submissionGuidelines: optionalMarkdownSchema,
+  howToPublish: optionalMarkdownSchema,
+  feesAndFunding: optionalMarkdownSchema,
+  boardMembersJson: optionalEditorialBoardSchema,
+  editorialBoardCanReviewSubmissions: checkboxBooleanSchema.default(true),
 });
 
 export const updateJournalSchema = createJournalSchema.extend({

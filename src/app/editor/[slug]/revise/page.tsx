@@ -11,7 +11,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-import { requireRole } from "@/lib/auth/session";
+import { requireAppSession } from "@/lib/auth/session";
 import {
   getOwnedResearchItemForRevision,
   listDepartments,
@@ -60,6 +60,21 @@ const DECISION_LABELS: Record<string, { label: string; className: string }> = {
   },
 };
 
+function getRevisionRequesterLabel(request: {
+  requestedByName: string | null;
+  requestedByRole: string | null;
+}) {
+  if (request.requestedByRole === "admin") {
+    return request.requestedByName ? `Admin ${request.requestedByName}` : "Admin";
+  }
+
+  if (request.requestedByRole === "editor") {
+    return request.requestedByName ? `Editor ${request.requestedByName}` : "Editor";
+  }
+
+  return request.requestedByName ?? "Reviewer";
+}
+
 function formatDate(date: Date) {
   return new Date(date).toLocaleDateString("en-US", {
     month: "short",
@@ -89,9 +104,7 @@ interface RevisePageProps {
 export default async function RevisePage({ params }: RevisePageProps) {
   const { slug } = await params;
 
-  const session = await requireRole(["editor", "admin"], {
-    returnTo: `/editor/${slug}/revise`,
-  });
+  const session = await requireAppSession(`/editor/${slug}/revise`);
   const { appUser } = session;
 
   const item = await getOwnedResearchItemForRevision({ slug, userId: appUser.id });
@@ -109,7 +122,12 @@ export default async function RevisePage({ params }: RevisePageProps) {
 
   const statusConfig = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.draft;
   const latestDecision = item.decisions[0] ?? null;
-  const canRevise = item.status === "changes_requested" || item.status === "draft";
+  const canRevise =
+    item.status === "changes_requested" ||
+    item.status === "draft" ||
+    item.workflowStage === "editor_revision_requested";
+  const backHref = appUser.role === "reader" ? "/my-submissions" : "/editor";
+  const backLabel = appUser.role === "reader" ? "My Submissions" : "Editor";
 
   return (
     <div className="relative min-h-screen bg-background">
@@ -132,8 +150,8 @@ export default async function RevisePage({ params }: RevisePageProps) {
             Home
           </Link>
           <ChevronRight className="size-3.5 text-muted-foreground/50" />
-          <Link href="/editor" className="font-medium text-primary underline-offset-2 transition-colors hover:underline hover:text-primary/80">
-            Editor
+          <Link href={backHref} className="font-medium text-primary underline-offset-2 transition-colors hover:underline hover:text-primary/80">
+            {backLabel}
           </Link>
           <ChevronRight className="size-3.5 text-muted-foreground/50" />
           <span className="font-medium text-foreground">Revise</span>
@@ -141,7 +159,7 @@ export default async function RevisePage({ params }: RevisePageProps) {
 
         {/* Title section */}
         <div className="mb-8">
-          <div className="mb-4 flex items-center gap-2">
+          {/* <div className="mb-4 flex items-center gap-2">
             <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
               <RefreshCw className="size-4 text-primary" />
             </div>
@@ -150,7 +168,7 @@ export default async function RevisePage({ params }: RevisePageProps) {
             >
               {statusConfig.label}
             </span>
-          </div>
+          </div> */}
           <h1 className="font-sans text-2xl tracking-tight md:text-3xl">
             {item.title}
           </h1>
@@ -168,35 +186,46 @@ export default async function RevisePage({ params }: RevisePageProps) {
         </div>
 
         {/* Latest moderation feedback */}
-        {latestDecision && (
-          <Card className="mb-6 border-border/60">
+        {(item.latestRevisionRequest || latestDecision) && (
+          <Card className="mb-6 border-primary/25 bg-primary/5">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="flex size-9 items-center justify-center rounded-lg bg-orange-600/10">
-                  <MessageSquareWarning className="size-4 text-orange-600" />
+                <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
+                  <MessageSquareWarning className="size-4 text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="text-sm font-semibold tracking-tight">
-                    Latest reviewer feedback
+                  <CardTitle className="text-base font-semibold tracking-tight text-foreground">
+                    Revision requested
                   </CardTitle>
-                  <CardDescription className="flex items-center gap-1.5">
-                    <span
-                      className={`font-medium ${DECISION_LABELS[latestDecision.decision]?.className ?? ""}`}
-                    >
-                      {DECISION_LABELS[latestDecision.decision]?.label ??
-                        latestDecision.decision}
-                    </span>
-                    <span className="text-border">&middot;</span>
-                    {formatDateTime(latestDecision.createdAt)}
+                  <CardDescription className="flex flex-wrap items-center gap-1.5 text-xs sm:text-sm">
+                    {item.latestRevisionRequest ? (
+                      <>
+                        <span className="font-medium text-primary">
+                          {getRevisionRequesterLabel(item.latestRevisionRequest)}
+                        </span>
+                        <span className="text-border">&middot;</span>
+                        {formatDateTime(item.latestRevisionRequest.requestedAt)}
+                      </>
+                    ) : latestDecision ? (
+                      <>
+                        <span
+                          className={`font-medium ${DECISION_LABELS[latestDecision.decision]?.className ?? ""}`}
+                        >
+                          {DECISION_LABELS[latestDecision.decision]?.label ?? latestDecision.decision}
+                        </span>
+                        <span className="text-border">&middot;</span>
+                        {formatDateTime(latestDecision.createdAt)}
+                      </>
+                    ) : null}
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
-            {latestDecision.comment && (
+            {(item.latestRevisionRequest?.comment || latestDecision?.comment) && (
               <CardContent className="pt-0">
-                <div className="rounded-lg border border-border/40 bg-muted/30 px-3 py-2.5">
+                <div className="rounded-lg border border-primary/15 bg-background/90 px-3 py-2.5">
                   <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
-                    {latestDecision.comment}
+                    {item.latestRevisionRequest?.comment ?? latestDecision?.comment}
                   </p>
                 </div>
               </CardContent>
@@ -374,6 +403,7 @@ export default async function RevisePage({ params }: RevisePageProps) {
                 notesToAdmin: item.notesToAdmin,
                 supervisorName: item.supervisorName,
                 programName: item.programName,
+                latestRevisionRequest: item.latestRevisionRequest,
                 authors: item.authors,
                 tagIds: item.tagIds,
                 references: item.references.map((r) => ({
@@ -418,10 +448,10 @@ export default async function RevisePage({ params }: RevisePageProps) {
                 )}
               </p>
               <Link
-                href="/editor"
+                href={backHref}
                 className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-primary transition-colors hover:text-primary/80"
               >
-                Return to editor
+                Return to {backLabel.toLowerCase()}
               </Link>
             </CardContent>
           </Card>

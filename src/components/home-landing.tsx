@@ -11,6 +11,10 @@ import {
 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
+import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
+import remarkGfm from "remark-gfm";
+
 import { SiteHeader } from "@/components/site-header";
 
 interface Journal {
@@ -52,12 +56,6 @@ interface HomeLandingProps {
   departments: Department[];
 }
 
-const quickLinks = [
-  { label: "Search Journals", href: "/journals" },
-  { label: "Research Papers", href: "/research" },
-  { label: "Publish with us", href: "/editor" },
-] as const;
-
 export function HomeLanding({ journals, recentResearch, departments }: HomeLandingProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
@@ -75,21 +73,6 @@ export function HomeLanding({ journals, recentResearch, departments }: HomeLandi
   return (
     <div className="relative min-h-screen bg-background">
       <SiteHeader />
-
-      {/* Secondary Nav Bar */}
-      <div className="border-b border-border/60">
-        <div className="mx-auto flex max-w-7xl items-center gap-6 overflow-x-auto px-6 md:px-12 lg:px-20">
-          {quickLinks.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              className="relative shrink-0 py-3 text-md font-medium text-muted-foreground transition-colors hover:text-foreground after:absolute after:bottom-0 after:left-0 after:h-[3px] after:w-full after:origin-left after:scale-x-0 after:rounded-full after:bg-primary after:transition-transform hover:after:scale-x-100"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </div>
-      </div>
 
       <main className="relative z-10">
         {/* Hero Section with Search */}
@@ -187,9 +170,11 @@ export function HomeLanding({ journals, recentResearch, departments }: HomeLandi
                       {journal.name}
                     </h3>
                     {journal.description && (
-                      <p className="mb-4 line-clamp-3 flex-1 text-md leading-relaxed text-muted-foreground">
-                        {journal.description}
-                      </p>
+                      <div className="mb-4 line-clamp-3 flex-1 text-md leading-relaxed text-muted-foreground [&_p]:m-0 [&_strong]:font-semibold [&_em]:italic [&_a]:text-primary [&_a]:underline">
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                          {journal.description}
+                        </ReactMarkdown>
+                      </div>
                     )}
                     <div className="mt-auto border-t border-border/40 pt-4">
                       <p className="text-xs text-muted-foreground">

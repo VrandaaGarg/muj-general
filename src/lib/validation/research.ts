@@ -151,10 +151,24 @@ export const createResearchSubmissionSchema = createResearchItemSchema.extend({
 
 export const reviewResearchSubmissionSchema = z.object({
   researchItemId: z.string().uuid(),
-  decision: z.enum(["publish", "request_changes", "archive"]),
+  decision: z.enum([
+    "publish",
+    "request_changes",
+    "archive",
+    "request_submitter_confirmation",
+  ]),
   comment: z.preprocess(
     (value) => (value === null ? undefined : value),
     z.string().trim().max(1000).optional().or(z.literal("")),
+  ),
+});
+
+export const submitPublicationConfirmationSchema = z.object({
+  researchItemId: z.string().uuid(),
+  decision: z.enum(["confirmed", "revision_requested", "declined_by_submitter"]),
+  note: z.preprocess(
+    (value) => (typeof value === "string" ? value.trim() : undefined),
+    z.string().max(1000).optional().or(z.literal("")),
   ),
 });
 
@@ -162,6 +176,39 @@ export const editorItemActionSchema = z.object({
   researchItemId: z.string().uuid(),
   action: z.enum(["delete_draft", "withdraw"]),
   reason: z.preprocess(normalizeOptionalString, z.string().trim().max(500).optional()),
+});
+
+export const editorDepartmentReviewSchema = z.object({
+  researchItemId: z.string().uuid(),
+  decision: z.enum(["forward_to_admin", "request_changes"]),
+  comment: z.preprocess(
+    (value) => (typeof value === "string" ? value.trim() : undefined),
+    z.string().max(1000).optional().or(z.literal("")),
+  ),
+});
+
+export const invitePeerReviewSchema = z.object({
+  researchItemId: z.string().uuid(),
+  inviteeEmail: z.string().trim().email(),
+  inviteeName: z.preprocess(normalizeOptionalString, z.string().max(200).optional()),
+});
+
+export const respondPeerReviewInviteSchema = z.object({
+  inviteId: z.string().uuid(),
+  decision: z.enum(["accepted", "declined"]),
+});
+
+export const submitPeerReviewSchema = z.object({
+  inviteId: z.string().uuid(),
+  recommendation: z.enum(["accept", "minor_revision", "major_revision", "reject"]),
+  reviewComment: z.preprocess(
+    (value) => (typeof value === "string" ? value.trim() : undefined),
+    z.string().min(10).max(4000),
+  ),
+  confidentialComment: z.preprocess(
+    normalizeOptionalString,
+    z.string().max(4000).optional(),
+  ),
 });
 
 export type CreateResearchItemInput = z.infer<typeof createResearchItemSchema>;
@@ -174,3 +221,14 @@ export type ReviewResearchSubmissionInput = z.infer<
   typeof reviewResearchSubmissionSchema
 >;
 export type EditorItemActionInput = z.infer<typeof editorItemActionSchema>;
+export type SubmitPublicationConfirmationInput = z.infer<
+  typeof submitPublicationConfirmationSchema
+>;
+export type EditorDepartmentReviewInput = z.infer<
+  typeof editorDepartmentReviewSchema
+>;
+export type InvitePeerReviewInput = z.infer<typeof invitePeerReviewSchema>;
+export type RespondPeerReviewInviteInput = z.infer<
+  typeof respondPeerReviewInviteSchema
+>;
+export type SubmitPeerReviewInput = z.infer<typeof submitPeerReviewSchema>;

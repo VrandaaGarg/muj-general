@@ -73,7 +73,7 @@ export function EditorAccessRequestCard({
     if (msg.type === "success") toast.success(msg.text);
     else if (msg.type === "error") toast.error(msg.text);
     else toast.info(msg.text);
-    router.replace("/editor", { scroll: false });
+    router.replace("/settings", { scroll: false });
   }, [requestParam, router]);
 
   const [showForm, setShowForm] = useState(false);

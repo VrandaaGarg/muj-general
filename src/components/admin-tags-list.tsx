@@ -23,6 +23,7 @@ import {
   updateTagAction,
 } from "@/lib/actions/admin";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -100,11 +101,11 @@ export function AdminTagsList({ tags }: AdminTagsListProps) {
       </div>
 
       {/* Create form */}
-      <CreateTagForm />
+      <CreateTagForm key={createParam === "success" ? "tag-form-reset" : "tag-form"} />
 
       {/* Tag list */}
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
+        <h2 className="text-lg font-semibold tracking-tight text-foreground">
           All tags
         </h2>
         {tags.length === 0 ? (
@@ -120,16 +121,19 @@ export function AdminTagsList({ tags }: AdminTagsListProps) {
             </CardContent>
           </Card>
         ) : (
-          tags.map((tag, idx) => (
-            <motion.div
-              key={tag.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.04, duration: 0.3 }}
-            >
-              <TagCard tag={tag} />
-            </motion.div>
-          ))
+          <div className="grid gap-4 md:grid-cols-2">
+            {tags.map((tag, idx) => (
+              <motion.div
+                key={tag.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.04, duration: 0.3 }}
+                className="h-full"
+              >
+                <TagCard tag={tag} />
+              </motion.div>
+            ))}
+          </div>
         )}
       </div>
     </div>
@@ -139,6 +143,9 @@ export function AdminTagsList({ tags }: AdminTagsListProps) {
 function TagCard({ tag }: { tag: TagStat }) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [confirmState, setConfirmState] = useState<
+    null | { mode: "archive" | "restore" | "delete" }
+  >(null);
 
   async function handleUpdate(formData: FormData) {
     setSaving(true);
@@ -150,10 +157,6 @@ function TagCard({ tag }: { tag: TagStat }) {
   }
 
   async function handleArchive(mode: "archive" | "restore") {
-    if (!window.confirm(mode === "archive" ? "Archive this tag?" : "Restore this tag?")) {
-      return;
-    }
-
     const formData = new FormData();
     formData.set("tagId", tag.id);
     formData.set("mode", mode);
@@ -166,10 +169,6 @@ function TagCard({ tag }: { tag: TagStat }) {
   }
 
   async function handleDelete() {
-    if (!window.confirm("Delete this tag permanently?")) {
-      return;
-    }
-
     const formData = new FormData();
     formData.set("tagId", tag.id);
     setSaving(true);
@@ -181,38 +180,38 @@ function TagCard({ tag }: { tag: TagStat }) {
   }
 
   return (
-    <Card className="border-border/60">
-      <CardHeader className="pb-2">
+    <Card className="h-full border-border/60 bg-card/90">
+      <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-rose-600/10">
-              <Tag className="size-4 text-rose-600" />
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <Tag className="size-4 text-primary" />
             </div>
             <div className="min-w-0">
-              <CardTitle className="truncate text-sm font-semibold tracking-tight">
+              <CardTitle className="truncate text-base font-semibold tracking-tight">
                 {tag.name}
               </CardTitle>
-              <CardDescription className="truncate font-mono text-[10px]">
+              <CardDescription className="mt-0.5 truncate font-mono text-[11px]">
                 /{tag.slug}
               </CardDescription>
               {tag.archivedAt && (
-                <p className="mt-1 text-[10px] font-medium text-amber-600">
+                <p className="mt-1 inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
                   Archived
                 </p>
               )}
             </div>
           </div>
 
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/60 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
             <BookOpen className="size-3" />
             {tag.researchCount}
           </span>
         </div>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="pt-0">
         {editing ? (
-          <form action={handleUpdate} className="space-y-2">
+          <form action={handleUpdate} className="space-y-2 border-t border-border/50 pt-3">
             <input type="hidden" name="tagId" value={tag.id} />
             <Input name="name" defaultValue={tag.name} required maxLength={120} disabled={saving} />
             <Input name="slug" defaultValue={tag.slug} required maxLength={140} disabled={saving} />
@@ -227,7 +226,7 @@ function TagCard({ tag }: { tag: TagStat }) {
             </div>
           </form>
         ) : (
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 border-t border-border/50 pt-3">
             <Button type="button" variant="outline" size="sm" onClick={() => setEditing(true)} disabled={saving}>
               <Pencil className="size-3.5" />
               Edit
@@ -236,19 +235,63 @@ function TagCard({ tag }: { tag: TagStat }) {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => handleArchive(tag.archivedAt ? "restore" : "archive")}
+              onClick={() =>
+                setConfirmState({ mode: tag.archivedAt ? "restore" : "archive" })
+              }
               disabled={saving}
             >
               {tag.archivedAt ? <Undo2 className="size-3.5" /> : <Archive className="size-3.5" />}
               {tag.archivedAt ? "Restore" : "Archive"}
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={handleDelete} disabled={saving}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setConfirmState({ mode: "delete" })}
+              disabled={saving}
+            >
               <Trash2 className="size-3.5" />
               Delete
             </Button>
           </div>
         )}
       </CardContent>
+
+      <ConfirmDialog
+        open={confirmState !== null}
+        title={
+          confirmState?.mode === "delete"
+            ? "Delete this tag?"
+            : confirmState?.mode === "archive"
+              ? "Archive this tag?"
+              : "Restore this tag?"
+        }
+        description={
+          confirmState?.mode === "delete"
+            ? "This action permanently deletes the tag. You cannot undo this."
+            : confirmState?.mode === "archive"
+              ? "Archived tags stop appearing in normal selection lists until restored."
+              : "This will make the tag active and selectable again."
+        }
+        confirmLabel={
+          confirmState?.mode === "delete"
+            ? "Delete"
+            : confirmState?.mode === "archive"
+              ? "Archive"
+              : "Restore"
+        }
+        cancelLabel="Cancel"
+        onCancel={() => setConfirmState(null)}
+        onConfirm={async () => {
+          if (!confirmState) return;
+          setConfirmState(null);
+          if (confirmState.mode === "delete") {
+            await handleDelete();
+            return;
+          }
+          await handleArchive(confirmState.mode);
+        }}
+      />
     </Card>
   );
 }
@@ -361,7 +404,7 @@ function CreateTagForm() {
                 type="submit"
                 size="sm"
                 disabled={saving || !name.trim() || !slug.trim()}
-                className="bg-rose-600 text-white hover:bg-rose-700"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 {saving ? (
                   <Loader2 className="size-3.5 animate-spin" />

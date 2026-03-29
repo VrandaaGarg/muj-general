@@ -22,11 +22,17 @@ import {
   user,
 } from "@/db/schema";
 import { requireRole } from "@/lib/auth/session";
+import { requireAppSession } from "@/lib/auth/session";
 import {
+  createPeerReviewInvite,
   countPendingResearchModerationItems,
   getAppUserById,
   getOwnedResearchItemForRevision,
+  getSubmitterConfirmationItem,
+  respondToPeerReviewInvite,
+  reviewDepartmentResearchSubmission,
   reviewResearchSubmission,
+  submitPeerReview,
 } from "@/lib/db/queries";
 import { createResearchItemSlug } from "@/lib/research/slug";
 import {
@@ -38,12 +44,22 @@ import {
 import { isR2Configured } from "@/lib/env";
 import {
   createResearchSubmissionSchema,
+  editorDepartmentReviewSchema,
   editorItemActionSchema,
+  invitePeerReviewSchema,
+  respondPeerReviewInviteSchema,
   reviewResearchSubmissionSchema,
+  submitPeerReviewSchema,
+  submitPublicationConfirmationSchema,
   type CreateResearchSubmissionInput,
 } from "@/lib/validation/research";
-import { sendResearchModerationEmail } from "@/lib/notifications";
+import {
+  sendResearchModerationEmail,
+  sendPeerReviewInviteEmail,
+  sendSubmitterConfirmationRequestEmail,
+} from "@/lib/notifications";
 import { env } from "@/lib/env";
+import { resolveSubmissionAccessContext } from "@/lib/submission-access";
 
 type StoredResearchFile = {
   bucketName: string;
@@ -56,6 +72,32 @@ type StoredResearchFile = {
 
 type UploadMetaPrefix = "uploaded" | "coverUploaded";
 type SubmissionIntent = "submit" | "save_draft";
+
+function getReturnToPath(formData: FormData, fallback: string) {
+  const value = formData.get("returnTo");
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+
+  if (!trimmed.startsWith("/")) return fallback;
+  if (trimmed.startsWith("//")) return fallback;
+
+  const allowed =
+    trimmed === "/editor" ||
+    trimmed === "/submit" ||
+    /^\/journals\/[^/]+\/new\/submission$/.test(trimmed);
+
+  if (!allowed) return fallback;
+
+  return trimmed;
+}
+
+async function requireVerifiedSubmissionSession(returnTo: string) {
+  const session = await requireAppSession(returnTo);
+  if (!session.user.emailVerified) {
+    redirect(`/verify-email?redirectTo=${encodeURIComponent(returnTo)}`);
+  }
+  return session;
+}
 
 function getSubmissionIntent(formData: FormData): SubmissionIntent {
   const value = formData.get("workflowIntent");
@@ -277,16 +319,14 @@ async function resolveUploadedResearchFile(params: {
 }
 
 export async function submitResearchSubmission(formData: FormData) {
-  const session = await requireRole(["editor", "admin"], {
-    returnTo: "/editor",
-    unauthorizedRedirectTo: "/settings",
-  });
+  const returnTo = getReturnToPath(formData, "/editor");
+  const session = await requireVerifiedSubmissionSession(returnTo);
 
   const parsed = parseSubmissionPayload(formData);
   const workflowIntent = getSubmissionIntent(formData);
 
   if (!parsed.success) {
-    redirect("/editor?submission=invalid");
+    redirect(`${returnTo}?submission=invalid`);
   }
 
   const submissionPdf = formData.get("pdf");
@@ -300,15 +340,15 @@ export async function submitResearchSubmission(formData: FormData) {
   const hasFileUpload = hasPdfFile || hasCoverFile || hasPdfMeta || hasCoverMeta;
 
   if (!isR2Configured && hasFileUpload) {
-    redirect("/editor?submission=storage-not-configured");
+    redirect(`${returnTo}?submission=storage-not-configured`);
   }
 
   if (workflowIntent === "submit" && !hasPdfFile && !hasPdfMeta) {
-    redirect("/editor?submission=missing-file");
+    redirect(`${returnTo}?submission=missing-file`);
   }
 
   if (workflowIntent === "submit" && !hasCoverFile && !hasCoverMeta) {
-    redirect("/editor?submission=missing-cover");
+    redirect(`${returnTo}?submission=missing-cover`);
   }
 
   const itemId = randomUUID();
@@ -399,6 +439,7 @@ export async function submitResearchSubmission(formData: FormData) {
         submittedByUserId: session.appUser.id,
         currentVersionId: versionId,
         status: workflowIntent === "submit" ? "submitted" : "draft",
+        workflowStage: workflowIntent === "submit" ? "editor_review" : "draft",
         license: parsed.data.license || null,
         externalUrl: parsed.data.externalUrl || null,
         doi: parsed.data.doi || null,
@@ -569,16 +610,16 @@ export async function submitResearchSubmission(formData: FormData) {
     }
 
     console.error("Failed to submit research item", error);
-    redirect("/editor?submission=failed");
+    redirect(`${returnTo}?submission=failed`);
   }
 
-  revalidatePath("/editor");
+  revalidatePath(returnTo);
   revalidatePath("/admin");
   revalidatePath("/settings");
   redirect(
     workflowIntent === "submit"
-      ? "/editor?submission=submitted"
-      : "/editor?submission=draft-saved",
+      ? `${returnTo}?submission=submitted`
+      : `${returnTo}?submission=draft-saved`,
   );
 }
 
@@ -602,12 +643,25 @@ export async function reviewResearchSubmissionAction(formData: FormData) {
     redirect("/admin?moderation=invalid");
   }
 
-  if (parsed.data.decision !== "archive") {
+  if (
+    parsed.data.decision === "publish" ||
+    parsed.data.decision === "request_changes" ||
+    parsed.data.decision === "request_submitter_confirmation"
+  ) {
     const pendingCount = await countPendingResearchModerationItems();
 
     if (pendingCount <= 0) {
       redirect("/admin?moderation=empty");
     }
+  }
+
+  const access = await resolveSubmissionAccessContext({
+    submissionId: parsed.data.researchItemId,
+    session,
+  });
+
+  if (!access || !access.canAdminModerate) {
+    redirect("/admin?moderation=invalid");
   }
 
   const reviewedItem = await reviewResearchSubmission({
@@ -619,7 +673,26 @@ export async function reviewResearchSubmissionAction(formData: FormData) {
 
   const targetUser = await getAppUserById(reviewedItem.submittedByUserId);
 
-  if (targetUser && parsed.data.decision !== "archive") {
+  if (targetUser && parsed.data.decision === "request_submitter_confirmation") {
+    try {
+      await sendSubmitterConfirmationRequestEmail({
+        to: targetUser.email,
+        name: targetUser.name,
+        researchTitle: reviewedItem.title,
+        researchItemId: reviewedItem.id,
+        comment: parsed.data.comment,
+        appUrl: env.NEXT_PUBLIC_APP_URL,
+      });
+    } catch (error) {
+      console.error("Failed to send submitter confirmation request email", error);
+    }
+  }
+
+  if (
+    targetUser &&
+    (parsed.data.decision === "publish" ||
+      parsed.data.decision === "request_changes")
+  ) {
     try {
       await sendResearchModerationEmail({
         to: targetUser.email,
@@ -643,6 +716,8 @@ export async function reviewResearchSubmissionAction(formData: FormData) {
     `/admin?moderation=${
       parsed.data.decision === "publish"
         ? "published"
+        : parsed.data.decision === "request_submitter_confirmation"
+          ? "confirmation-requested"
         : parsed.data.decision === "archive"
           ? "archived"
           : "changes-requested"
@@ -650,11 +725,292 @@ export async function reviewResearchSubmissionAction(formData: FormData) {
   );
 }
 
-export async function submitResearchRevision(formData: FormData) {
+export async function submitPublicationConfirmationAction(formData: FormData) {
+  const session = await requireVerifiedSubmissionSession("/settings");
+
+  const parsed = submitPublicationConfirmationSchema.safeParse({
+    researchItemId: formData.get("researchItemId"),
+    decision: formData.get("decision"),
+    note: formData.get("note"),
+  });
+
+  if (!parsed.success) {
+    redirect("/settings?confirmation=invalid");
+  }
+
+  const access = await resolveSubmissionAccessContext({
+    submissionId: parsed.data.researchItemId,
+    session,
+  });
+
+  if (!access || !access.canSubmitterConfirm) {
+    redirect("/settings?confirmation=missing");
+  }
+
+  const item = await getSubmitterConfirmationItem({
+    researchItemId: parsed.data.researchItemId,
+    userId: session.appUser.id,
+  });
+
+  if (!item) {
+    redirect("/settings?confirmation=missing");
+  }
+
+  if (
+    item.workflowStage !== "awaiting_submitter_confirmation" ||
+    item.submitterConfirmationStatus !== "pending"
+  ) {
+    redirect("/settings?confirmation=invalid");
+  }
+
+  try {
+    await db.transaction(async (tx) => {
+      const updatedRows = await tx
+        .update(researchItems)
+        .set({
+          workflowStage:
+            parsed.data.decision === "confirmed"
+              ? "ready_to_publish"
+              : parsed.data.decision === "revision_requested"
+                ? "editor_revision_requested"
+                : "declined_by_submitter",
+          status:
+            parsed.data.decision === "confirmed"
+              ? "submitted"
+              : parsed.data.decision === "revision_requested"
+                ? "changes_requested"
+                : "archived",
+          submitterConfirmationStatus: parsed.data.decision,
+          submitterConfirmationNote: parsed.data.note || null,
+          submitterConfirmationRespondedAt: new Date(),
+          archivedAt:
+            parsed.data.decision === "declined_by_submitter"
+              ? new Date()
+              : null,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(researchItems.id, parsed.data.researchItemId),
+            eq(researchItems.workflowStage, "awaiting_submitter_confirmation"),
+            eq(researchItems.submitterConfirmationStatus, "pending"),
+          ),
+        )
+        .returning({ id: researchItems.id });
+
+      if (updatedRows.length !== 1) {
+        throw new Error("Confirmation request is no longer pending.");
+      }
+
+      await tx.insert(activityLogs).values({
+        actorUserId: session.appUser.id,
+        targetType: "research_item",
+        targetId: parsed.data.researchItemId,
+        action: `research_item_submitter_${parsed.data.decision}`,
+        metadata: JSON.stringify({
+          researchItemId: parsed.data.researchItemId,
+          decision: parsed.data.decision,
+        }),
+      });
+    });
+  } catch {
+    redirect("/settings?confirmation=invalid");
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/admin");
+  revalidatePath("/editor");
+  revalidatePath(`/research/${item.slug}`);
+  redirect("/settings?confirmation=updated");
+}
+
+export async function reviewDepartmentResearchSubmissionAction(formData: FormData) {
   const session = await requireRole(["editor", "admin"], {
     returnTo: "/editor",
     unauthorizedRedirectTo: "/settings",
   });
+
+  const parsed = editorDepartmentReviewSchema.safeParse({
+    researchItemId: formData.get("researchItemId"),
+    decision: formData.get("decision"),
+    comment: formData.get("comment"),
+  });
+
+  if (!parsed.success) {
+    redirect("/editor?review=invalid");
+  }
+
+  if (parsed.data.decision === "request_changes" && !parsed.data.comment?.trim()) {
+    redirect("/editor?review=invalid");
+  }
+
+  const access = await resolveSubmissionAccessContext({
+    submissionId: parsed.data.researchItemId,
+    session,
+  });
+
+  if (!access || !access.canDepartmentReview) {
+    redirect("/editor?review=forbidden");
+  }
+
+  const reviewedItem = await reviewDepartmentResearchSubmission({
+    researchItemId: parsed.data.researchItemId,
+    reviewerUserId: session.appUser.id,
+    decision: parsed.data.decision,
+    comment: parsed.data.comment,
+  });
+
+  const targetUser = await getAppUserById(reviewedItem.submittedByUserId);
+  if (targetUser && parsed.data.decision === "request_changes") {
+    try {
+      await sendResearchModerationEmail({
+        to: targetUser.email,
+        name: targetUser.name,
+        decision: "request_changes",
+        researchTitle: reviewedItem.title,
+        researchSlug: reviewedItem.slug,
+        comment: parsed.data.comment,
+        appUrl: env.NEXT_PUBLIC_APP_URL,
+      });
+    } catch (error) {
+      console.error("Failed to send editor review update email", error);
+    }
+  }
+
+  revalidatePath("/editor");
+  revalidatePath("/admin");
+  revalidatePath("/settings");
+  revalidatePath(`/research/${reviewedItem.slug}`);
+  redirect(
+    parsed.data.decision === "forward_to_admin"
+      ? "/editor?review=forwarded"
+      : "/editor?review=changes-requested",
+  );
+}
+
+export async function invitePeerReviewerAction(formData: FormData) {
+  const session = await requireRole(["editor", "admin"], {
+    returnTo: "/editor",
+    unauthorizedRedirectTo: "/settings",
+  });
+
+  const parsed = invitePeerReviewSchema.safeParse({
+    researchItemId: formData.get("researchItemId"),
+    inviteeEmail: formData.get("inviteeEmail"),
+    inviteeName: formData.get("inviteeName"),
+  });
+
+  if (!parsed.success) {
+    redirect("/editor?peer=invalid");
+  }
+
+  const access = await resolveSubmissionAccessContext({
+    submissionId: parsed.data.researchItemId,
+    session,
+  });
+
+  if (!access || !access.canDepartmentReview) {
+    redirect("/editor?peer=forbidden");
+  }
+
+  const token = randomUUID();
+  try {
+    await createPeerReviewInvite({
+      researchItemId: parsed.data.researchItemId,
+      invitedByUserId: session.appUser.id,
+      inviteeEmail: parsed.data.inviteeEmail,
+      inviteeName: parsed.data.inviteeName,
+      inviteToken: token,
+    });
+  } catch {
+    redirect("/editor?peer=invalid");
+  }
+
+  try {
+    await sendPeerReviewInviteEmail({
+      to: parsed.data.inviteeEmail,
+      name: parsed.data.inviteeName || parsed.data.inviteeEmail,
+      invitedByName: session.appUser.name,
+      researchTitle: access.item.title,
+      reviewUrl: `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/reviews`,
+    });
+  } catch (error) {
+    console.error("Failed to send peer-review invite email", error);
+  }
+
+  revalidatePath("/editor");
+  revalidatePath("/reviews");
+  revalidatePath(`/research/${access.item.slug}`);
+  redirect("/editor?peer=invited");
+}
+
+export async function respondPeerReviewInviteAction(formData: FormData) {
+  const session = await requireVerifiedSubmissionSession("/reviews");
+
+  const parsed = respondPeerReviewInviteSchema.safeParse({
+    inviteId: formData.get("inviteId"),
+    decision: formData.get("decision"),
+  });
+
+  if (!parsed.success) {
+    redirect("/reviews?peer=invalid");
+  }
+
+  try {
+    await respondToPeerReviewInvite({
+      inviteId: parsed.data.inviteId,
+      userId: session.appUser.id,
+      userEmail: session.appUser.email,
+      decision: parsed.data.decision,
+    });
+  } catch {
+    redirect("/reviews?peer=forbidden");
+  }
+
+  revalidatePath("/reviews");
+  revalidatePath("/editor");
+  redirect(
+    parsed.data.decision === "accepted"
+      ? "/reviews?peer=accepted"
+      : "/reviews?peer=declined",
+  );
+}
+
+export async function submitPeerReviewAction(formData: FormData) {
+  const session = await requireVerifiedSubmissionSession("/reviews");
+
+  const parsed = submitPeerReviewSchema.safeParse({
+    inviteId: formData.get("inviteId"),
+    recommendation: formData.get("recommendation"),
+    reviewComment: formData.get("reviewComment"),
+    confidentialComment: formData.get("confidentialComment"),
+  });
+
+  if (!parsed.success) {
+    redirect("/reviews?peer=invalid");
+  }
+
+  try {
+    await submitPeerReview({
+      inviteId: parsed.data.inviteId,
+      userId: session.appUser.id,
+      userEmail: session.appUser.email,
+      recommendation: parsed.data.recommendation,
+      reviewComment: parsed.data.reviewComment,
+      confidentialComment: parsed.data.confidentialComment,
+    });
+  } catch {
+    redirect("/reviews?peer=forbidden");
+  }
+
+  revalidatePath("/reviews");
+  revalidatePath("/editor");
+  revalidatePath("/admin");
+  redirect("/reviews?peer=submitted");
+}
+
+export async function submitResearchRevision(formData: FormData) {
+  const session = await requireVerifiedSubmissionSession("/editor");
 
   const slug = formData.get("slug");
 
@@ -678,7 +1034,19 @@ export async function submitResearchRevision(formData: FormData) {
     redirect(`/editor/${slug}/revise?revision=invalid`);
   }
 
-  if (workflowIntent === "save_draft" && existingItem.status !== "draft") {
+  if (workflowIntent === "save_draft" && existingItem.workflowStage !== "draft") {
+    redirect(`/editor/${slug}/revise?revision=invalid`);
+  }
+
+  if (
+    workflowIntent === "submit" &&
+    ![
+      "draft",
+      "submitted",
+      "editor_review",
+      "editor_revision_requested",
+    ].includes(existingItem.workflowStage)
+  ) {
     redirect(`/editor/${slug}/revise?revision=invalid`);
   }
 
@@ -817,6 +1185,8 @@ export async function submitResearchRevision(formData: FormData) {
           departmentId: parsed.data.departmentId,
           currentVersionId: versionId,
           status: workflowIntent === "submit" ? "submitted" : "draft",
+          workflowStage:
+            workflowIntent === "submit" ? "editor_review" : "draft",
           license: parsed.data.license || null,
           externalUrl: parsed.data.externalUrl || null,
           doi: parsed.data.doi || null,
@@ -1017,10 +1387,7 @@ export async function submitResearchRevision(formData: FormData) {
 }
 
 export async function manageEditorResearchItemAction(formData: FormData) {
-  const session = await requireRole(["editor", "admin"], {
-    returnTo: "/editor",
-    unauthorizedRedirectTo: "/settings",
-  });
+  const session = await requireVerifiedSubmissionSession("/editor");
 
   const parsed = editorItemActionSchema.safeParse({
     researchItemId: formData.get("researchItemId"),
@@ -1037,6 +1404,7 @@ export async function manageEditorResearchItemAction(formData: FormData) {
       id: researchItems.id,
       slug: researchItems.slug,
       status: researchItems.status,
+      workflowStage: researchItems.workflowStage,
     })
     .from(researchItems)
     .where(
@@ -1052,7 +1420,7 @@ export async function manageEditorResearchItemAction(formData: FormData) {
   }
 
   if (parsed.data.action === "delete_draft") {
-    if (item.status !== "draft") {
+    if (item.workflowStage !== "draft") {
       redirect("/editor?item=invalid");
     }
 
@@ -1091,7 +1459,11 @@ export async function manageEditorResearchItemAction(formData: FormData) {
     redirect("/editor?item=draft-deleted");
   }
 
-  if (item.status !== "submitted" && item.status !== "changes_requested") {
+  if (
+    item.workflowStage !== "submitted" &&
+    item.workflowStage !== "editor_review" &&
+    item.workflowStage !== "editor_revision_requested"
+  ) {
     redirect("/editor?item=invalid");
   }
 
@@ -1100,6 +1472,7 @@ export async function manageEditorResearchItemAction(formData: FormData) {
       .update(researchItems)
       .set({
         status: "archived",
+        workflowStage: "archived",
         archivedAt: new Date(),
         updatedAt: new Date(),
       })

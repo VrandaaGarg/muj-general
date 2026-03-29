@@ -29,6 +29,7 @@ interface SubmittedItem {
   title: string;
   abstract: string;
   status: string;
+  workflowStage?: string;
   itemType: string;
   publicationYear: number;
   createdAt: Date;
@@ -56,8 +57,38 @@ const STATUS_CONFIG: Record<
     className: "bg-amber-600/10 text-amber-600",
     icon: <Clock className="size-3" />,
   },
+  editor_review: {
+    label: "Editor review",
+    className: "bg-amber-600/10 text-amber-600",
+    icon: <Clock className="size-3" />,
+  },
+  peer_review: {
+    label: "Peer review",
+    className: "bg-amber-600/10 text-amber-600",
+    icon: <Clock className="size-3" />,
+  },
+  editor_forwarded_to_admin: {
+    label: "Admin review",
+    className: "bg-amber-600/10 text-amber-600",
+    icon: <Clock className="size-3" />,
+  },
+  awaiting_submitter_confirmation: {
+    label: "Awaiting confirmation",
+    className: "bg-orange-600/10 text-orange-600",
+    icon: <Clock className="size-3" />,
+  },
+  ready_to_publish: {
+    label: "Ready to publish",
+    className: "bg-emerald-600/10 text-emerald-600",
+    icon: <BookCheck className="size-3" />,
+  },
   changes_requested: {
     label: "Changes requested",
+    className: "bg-orange-600/10 text-orange-600",
+    icon: <MessageSquareWarning className="size-3" />,
+  },
+  editor_revision_requested: {
+    label: "Revision requested",
     className: "bg-orange-600/10 text-orange-600",
     icon: <MessageSquareWarning className="size-3" />,
   },
@@ -73,6 +104,11 @@ const STATUS_CONFIG: Record<
   },
   archived: {
     label: "Archived",
+    className: "bg-muted text-muted-foreground",
+    icon: <FileText className="size-3" />,
+  },
+  declined_by_submitter: {
+    label: "Declined by submitter",
     className: "bg-muted text-muted-foreground",
     icon: <FileText className="size-3" />,
   },
@@ -198,10 +234,18 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
         <div className="space-y-3">
           {items.map((item, idx) => {
             const status = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.draft;
-            const needsRevision = item.status === "changes_requested";
+            const workflowStatus = item.workflowStage
+              ? STATUS_CONFIG[item.workflowStage] ?? status
+              : status;
+            const needsRevision =
+              item.status === "changes_requested" ||
+              item.workflowStage === "editor_revision_requested";
             const isDraft = item.status === "draft";
             const canWithdraw =
-              item.status === "submitted" || item.status === "changes_requested";
+              item.workflowStage === "submitted" ||
+              item.workflowStage === "editor_revision_requested" ||
+              item.status === "submitted" ||
+              item.status === "changes_requested";
             const isBusy = activeActionItemId === item.id;
 
             return (
@@ -259,10 +303,10 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
                                 </>
                               )}
                               <span
-                                className={`ml-auto flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${status.className}`}
+                                className={`ml-auto flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${workflowStatus.className}`}
                               >
-                                {status.icon}
-                                {status.label}
+                                {workflowStatus.icon}
+                                {workflowStatus.label}
                               </span>
                             </div>
 

@@ -1,8 +1,9 @@
 import "server-only";
 
-import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, isNull, ne, or, sql } from "drizzle-orm";
 
 import { db } from "@/db";
+import { normalizeJournalRichText } from "@/lib/journal-rich-text";
 import {
   activityLogs,
   appUsers,
@@ -16,6 +17,7 @@ import {
   moderationDecisions,
   researchItemAuthors,
   researchItemReferences,
+  researchItemPeerReviews,
   researchItemTags,
   researchItems,
   authors,
@@ -51,6 +53,107 @@ type PublishedResearchListItem = {
   tags: { id: string; name: string; slug: string }[];
   coverImageObjectKey: string | null;
 };
+
+type RevisionRequestSummary = {
+  requestedAt: Date;
+  requestedByName: string | null;
+  requestedByRole: string | null;
+  comment: string | null;
+  source: "editor" | "admin";
+};
+
+function extractActivityLogComment(metadata: string | null) {
+  if (!metadata) return null;
+
+  try {
+    const parsed = JSON.parse(metadata) as { comment?: unknown };
+    return typeof parsed.comment === "string" && parsed.comment.trim()
+      ? parsed.comment.trim()
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+async function getLatestRevisionRequestsForItems(researchItemIds: string[]) {
+  if (researchItemIds.length === 0) {
+    return new Map<string, RevisionRequestSummary>();
+  }
+
+  const [moderationRows, activityRows] = await Promise.all([
+    db
+      .select({
+        researchItemId: moderationDecisions.researchItemId,
+        requestedAt: moderationDecisions.createdAt,
+        requestedByName: user.name,
+        requestedByRole: appUsers.role,
+        comment: moderationDecisions.comment,
+      })
+      .from(moderationDecisions)
+      .innerJoin(appUsers, eq(appUsers.id, moderationDecisions.reviewedByUserId))
+      .leftJoin(user, eq(user.id, appUsers.id))
+      .where(
+        and(
+          inArray(moderationDecisions.researchItemId, researchItemIds),
+          eq(moderationDecisions.decision, "changes_requested"),
+        ),
+      )
+      .orderBy(desc(moderationDecisions.createdAt)),
+    db
+      .select({
+        researchItemId: activityLogs.targetId,
+        requestedAt: activityLogs.createdAt,
+        requestedByName: user.name,
+        requestedByRole: appUsers.role,
+        metadata: activityLogs.metadata,
+      })
+      .from(activityLogs)
+      .leftJoin(appUsers, eq(appUsers.id, activityLogs.actorUserId))
+      .leftJoin(user, eq(user.id, appUsers.id))
+      .where(
+        and(
+          eq(activityLogs.targetType, "research_item"),
+          inArray(activityLogs.targetId, researchItemIds),
+          eq(activityLogs.action, "research_item_editor_changes_requested"),
+        ),
+      )
+      .orderBy(desc(activityLogs.createdAt)),
+  ]);
+
+  const requestMap = new Map<string, RevisionRequestSummary>();
+
+  for (const row of moderationRows) {
+    const existing = requestMap.get(row.researchItemId);
+    if (existing && existing.requestedAt >= row.requestedAt) {
+      continue;
+    }
+
+    requestMap.set(row.researchItemId, {
+      requestedAt: row.requestedAt,
+      requestedByName: row.requestedByName ?? null,
+      requestedByRole: row.requestedByRole,
+      comment: row.comment?.trim() || null,
+      source: row.requestedByRole === "editor" ? "editor" : "admin",
+    });
+  }
+
+  for (const row of activityRows) {
+    const existing = requestMap.get(row.researchItemId);
+    if (existing && existing.requestedAt >= row.requestedAt) {
+      continue;
+    }
+
+    requestMap.set(row.researchItemId, {
+      requestedAt: row.requestedAt,
+      requestedByName: row.requestedByName ?? null,
+      requestedByRole: row.requestedByRole,
+      comment: extractActivityLogComment(row.metadata),
+      source: "editor",
+    });
+  }
+
+  return requestMap;
+}
 
 function buildPublishedResearchWhere(filters: PublishedResearchFilters) {
   const conditions = [eq(researchItems.status, "published")];
@@ -313,11 +416,22 @@ export async function listJournalAdminOverview() {
       name: journals.name,
       slug: journals.slug,
       description: journals.description,
+      coverImageKey: journals.coverImageKey,
       issn: journals.issn,
       eissn: journals.eissn,
       aimAndScope: journals.aimAndScope,
+      topics: journals.topics,
+      contentTypes: journals.contentTypes,
+      ethicsPolicy: journals.ethicsPolicy,
+      disclosuresPolicy: journals.disclosuresPolicy,
+      rightsPermissions: journals.rightsPermissions,
+      contactInfo: journals.contactInfo,
+      submissionChecklist: journals.submissionChecklist,
       submissionGuidelines: journals.submissionGuidelines,
+      howToPublish: journals.howToPublish,
       feesAndFunding: journals.feesAndFunding,
+      editorialBoardCanReviewSubmissions:
+        journals.editorialBoardCanReviewSubmissions,
       status: journals.status,
       createdAt: journals.createdAt,
       volumeCount: sql<number>`count(distinct ${journalVolumes.id})`,
@@ -374,10 +488,109 @@ export async function listJournalAdminOverview() {
 
   return rows.map((row) => ({
     ...row,
+    ethicsPolicy: normalizeJournalRichText(row.ethicsPolicy),
+    disclosuresPolicy: normalizeJournalRichText(row.disclosuresPolicy),
+    rightsPermissions: normalizeJournalRichText(row.rightsPermissions),
+    contactInfo: normalizeJournalRichText(row.contactInfo),
+    submissionChecklist: normalizeJournalRichText(row.submissionChecklist),
+    submissionGuidelines: normalizeJournalRichText(row.submissionGuidelines),
+    howToPublish: normalizeJournalRichText(row.howToPublish),
+    feesAndFunding: normalizeJournalRichText(row.feesAndFunding),
     volumes: volumes.filter((volume) => volume.journalId === row.id),
     issues: issues.filter((issue) => issue.journalId === row.id),
     editorialBoard: editorialBoard.filter((member) => member.journalId === row.id),
   }));
+}
+
+export async function getJournalForAdminEdit(journalSlug: string) {
+  const [journal] = await db
+    .select({
+      id: journals.id,
+      name: journals.name,
+      slug: journals.slug,
+      description: journals.description,
+      coverImageKey: journals.coverImageKey,
+      issn: journals.issn,
+      eissn: journals.eissn,
+      aimAndScope: journals.aimAndScope,
+      topics: journals.topics,
+      contentTypes: journals.contentTypes,
+      ethicsPolicy: journals.ethicsPolicy,
+      disclosuresPolicy: journals.disclosuresPolicy,
+      rightsPermissions: journals.rightsPermissions,
+      contactInfo: journals.contactInfo,
+      submissionChecklist: journals.submissionChecklist,
+      submissionGuidelines: journals.submissionGuidelines,
+      howToPublish: journals.howToPublish,
+      feesAndFunding: journals.feesAndFunding,
+      editorialBoardCanReviewSubmissions:
+        journals.editorialBoardCanReviewSubmissions,
+      status: journals.status,
+      createdAt: journals.createdAt,
+    })
+    .from(journals)
+    .where(eq(journals.slug, journalSlug))
+    .limit(1);
+
+  if (!journal) return null;
+
+  const [volumes, issues, editorialBoard] = await Promise.all([
+    db
+      .select({
+        id: journalVolumes.id,
+        journalId: journalVolumes.journalId,
+        volumeNumber: journalVolumes.volumeNumber,
+        title: journalVolumes.title,
+        year: journalVolumes.year,
+      })
+      .from(journalVolumes)
+      .where(eq(journalVolumes.journalId, journal.id))
+      .orderBy(desc(journalVolumes.year), desc(journalVolumes.volumeNumber)),
+    db
+      .select({
+        id: journalIssues.id,
+        journalId: journalIssues.journalId,
+        volumeId: journalIssues.volumeId,
+        issueNumber: journalIssues.issueNumber,
+        title: journalIssues.title,
+        publishedAt: journalIssues.publishedAt,
+      })
+      .from(journalIssues)
+      .where(eq(journalIssues.journalId, journal.id))
+      .orderBy(desc(journalIssues.publishedAt), desc(journalIssues.issueNumber)),
+    db
+      .select({
+        id: journalEditorialBoard.id,
+        journalId: journalEditorialBoard.journalId,
+        role: journalEditorialBoard.role,
+        personName: journalEditorialBoard.personName,
+        affiliation: journalEditorialBoard.affiliation,
+        email: journalEditorialBoard.email,
+        orcid: journalEditorialBoard.orcid,
+        displayOrder: journalEditorialBoard.displayOrder,
+      })
+      .from(journalEditorialBoard)
+      .where(eq(journalEditorialBoard.journalId, journal.id))
+      .orderBy(
+        asc(journalEditorialBoard.displayOrder),
+        asc(journalEditorialBoard.personName),
+      ),
+  ]);
+
+  return {
+    ...journal,
+    ethicsPolicy: normalizeJournalRichText(journal.ethicsPolicy),
+    disclosuresPolicy: normalizeJournalRichText(journal.disclosuresPolicy),
+    rightsPermissions: normalizeJournalRichText(journal.rightsPermissions),
+    contactInfo: normalizeJournalRichText(journal.contactInfo),
+    submissionChecklist: normalizeJournalRichText(journal.submissionChecklist),
+    submissionGuidelines: normalizeJournalRichText(journal.submissionGuidelines),
+    howToPublish: normalizeJournalRichText(journal.howToPublish),
+    feesAndFunding: normalizeJournalRichText(journal.feesAndFunding),
+    volumes,
+    issues,
+    editorialBoard,
+  };
 }
 
 export async function listPublicJournals() {
@@ -386,6 +599,7 @@ export async function listPublicJournals() {
       id: journals.id,
       name: journals.name,
       slug: journals.slug,
+      coverImageKey: journals.coverImageKey,
       description: journals.description,
       issn: journals.issn,
       eissn: journals.eissn,
@@ -408,6 +622,7 @@ export async function getPublicJournalBySlug(slug: string) {
       id: journals.id,
       name: journals.name,
       slug: journals.slug,
+      coverImageKey: journals.coverImageKey,
       description: journals.description,
       issn: journals.issn,
       eissn: journals.eissn,
@@ -511,6 +726,14 @@ export async function getPublicJournalBySlug(slug: string) {
 
   return {
     ...journal,
+    ethicsPolicy: normalizeJournalRichText(journal.ethicsPolicy),
+    disclosuresPolicy: normalizeJournalRichText(journal.disclosuresPolicy),
+    rightsPermissions: normalizeJournalRichText(journal.rightsPermissions),
+    contactInfo: normalizeJournalRichText(journal.contactInfo),
+    submissionChecklist: normalizeJournalRichText(journal.submissionChecklist),
+    submissionGuidelines: normalizeJournalRichText(journal.submissionGuidelines),
+    howToPublish: normalizeJournalRichText(journal.howToPublish),
+    feesAndFunding: normalizeJournalRichText(journal.feesAndFunding),
     editorialBoard,
     onlineFirstItems: onlineFirstRows.map((row) => ({
       ...row,
@@ -744,6 +967,7 @@ export async function listResearchItemsForEditor(userId: string) {
       title: researchItems.title,
       abstract: researchItems.abstract,
       status: researchItems.status,
+      workflowStage: researchItems.workflowStage,
       itemType: researchItems.itemType,
       publicationYear: researchItems.publicationYear,
       journalId: researchItems.journalId,
@@ -761,29 +985,118 @@ export async function listResearchItemsForEditor(userId: string) {
     .orderBy(desc(researchItems.updatedAt));
 
   const itemIds = rows.map((r) => r.id);
-  if (itemIds.length === 0) return rows.map((r) => ({ ...r, coverImageObjectKey: null as string | null }));
+  if (itemIds.length === 0) {
+    return rows.map((r) => ({
+      ...r,
+      coverImageObjectKey: null as string | null,
+      latestRevisionRequest: null as RevisionRequestSummary | null,
+    }));
+  }
 
-  const coverRows = await db
-    .select({
-      researchItemId: files.researchItemId,
-      objectKey: files.objectKey,
-    })
-    .from(files)
-    .innerJoin(researchItems, eq(researchItems.id, files.researchItemId))
-    .where(
-      and(
-        inArray(files.researchItemId, itemIds),
-        eq(files.fileKind, "cover_image"),
-        sql`${files.itemVersionId} = ${researchItems.currentVersionId}`,
+  const [coverRows, revisionRequestMap] = await Promise.all([
+    db
+      .select({
+        researchItemId: files.researchItemId,
+        objectKey: files.objectKey,
+      })
+      .from(files)
+      .innerJoin(researchItems, eq(researchItems.id, files.researchItemId))
+      .where(
+        and(
+          inArray(files.researchItemId, itemIds),
+          eq(files.fileKind, "cover_image"),
+          sql`${files.itemVersionId} = ${researchItems.currentVersionId}`,
+        ),
       ),
-    );
+    getLatestRevisionRequestsForItems(itemIds),
+  ]);
 
   const coverMap = new Map(coverRows.map((r) => [r.researchItemId, r.objectKey]));
 
   return rows.map((r) => ({
     ...r,
     coverImageObjectKey: coverMap.get(r.id) ?? null,
+    latestRevisionRequest: revisionRequestMap.get(r.id) ?? null,
   }));
+}
+
+export async function listResearchItemsForSubmitter(userId: string) {
+  return listResearchItemsForEditor(userId);
+}
+
+export async function listDepartmentResearchItemsForReview(userId: string) {
+  const appUserRecord = await getAppUserById(userId);
+  if (!appUserRecord) {
+    return [];
+  }
+
+  const boardJournalRows = await db
+    .selectDistinct({ journalId: journalEditorialBoard.journalId })
+    .from(journalEditorialBoard)
+    .innerJoin(journals, eq(journals.id, journalEditorialBoard.journalId))
+    .where(
+      and(
+        eq(journals.editorialBoardCanReviewSubmissions, true),
+        sql`lower(${journalEditorialBoard.email}) = lower(${appUserRecord.email})`,
+      ),
+    );
+
+  const boardJournalIds = boardJournalRows.map((row) => row.journalId);
+
+  const workflowFilter = inArray(researchItems.workflowStage, [
+    "submitted",
+    "editor_review",
+    "peer_review",
+    "editor_revision_requested",
+  ]);
+
+  const departmentFlowFilter = appUserRecord.departmentId
+    ? and(
+        workflowFilter,
+        eq(researchItems.departmentId, appUserRecord.departmentId),
+      )
+    : sql`false`;
+
+  const journalBoardFilter =
+    boardJournalIds.length > 0
+      ? and(
+          workflowFilter,
+          inArray(researchItems.journalId, boardJournalIds),
+          eq(journals.editorialBoardCanReviewSubmissions, true),
+        )
+      : sql`false`;
+
+  return db
+    .select({
+      id: researchItems.id,
+      slug: researchItems.slug,
+      title: researchItems.title,
+      itemType: researchItems.itemType,
+      workflowStage: researchItems.workflowStage,
+      status: researchItems.status,
+      submittedAt: researchItems.createdAt,
+      updatedAt: researchItems.updatedAt,
+      submittedByUserId: researchItems.submittedByUserId,
+      submittedByName: user.name,
+      submittedByEmail: user.email,
+      departmentName: departments.name,
+      journalName: journals.name,
+      currentVersionId: researchItems.currentVersionId,
+      notesToAdmin: itemVersions.notesToAdmin,
+    })
+    .from(researchItems)
+    .innerJoin(appUsers, eq(appUsers.id, researchItems.submittedByUserId))
+    .innerJoin(user, eq(user.id, appUsers.id))
+    .leftJoin(departments, eq(departments.id, researchItems.departmentId))
+    .leftJoin(journals, eq(journals.id, researchItems.journalId))
+    .leftJoin(itemVersions, eq(itemVersions.id, researchItems.currentVersionId))
+    .where(
+      and(
+        ne(researchItems.submittedByUserId, userId),
+        or(departmentFlowFilter, journalBoardFilter),
+      ),
+    )
+    .orderBy(desc(researchItems.updatedAt));
 }
 
 export async function listPendingResearchModerationItems() {
@@ -793,6 +1106,8 @@ export async function listPendingResearchModerationItems() {
       slug: researchItems.slug,
       title: researchItems.title,
       itemType: researchItems.itemType,
+      workflowStage: researchItems.workflowStage,
+      submitterConfirmationStatus: researchItems.submitterConfirmationStatus,
       publicationYear: researchItems.publicationYear,
       createdAt: researchItems.createdAt,
       updatedAt: researchItems.updatedAt,
@@ -807,7 +1122,12 @@ export async function listPendingResearchModerationItems() {
     .innerJoin(user, eq(user.id, appUsers.id))
     .leftJoin(departments, eq(departments.id, researchItems.departmentId))
     .leftJoin(itemVersions, eq(itemVersions.id, researchItems.currentVersionId))
-    .where(eq(researchItems.status, "submitted"))
+    .where(
+      inArray(researchItems.workflowStage, [
+        "editor_forwarded_to_admin",
+        "ready_to_publish",
+      ]),
+    )
     .orderBy(desc(researchItems.updatedAt));
 }
 
@@ -815,7 +1135,12 @@ export async function countPendingResearchModerationItems() {
   const [result] = await db
     .select({ count: sql<number>`count(*)` })
     .from(researchItems)
-    .where(eq(researchItems.status, "submitted"));
+    .where(
+      inArray(researchItems.workflowStage, [
+        "editor_forwarded_to_admin",
+        "ready_to_publish",
+      ]),
+    );
 
   return Number(result?.count ?? 0);
 }
@@ -830,6 +1155,8 @@ export async function getResearchItemForAdminReview(researchItemId: string) {
       itemType: researchItems.itemType,
       publicationYear: researchItems.publicationYear,
       status: researchItems.status,
+      workflowStage: researchItems.workflowStage,
+      submitterConfirmationStatus: researchItems.submitterConfirmationStatus,
       license: researchItems.license,
       externalUrl: researchItems.externalUrl,
       doi: researchItems.doi,
@@ -838,8 +1165,14 @@ export async function getResearchItemForAdminReview(researchItemId: string) {
       departmentName: departments.name,
       departmentSlug: departments.slug,
       currentVersionId: researchItems.currentVersionId,
+      submittedByUserId: researchItems.submittedByUserId,
       submittedByName: user.name,
       submittedByEmail: user.email,
+      submitterConfirmationNote: researchItems.submitterConfirmationNote,
+      submitterConfirmationRequestedAt:
+        researchItems.submitterConfirmationRequestedAt,
+      submitterConfirmationRespondedAt:
+        researchItems.submitterConfirmationRespondedAt,
       supervisorName: itemVersions.supervisorName,
       programName: itemVersions.programName,
       notesToAdmin: itemVersions.notesToAdmin,
@@ -915,6 +1248,35 @@ export async function getResearchItemForAdminReview(researchItemId: string) {
     pdfFile: currentFiles.find((f) => f.fileKind === "main_pdf") ?? null,
     coverImageFile: currentFiles.find((f) => f.fileKind === "cover_image") ?? null,
   };
+}
+
+export async function getPeerReviewInviteForResearchItemForUser(params: {
+  researchItemId: string;
+  userId: string;
+  userEmail: string;
+}) {
+  const [invite] = await db
+    .select({
+      id: researchItemPeerReviews.id,
+      status: researchItemPeerReviews.status,
+      recommendation: researchItemPeerReviews.recommendation,
+      reviewSubmittedAt: researchItemPeerReviews.reviewSubmittedAt,
+    })
+    .from(researchItemPeerReviews)
+    .where(
+      and(
+        eq(researchItemPeerReviews.researchItemId, params.researchItemId),
+        or(
+          eq(researchItemPeerReviews.inviteeUserId, params.userId),
+          sql`lower(${researchItemPeerReviews.inviteeEmail}) = lower(${params.userEmail})`,
+        ),
+        inArray(researchItemPeerReviews.status, ["pending", "accepted", "completed"]),
+      ),
+    )
+    .orderBy(desc(researchItemPeerReviews.updatedAt))
+    .limit(1);
+
+  return invite ?? null;
 }
 
 export async function getResearchItemVersionDiff(researchItemId: string) {
@@ -1001,7 +1363,11 @@ export async function getResearchItemVersionDiff(researchItemId: string) {
 export async function reviewResearchSubmission(params: {
   researchItemId: string;
   reviewerUserId: string;
-  decision: "publish" | "request_changes" | "archive";
+  decision:
+    | "publish"
+    | "request_changes"
+    | "archive"
+    | "request_submitter_confirmation";
   comment?: string;
 }) {
   return db.transaction(async (tx) => {
@@ -1012,6 +1378,8 @@ export async function reviewResearchSubmission(params: {
         slug: researchItems.slug,
         currentVersionId: researchItems.currentVersionId,
         status: researchItems.status,
+        workflowStage: researchItems.workflowStage,
+        submitterConfirmationStatus: researchItems.submitterConfirmationStatus,
         submittedByUserId: researchItems.submittedByUserId,
       })
       .from(researchItems)
@@ -1030,22 +1398,34 @@ export async function reviewResearchSubmission(params: {
       if (item.status !== "published") {
         throw new Error("Only published items can be archived.");
       }
-    } else if (item.status !== "submitted") {
-      throw new Error("This submission is not currently awaiting review.");
+    } else if (params.decision === "publish") {
+      if (
+        item.workflowStage !== "ready_to_publish" ||
+        item.submitterConfirmationStatus !== "confirmed"
+      ) {
+        throw new Error("Submitter confirmation is required before publishing.");
+      }
+    } else if (
+      item.workflowStage !== "editor_forwarded_to_admin" &&
+      item.workflowStage !== "ready_to_publish"
+    ) {
+      throw new Error("This submission is not currently awaiting admin review.");
     }
 
-    await tx.insert(moderationDecisions).values({
-      researchItemId: item.id,
-      itemVersionId: item.currentVersionId,
-      reviewedByUserId: params.reviewerUserId,
-      decision:
-        params.decision === "publish"
-          ? "approved"
-          : params.decision === "archive"
-            ? "archived"
-            : "changes_requested",
-      comment: params.comment?.trim() || null,
-    });
+    if (params.decision !== "request_submitter_confirmation") {
+      await tx.insert(moderationDecisions).values({
+        researchItemId: item.id,
+        itemVersionId: item.currentVersionId,
+        reviewedByUserId: params.reviewerUserId,
+        decision:
+          params.decision === "publish"
+            ? "approved"
+            : params.decision === "archive"
+              ? "archived"
+              : "changes_requested",
+        comment: params.comment?.trim() || null,
+      });
+    }
 
     await tx
       .update(researchItems)
@@ -1055,7 +1435,37 @@ export async function reviewResearchSubmission(params: {
             ? "published"
             : params.decision === "archive"
               ? "archived"
+              : params.decision === "request_submitter_confirmation"
+                ? "submitted"
               : "changes_requested",
+        workflowStage:
+          params.decision === "publish"
+            ? "published"
+            : params.decision === "archive"
+              ? "archived"
+              : params.decision === "request_submitter_confirmation"
+                ? "awaiting_submitter_confirmation"
+              : "editor_revision_requested",
+        submitterConfirmationStatus:
+          params.decision === "publish"
+            ? "confirmed"
+            : params.decision === "request_submitter_confirmation"
+              ? "pending"
+              : "not_requested",
+        submitterConfirmationNote:
+          params.decision === "request_submitter_confirmation"
+            ? params.comment?.trim() || null
+            : params.decision === "publish"
+              ? undefined
+              : null,
+        submitterConfirmationRequestedAt:
+          params.decision === "request_submitter_confirmation"
+            ? new Date()
+            : params.decision === "publish"
+              ? undefined
+              : null,
+        submitterConfirmationRespondedAt:
+          params.decision === "publish" ? undefined : null,
         publishedAt: params.decision === "publish" ? new Date() : null,
         archivedAt: params.decision === "archive" ? new Date() : null,
         updatedAt: new Date(),
@@ -1071,6 +1481,8 @@ export async function reviewResearchSubmission(params: {
           ? "research_item_published"
           : params.decision === "archive"
             ? "research_item_archived"
+            : params.decision === "request_submitter_confirmation"
+              ? "research_item_submitter_confirmation_requested"
             : "research_item_changes_requested",
       metadata: JSON.stringify({
         researchItemId: params.researchItemId,
@@ -1086,6 +1498,568 @@ export async function reviewResearchSubmission(params: {
       slug: item.slug,
     };
   });
+}
+
+export async function reviewDepartmentResearchSubmission(params: {
+  researchItemId: string;
+  reviewerUserId: string;
+  decision: "forward_to_admin" | "request_changes";
+  comment?: string;
+}) {
+  return db.transaction(async (tx) => {
+    const [reviewer] = await tx
+      .select({
+        id: appUsers.id,
+        role: appUsers.role,
+        departmentId: appUsers.departmentId,
+        email: user.email,
+      })
+      .from(appUsers)
+      .innerJoin(user, eq(user.id, appUsers.id))
+      .where(eq(appUsers.id, params.reviewerUserId))
+      .limit(1);
+
+    if (!reviewer || (reviewer.role !== "editor" && reviewer.role !== "admin")) {
+      throw new Error("Only editors or admins can review department submissions.");
+    }
+
+    const [item] = await tx
+      .select({
+        id: researchItems.id,
+        slug: researchItems.slug,
+      title: researchItems.title,
+      journalId: researchItems.journalId,
+      departmentId: researchItems.departmentId,
+      submittedByUserId: researchItems.submittedByUserId,
+      currentVersionId: researchItems.currentVersionId,
+    })
+      .from(researchItems)
+      .leftJoin(journals, eq(journals.id, researchItems.journalId))
+      .where(
+        and(
+          eq(researchItems.id, params.researchItemId),
+          inArray(researchItems.workflowStage, [
+            "submitted",
+            "editor_review",
+            "peer_review",
+            "editor_revision_requested",
+          ]),
+        ),
+      )
+      .limit(1);
+
+    if (!item) {
+      throw new Error("Submission is not available for editor review.");
+    }
+
+    if (item.submittedByUserId === params.reviewerUserId) {
+      throw new Error("You cannot review your own submission.");
+    }
+
+    const isJournalBoardReviewer = item.journalId
+      ? !!(
+          await tx
+            .select({ id: journalEditorialBoard.id })
+            .from(journalEditorialBoard)
+            .innerJoin(journals, eq(journals.id, journalEditorialBoard.journalId))
+            .where(
+              and(
+                eq(journalEditorialBoard.journalId, item.journalId),
+                eq(journals.editorialBoardCanReviewSubmissions, true),
+                sql`lower(${journalEditorialBoard.email}) = lower(${reviewer.email})`,
+              ),
+            )
+            .limit(1)
+        )[0]
+      : false;
+
+    if (
+      reviewer.departmentId &&
+      item.departmentId !== reviewer.departmentId &&
+      !isJournalBoardReviewer
+    ) {
+      throw new Error("This submission is outside your department scope.");
+    }
+
+    if (
+      !reviewer.departmentId &&
+      !isJournalBoardReviewer
+    ) {
+      throw new Error("Assign a department before reviewing submissions.");
+    }
+
+    if (params.decision === "forward_to_admin") {
+      const [peerSummary] = await tx
+        .select({
+          totalInvites: sql<number>`count(*)`,
+          outstandingInvites: sql<number>`count(*) filter (where ${researchItemPeerReviews.status} in ('pending', 'accepted'))`,
+          positiveCompletedReviews: sql<number>`count(*) filter (where ${researchItemPeerReviews.status} = 'completed' and ${researchItemPeerReviews.recommendation} <> 'reject')`,
+        })
+        .from(researchItemPeerReviews)
+        .where(eq(researchItemPeerReviews.researchItemId, item.id));
+
+      const totalInvites = Number(peerSummary?.totalInvites ?? 0);
+      const outstandingInvites = Number(peerSummary?.outstandingInvites ?? 0);
+      const positiveCompletedReviews = Number(
+        peerSummary?.positiveCompletedReviews ?? 0,
+      );
+
+      if (totalInvites > 0) {
+        if (outstandingInvites > 0) {
+          throw new Error(
+            "Peer review invitations are still pending. Complete peer review before forwarding.",
+          );
+        }
+
+        if (positiveCompletedReviews <= 0) {
+          throw new Error(
+            "At least one completed non-reject peer review is required before forwarding.",
+          );
+        }
+      }
+    }
+
+    if (params.decision === "request_changes" && item.currentVersionId) {
+      await tx.insert(moderationDecisions).values({
+        researchItemId: item.id,
+        itemVersionId: item.currentVersionId,
+        reviewedByUserId: params.reviewerUserId,
+        decision: "changes_requested",
+        comment: params.comment?.trim() || null,
+      });
+    }
+
+    await tx
+      .update(researchItems)
+      .set({
+        workflowStage:
+          params.decision === "forward_to_admin"
+            ? "editor_forwarded_to_admin"
+            : "editor_revision_requested",
+        status:
+          params.decision === "forward_to_admin"
+            ? "submitted"
+            : "changes_requested",
+        submitterConfirmationStatus: "not_requested",
+        submitterConfirmationNote: null,
+        submitterConfirmationRequestedAt: null,
+        submitterConfirmationRespondedAt: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(researchItems.id, item.id));
+
+    await tx.insert(activityLogs).values({
+      actorUserId: params.reviewerUserId,
+      targetType: "research_item",
+      targetId: item.id,
+      action:
+        params.decision === "forward_to_admin"
+          ? "research_item_forwarded_to_admin"
+          : "research_item_editor_changes_requested",
+      metadata: JSON.stringify({
+        researchItemId: item.id,
+        decision: params.decision,
+        comment: params.comment?.trim() || null,
+      }),
+    });
+
+    return {
+      ...item,
+      decision: params.decision,
+    };
+  });
+}
+
+export async function listPeerReviewInvitesForResearchItem(params: {
+  researchItemId: string;
+}) {
+  return db
+    .select({
+      id: researchItemPeerReviews.id,
+      status: researchItemPeerReviews.status,
+      inviteeEmail: researchItemPeerReviews.inviteeEmail,
+      inviteeName: researchItemPeerReviews.inviteeName,
+      recommendation: researchItemPeerReviews.recommendation,
+      reviewComment: researchItemPeerReviews.reviewComment,
+      confidentialComment: researchItemPeerReviews.confidentialComment,
+      createdAt: researchItemPeerReviews.createdAt,
+      respondedAt: researchItemPeerReviews.respondedAt,
+      reviewSubmittedAt: researchItemPeerReviews.reviewSubmittedAt,
+      reviewerName: user.name,
+      reviewerEmail: user.email,
+    })
+    .from(researchItemPeerReviews)
+    .leftJoin(user, eq(user.id, researchItemPeerReviews.inviteeUserId))
+    .where(eq(researchItemPeerReviews.researchItemId, params.researchItemId))
+    .orderBy(desc(researchItemPeerReviews.createdAt));
+}
+
+export async function listPeerReviewInvitesForResearchItems(
+  researchItemIds: string[],
+) {
+  if (researchItemIds.length === 0) return {};
+
+  const rows = await db
+    .select({
+      id: researchItemPeerReviews.id,
+      researchItemId: researchItemPeerReviews.researchItemId,
+      status: researchItemPeerReviews.status,
+      inviteeEmail: researchItemPeerReviews.inviteeEmail,
+      inviteeName: researchItemPeerReviews.inviteeName,
+      recommendation: researchItemPeerReviews.recommendation,
+      reviewComment: researchItemPeerReviews.reviewComment,
+      confidentialComment: researchItemPeerReviews.confidentialComment,
+      createdAt: researchItemPeerReviews.createdAt,
+      reviewSubmittedAt: researchItemPeerReviews.reviewSubmittedAt,
+    })
+    .from(researchItemPeerReviews)
+    .where(inArray(researchItemPeerReviews.researchItemId, researchItemIds))
+    .orderBy(desc(researchItemPeerReviews.createdAt));
+
+  const grouped: Record<string, typeof rows> = {};
+  for (const row of rows) {
+    const key = row.researchItemId;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(row);
+  }
+  return grouped;
+}
+
+export async function createPeerReviewInvite(params: {
+  researchItemId: string;
+  invitedByUserId: string;
+  inviteeEmail: string;
+  inviteeName?: string | null;
+  inviteToken?: string | null;
+  inviteExpiresAt?: Date | null;
+}) {
+  const normalizedEmail = params.inviteeEmail.trim().toLowerCase();
+
+  return db.transaction(async (tx) => {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+    const [recentInviteCount] = await tx
+      .select({
+        count: sql<number>`count(*)`,
+      })
+      .from(researchItemPeerReviews)
+      .where(
+        and(
+          eq(researchItemPeerReviews.invitedByUserId, params.invitedByUserId),
+          sql`${researchItemPeerReviews.createdAt} >= ${oneHourAgo}`,
+        ),
+      );
+
+    if (Number(recentInviteCount?.count ?? 0) >= 20) {
+      throw new Error("Invite rate limit reached. Please try again later.");
+    }
+
+    const [activeInviteCount] = await tx
+      .select({ count: sql<number>`count(*)` })
+      .from(researchItemPeerReviews)
+      .where(
+        and(
+          eq(researchItemPeerReviews.researchItemId, params.researchItemId),
+          inArray(researchItemPeerReviews.status, ["pending", "accepted"]),
+        ),
+      );
+
+    if (Number(activeInviteCount?.count ?? 0) >= 10) {
+      throw new Error(
+        "Maximum active peer-review invites reached for this submission.",
+      );
+    }
+
+    const [existing] = await tx
+      .select({ id: researchItemPeerReviews.id })
+      .from(researchItemPeerReviews)
+      .where(
+        and(
+          eq(researchItemPeerReviews.researchItemId, params.researchItemId),
+          eq(researchItemPeerReviews.inviteeEmail, normalizedEmail),
+          inArray(researchItemPeerReviews.status, ["pending", "accepted"]),
+        ),
+      )
+      .limit(1);
+
+    if (existing) {
+      throw new Error("An active peer-review invite already exists for this email.");
+    }
+
+    const [inviteeUser] = await tx
+      .select({ id: user.id, emailVerified: user.emailVerified })
+      .from(user)
+      .where(sql`lower(${user.email}) = ${normalizedEmail}`)
+      .limit(1);
+
+    const [created] = await tx
+      .insert(researchItemPeerReviews)
+      .values({
+        researchItemId: params.researchItemId,
+        invitedByUserId: params.invitedByUserId,
+        inviteeUserId: inviteeUser?.emailVerified ? inviteeUser.id : null,
+        inviteeEmail: normalizedEmail,
+        inviteeName: params.inviteeName ?? null,
+        status: "pending",
+        inviteToken: params.inviteToken ?? null,
+        inviteExpiresAt: params.inviteExpiresAt ?? null,
+      })
+      .returning({
+        id: researchItemPeerReviews.id,
+        researchItemId: researchItemPeerReviews.researchItemId,
+        inviteeEmail: researchItemPeerReviews.inviteeEmail,
+      });
+
+    await tx
+      .update(researchItems)
+      .set({ workflowStage: "peer_review", updatedAt: new Date() })
+      .where(
+        and(
+          eq(researchItems.id, params.researchItemId),
+          inArray(researchItems.workflowStage, [
+            "submitted",
+            "editor_review",
+            "editor_revision_requested",
+          ]),
+        ),
+      );
+
+    return created;
+  });
+}
+
+export async function listPeerReviewInvitesForUser(params: {
+  userId: string;
+  userEmail: string;
+}) {
+  return db
+    .select({
+      id: researchItemPeerReviews.id,
+      status: researchItemPeerReviews.status,
+      researchItemId: researchItems.id,
+      researchSlug: researchItems.slug,
+      researchTitle: researchItems.title,
+      invitedAt: researchItemPeerReviews.createdAt,
+      respondedAt: researchItemPeerReviews.respondedAt,
+      recommendation: researchItemPeerReviews.recommendation,
+      reviewComment: researchItemPeerReviews.reviewComment,
+      invitedByName: user.name,
+      invitedByEmail: user.email,
+    })
+    .from(researchItemPeerReviews)
+    .innerJoin(researchItems, eq(researchItems.id, researchItemPeerReviews.researchItemId))
+    .innerJoin(appUsers, eq(appUsers.id, researchItemPeerReviews.invitedByUserId))
+    .innerJoin(user, eq(user.id, appUsers.id))
+    .where(
+      or(
+        eq(researchItemPeerReviews.inviteeUserId, params.userId),
+        sql`lower(${researchItemPeerReviews.inviteeEmail}) = lower(${params.userEmail})`,
+      ),
+    )
+    .orderBy(desc(researchItemPeerReviews.updatedAt));
+}
+
+export async function getPeerReviewInviteForUser(params: {
+  inviteId: string;
+  userId: string;
+  userEmail: string;
+}) {
+  const [invite] = await db
+    .select({
+      id: researchItemPeerReviews.id,
+      status: researchItemPeerReviews.status,
+      researchItemId: researchItemPeerReviews.researchItemId,
+      researchTitle: researchItems.title,
+    })
+    .from(researchItemPeerReviews)
+    .innerJoin(researchItems, eq(researchItems.id, researchItemPeerReviews.researchItemId))
+    .where(
+      and(
+        eq(researchItemPeerReviews.id, params.inviteId),
+        or(
+          eq(researchItemPeerReviews.inviteeUserId, params.userId),
+          sql`lower(${researchItemPeerReviews.inviteeEmail}) = lower(${params.userEmail})`,
+        ),
+      ),
+    )
+    .limit(1);
+
+  return invite ?? null;
+}
+
+export async function respondToPeerReviewInvite(params: {
+  inviteId: string;
+  userId: string;
+  userEmail: string;
+  decision: "accepted" | "declined";
+}) {
+  return db.transaction(async (tx) => {
+    const [invite] = await tx
+      .select({
+        id: researchItemPeerReviews.id,
+        status: researchItemPeerReviews.status,
+        inviteeUserId: researchItemPeerReviews.inviteeUserId,
+        inviteeEmail: researchItemPeerReviews.inviteeEmail,
+      })
+      .from(researchItemPeerReviews)
+      .where(eq(researchItemPeerReviews.id, params.inviteId))
+      .limit(1);
+
+    if (!invite) {
+      throw new Error("Invite not found.");
+    }
+
+    if (invite.status !== "pending") {
+      throw new Error("Invite is no longer pending.");
+    }
+
+    if (invite.inviteeUserId && invite.inviteeUserId !== params.userId) {
+      throw new Error("You are not allowed to respond to this invite.");
+    }
+
+    if (
+      !invite.inviteeUserId &&
+      invite.inviteeEmail.toLowerCase() !== params.userEmail.toLowerCase()
+    ) {
+      throw new Error("You are not allowed to respond to this invite.");
+    }
+
+    const [updated] = await tx
+      .update(researchItemPeerReviews)
+      .set({
+        inviteeUserId: params.userId,
+        status: params.decision,
+        respondedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(researchItemPeerReviews.id, params.inviteId))
+      .returning({
+        id: researchItemPeerReviews.id,
+        researchItemId: researchItemPeerReviews.researchItemId,
+      });
+
+    return updated;
+  });
+}
+
+export async function submitPeerReview(params: {
+  inviteId: string;
+  userId: string;
+  userEmail: string;
+  recommendation: "accept" | "minor_revision" | "major_revision" | "reject";
+  reviewComment: string;
+  confidentialComment?: string;
+}) {
+  return db.transaction(async (tx) => {
+    const [invite] = await tx
+      .select({
+        id: researchItemPeerReviews.id,
+        status: researchItemPeerReviews.status,
+        inviteeUserId: researchItemPeerReviews.inviteeUserId,
+        inviteeEmail: researchItemPeerReviews.inviteeEmail,
+        researchItemId: researchItemPeerReviews.researchItemId,
+      })
+      .from(researchItemPeerReviews)
+      .where(eq(researchItemPeerReviews.id, params.inviteId))
+      .limit(1);
+
+    if (!invite) {
+      throw new Error("Invite not found.");
+    }
+
+    if (invite.inviteeUserId && invite.inviteeUserId !== params.userId) {
+      throw new Error("You are not allowed to submit this review.");
+    }
+
+    if (
+      !invite.inviteeUserId &&
+      invite.inviteeEmail.toLowerCase() !== params.userEmail.toLowerCase()
+    ) {
+      throw new Error("You are not allowed to submit this review.");
+    }
+
+    if (invite.status !== "accepted") {
+      throw new Error("Invite must be accepted before submitting review.");
+    }
+
+    const [updated] = await tx
+      .update(researchItemPeerReviews)
+      .set({
+        inviteeUserId: params.userId,
+        status: "completed",
+        recommendation: params.recommendation,
+        reviewComment: params.reviewComment.trim(),
+        confidentialComment: params.confidentialComment?.trim() || null,
+        reviewSubmittedAt: new Date(),
+        respondedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(researchItemPeerReviews.id, params.inviteId))
+      .returning({
+        id: researchItemPeerReviews.id,
+        researchItemId: researchItemPeerReviews.researchItemId,
+      });
+
+    return updated;
+  });
+}
+
+export async function listPendingSubmitterConfirmations(userId: string) {
+  return db
+    .select({
+      id: researchItems.id,
+      slug: researchItems.slug,
+      title: researchItems.title,
+      itemType: researchItems.itemType,
+      publicationYear: researchItems.publicationYear,
+      workflowStage: researchItems.workflowStage,
+      submitterConfirmationStatus: researchItems.submitterConfirmationStatus,
+      submitterConfirmationNote: researchItems.submitterConfirmationNote,
+      submitterConfirmationRequestedAt:
+        researchItems.submitterConfirmationRequestedAt,
+      updatedAt: researchItems.updatedAt,
+    })
+    .from(researchItems)
+    .where(
+      and(
+        eq(researchItems.submittedByUserId, userId),
+        eq(researchItems.workflowStage, "awaiting_submitter_confirmation"),
+        eq(researchItems.submitterConfirmationStatus, "pending"),
+      ),
+    )
+    .orderBy(desc(researchItems.updatedAt));
+}
+
+export async function getSubmitterConfirmationItem(params: {
+  researchItemId: string;
+  userId: string;
+}) {
+  const [item] = await db
+    .select({
+      id: researchItems.id,
+      slug: researchItems.slug,
+      title: researchItems.title,
+      abstract: researchItems.abstract,
+      itemType: researchItems.itemType,
+      publicationYear: researchItems.publicationYear,
+      workflowStage: researchItems.workflowStage,
+      submitterConfirmationStatus: researchItems.submitterConfirmationStatus,
+      submitterConfirmationNote: researchItems.submitterConfirmationNote,
+      submitterConfirmationRequestedAt:
+        researchItems.submitterConfirmationRequestedAt,
+      departmentName: departments.name,
+    })
+    .from(researchItems)
+    .leftJoin(departments, eq(departments.id, researchItems.departmentId))
+    .where(
+      and(
+        eq(researchItems.id, params.researchItemId),
+        eq(researchItems.submittedByUserId, params.userId),
+      ),
+    )
+    .limit(1);
+
+  return item ?? null;
 }
 
 export async function listPublishedResearchItems(filters: PublishedResearchFilters) {
@@ -1527,6 +2501,7 @@ export async function getOwnedResearchItemForRevision(params: {
       journalId: researchItems.journalId,
       journalIssueId: researchItems.journalIssueId,
       status: researchItems.status,
+      workflowStage: researchItems.workflowStage,
       license: researchItems.license,
       externalUrl: researchItems.externalUrl,
       doi: researchItems.doi,
@@ -1555,15 +2530,27 @@ export async function getOwnedResearchItemForRevision(params: {
     return null;
   }
 
-  const [decisions, versions, authorRows, tagRows, currentFiles, referenceRows] = await Promise.all([
+  const [
+    decisions,
+    versions,
+    authorRows,
+    tagRows,
+    currentFiles,
+    referenceRows,
+    revisionRequestMap,
+  ] = await Promise.all([
     db
       .select({
         id: moderationDecisions.id,
         decision: moderationDecisions.decision,
         comment: moderationDecisions.comment,
         createdAt: moderationDecisions.createdAt,
+        reviewedByName: user.name,
+        reviewedByRole: appUsers.role,
       })
       .from(moderationDecisions)
+      .innerJoin(appUsers, eq(appUsers.id, moderationDecisions.reviewedByUserId))
+      .leftJoin(user, eq(user.id, appUsers.id))
       .where(eq(moderationDecisions.researchItemId, item.id))
       .orderBy(desc(moderationDecisions.createdAt)),
     db
@@ -1630,6 +2617,7 @@ export async function getOwnedResearchItemForRevision(params: {
       .from(researchItemReferences)
       .where(eq(researchItemReferences.researchItemId, item.id))
       .orderBy(asc(researchItemReferences.referenceOrder)),
+    getLatestRevisionRequestsForItems([item.id]),
   ]);
 
   const currentPdf =
@@ -1653,6 +2641,7 @@ export async function getOwnedResearchItemForRevision(params: {
     references: referenceRows,
     pdfFile: currentPdf,
     coverImageFile: currentCoverImage,
+    latestRevisionRequest: revisionRequestMap.get(item.id) ?? null,
     decisions,
     versions,
   };

@@ -57,6 +57,13 @@
       "when": 1773841200000,
       "tag": "0007_aim_and_scope_merge",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1774872000000,
+      "tag": "0009_search_index_hardening",
+      "breakpoints": true
     }
   ]
 }
