@@ -273,7 +273,7 @@ export function AdminModerationHistory({
 
       {/* Timeline */}
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
+        <h2 className="text-lg font-semibold tracking-tight text-foreground">
           All decisions ({filteredEntries.length})
         </h2>
         {filteredEntries.map((entry, idx) => (
@@ -309,7 +309,7 @@ function HistoryCard({ entry }: { entry: ModerationEntry }) {
               <CardTitle className="truncate text-sm font-semibold tracking-tight">
                 <Link
                   href={`/admin/review/${entry.researchItemId}`}
-                  className="transition-colors hover:text-rose-600"
+                  className="transition-colors hover:text-primary"
                 >
                   {entry.researchTitle}
                 </Link>

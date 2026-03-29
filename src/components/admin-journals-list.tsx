@@ -160,7 +160,13 @@ async function appendUploadedJournalCoverKey(formData: FormData) {
   formData.set("coverImageKey", objectKey);
 }
 
-export function AdminJournalsList({ journals }: { journals: JournalOverview[] }) {
+export function AdminJournalsList({
+  journals,
+  mode = "list",
+}: {
+  journals: JournalOverview[];
+  mode?: "list" | "create";
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const opParam = searchParams.get("op");
@@ -202,6 +208,8 @@ export function AdminJournalsList({ journals }: { journals: JournalOverview[] })
     "For Authors",
     "Review",
   ] as const;
+  const pageSize = 10;
+  const [currentPage, setCurrentPage] = useState(1);
 
   function handleCreateNameChange(nextName: string) {
     setCreateName(nextName);
@@ -241,9 +249,15 @@ export function AdminJournalsList({ journals }: { journals: JournalOverview[] })
     }
   }
 
+  const totalPages = Math.max(1, Math.ceil(journals.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const paginatedJournals = journals.slice(startIndex, startIndex + pageSize);
+
   return (
     <div className="space-y-6">
-      <Card className="border-border/60 py-4">
+      {mode === "create" ? (
+        <Card className="border-border/60 py-4">
         <CardHeader>
           {/* <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
             <Library className="size-4 text-primary" />
@@ -430,10 +444,75 @@ export function AdminJournalsList({ journals }: { journals: JournalOverview[] })
           </form>
         </CardContent>
       </Card>
+      ) : (
+        <>
+          <Card className="border-border/60 bg-muted/20">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold tracking-tight text-foreground">
+                Create a new journal
+              </CardTitle>
+              <CardDescription>
+                Start a new journal profile, configure scope and policies, then publish it to the journals listing.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link href="/admin/journals/new/submission">
+                <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  Create journal
+                  <ArrowRight className="size-3.5" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
 
-      {journals.map((journal, index) => (
-        <JournalCard key={journal.id} journal={journal} index={index} />
-      ))}
+          {journals.length === 0 ? (
+            <Card className="border-border/60">
+              <CardContent className="py-10 text-center text-sm text-muted-foreground">
+                No journals launched yet.
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {paginatedJournals.map((journal, index) => (
+                <JournalCard key={journal.id} journal={journal} index={index} />
+              ))}
+
+              <div className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/20 px-4 py-3">
+                <p className="text-xs text-muted-foreground">
+                  Showing {startIndex + 1}-{Math.min(startIndex + pageSize, journals.length)} of {journals.length} journals
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={safePage <= 1}
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  >
+                    <ArrowLeft className="size-3.5" />
+                    Prev
+                  </Button>
+                  <span className="text-xs font-medium text-foreground">
+                    Page {safePage} / {totalPages}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={safePage >= totalPages}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                    }
+                  >
+                    Next
+                    <ArrowRight className="size-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 }

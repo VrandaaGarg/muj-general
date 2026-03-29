@@ -89,7 +89,7 @@ export function ConfirmDialog({
                 <Button
                   ref={confirmRef}
                   size="sm"
-                  className="bg-violet-600 text-white hover:bg-violet-700"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
                   onClick={onConfirm}
                 >
                   {confirmLabel}

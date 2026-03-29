@@ -24,6 +24,7 @@ import {
   updateDepartmentAction,
 } from "@/lib/actions/admin";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -99,11 +100,13 @@ export function AdminDepartmentsList({ departments }: AdminDepartmentsListProps)
       </div>
 
       {/* Create form */}
-      <CreateDepartmentForm />
+      <CreateDepartmentForm
+        key={createParam === "success" ? "department-form-reset" : "department-form"}
+      />
 
       {/* Department list */}
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
+        <h2 className="text-lg font-semibold tracking-tight text-foreground">
           All departments
         </h2>
         {departments.length === 0 ? (
@@ -119,16 +122,19 @@ export function AdminDepartmentsList({ departments }: AdminDepartmentsListProps)
             </CardContent>
           </Card>
         ) : (
-          departments.map((dept, idx) => (
-            <motion.div
-              key={dept.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.04, duration: 0.3 }}
-            >
-              <DepartmentCard department={dept} />
-            </motion.div>
-          ))
+          <div className="grid gap-4 md:grid-cols-2">
+            {departments.map((dept, idx) => (
+              <motion.div
+                key={dept.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.04, duration: 0.3 }}
+                className="h-full"
+              >
+                <DepartmentCard department={dept} />
+              </motion.div>
+            ))}
+          </div>
         )}
       </div>
     </div>
@@ -138,6 +144,9 @@ export function AdminDepartmentsList({ departments }: AdminDepartmentsListProps)
 function DepartmentCard({ department }: { department: DepartmentStat }) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [confirmState, setConfirmState] = useState<
+    null | { mode: "archive" | "restore" | "delete" }
+  >(null);
 
   async function handleUpdate(formData: FormData) {
     setSaving(true);
@@ -149,16 +158,6 @@ function DepartmentCard({ department }: { department: DepartmentStat }) {
   }
 
   async function handleArchive(mode: "archive" | "restore") {
-    if (
-      !window.confirm(
-        mode === "archive"
-          ? "Archive this department? It will be hidden from editor/public dropdowns."
-          : "Restore this department?",
-      )
-    ) {
-      return;
-    }
-
     const formData = new FormData();
     formData.set("departmentId", department.id);
     formData.set("mode", mode);
@@ -171,14 +170,6 @@ function DepartmentCard({ department }: { department: DepartmentStat }) {
   }
 
   async function handleDelete() {
-    if (
-      !window.confirm(
-        "Delete this department permanently? This works only if no users/items are linked.",
-      )
-    ) {
-      return;
-    }
-
     const formData = new FormData();
     formData.set("departmentId", department.id);
     setSaving(true);
@@ -190,22 +181,22 @@ function DepartmentCard({ department }: { department: DepartmentStat }) {
   }
 
   return (
-    <Card className="border-border/60">
-      <CardHeader className="pb-2">
+    <Card className="h-full border-border/60 bg-card/90">
+      <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-rose-600/10">
-              <Building2 className="size-4 text-rose-600" />
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <Building2 className="size-4 text-primary" />
             </div>
             <div className="min-w-0">
-              <CardTitle className="text-sm font-semibold tracking-tight truncate">
+              <CardTitle className="truncate text-base font-semibold tracking-tight">
                 {department.name}
               </CardTitle>
-              <CardDescription className="truncate font-mono text-[10px]">
+              <CardDescription className="mt-0.5 truncate font-mono text-[11px]">
                 /{department.slug}
               </CardDescription>
               {department.archivedAt && (
-                <p className="mt-1 text-[10px] font-medium text-amber-600">
+                <p className="mt-1 inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
                   Archived
                 </p>
               )}
@@ -213,11 +204,11 @@ function DepartmentCard({ department }: { department: DepartmentStat }) {
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+            <span className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
               <Users className="size-3" />
               {department.userCount}
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+            <span className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
               <BookOpen className="size-3" />
               {department.researchCount}
             </span>
@@ -225,9 +216,9 @@ function DepartmentCard({ department }: { department: DepartmentStat }) {
         </div>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="pt-0">
         {editing ? (
-          <form action={handleUpdate} className="space-y-2">
+          <form action={handleUpdate} className="space-y-2 border-t border-border/50 pt-3">
             <input type="hidden" name="departmentId" value={department.id} />
             <Input
               name="name"
@@ -273,7 +264,7 @@ function DepartmentCard({ department }: { department: DepartmentStat }) {
                 {department.description}
               </p>
             )}
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border/50 pt-3">
               <Button
                 type="button"
                 variant="outline"
@@ -289,7 +280,7 @@ function DepartmentCard({ department }: { department: DepartmentStat }) {
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  handleArchive(department.archivedAt ? "restore" : "archive")
+                  setConfirmState({ mode: department.archivedAt ? "restore" : "archive" })
                 }
                 disabled={saving}
               >
@@ -304,7 +295,7 @@ function DepartmentCard({ department }: { department: DepartmentStat }) {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={handleDelete}
+                onClick={() => setConfirmState({ mode: "delete" })}
                 disabled={saving}
               >
                 <Trash2 className="size-3.5" />
@@ -314,6 +305,42 @@ function DepartmentCard({ department }: { department: DepartmentStat }) {
           </>
         )}
       </CardContent>
+
+      <ConfirmDialog
+        open={confirmState !== null}
+        title={
+          confirmState?.mode === "delete"
+            ? "Delete this department?"
+            : confirmState?.mode === "archive"
+              ? "Archive this department?"
+              : "Restore this department?"
+        }
+        description={
+          confirmState?.mode === "delete"
+            ? "This action permanently deletes the department. It only works if no users or items are linked."
+            : confirmState?.mode === "archive"
+              ? "Archived departments are hidden from normal selection lists until restored."
+              : "This will make the department active and selectable again."
+        }
+        confirmLabel={
+          confirmState?.mode === "delete"
+            ? "Delete"
+            : confirmState?.mode === "archive"
+              ? "Archive"
+              : "Restore"
+        }
+        cancelLabel="Cancel"
+        onCancel={() => setConfirmState(null)}
+        onConfirm={async () => {
+          if (!confirmState) return;
+          setConfirmState(null);
+          if (confirmState.mode === "delete") {
+            await handleDelete();
+            return;
+          }
+          await handleArchive(confirmState.mode);
+        }}
+      />
     </Card>
   );
 }
@@ -440,7 +467,7 @@ function CreateDepartmentForm() {
                 type="submit"
                 size="sm"
                 disabled={saving || !name.trim() || !slug.trim()}
-                className="bg-rose-600 text-white hover:bg-rose-700"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 {saving ? (
                   <Loader2 className="size-3.5 animate-spin" />

@@ -61,8 +61,8 @@ const UPDATE_MESSAGES: Record<string, { text: string; type: "success" | "error" 
 };
 
 const ROLE_CONFIG: Record<string, { label: string; color: string; icon: typeof Shield }> = {
-  admin: { label: "Admin", color: "text-rose-600 bg-rose-600/10", icon: ShieldAlert },
-  editor: { label: "Editor", color: "text-violet-600 bg-violet-600/10", icon: Shield },
+  admin: { label: "Admin", color: "text-primary bg-primary/10", icon: ShieldAlert },
+  editor: { label: "Editor", color: "text-primary bg-primary/10", icon: Shield },
   reader: { label: "Reader", color: "text-muted-foreground bg-muted", icon: User },
 };
 
@@ -396,7 +396,7 @@ function UserCard({
                   type="submit"
                   size="sm"
                   disabled={saving || !hasChanges}
-                  className="bg-rose-600 text-white hover:bg-rose-700"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   {saving ? (
                     <Loader2 className="size-3.5 animate-spin" />
