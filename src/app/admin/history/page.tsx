@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { ChevronRight, Shield } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 import { requireRole } from "@/lib/auth/session";
 import { listModerationHistory } from "@/lib/db/queries";

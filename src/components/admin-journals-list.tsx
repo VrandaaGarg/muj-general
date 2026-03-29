@@ -9,10 +9,14 @@ import {
   ArrowRight,
   BookOpen,
   Check,
+  CircleHelp,
+  FileText,
   Layers3,
   Loader2,
   Pencil,
   ScrollText,
+  Shield,
+  User,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -90,6 +94,14 @@ type JournalOverview = {
     displayOrder: number;
   }>;
 };
+
+const JOURNAL_CREATE_STEPS = [
+  { key: "overview", label: "Overview", icon: BookOpen },
+  { key: "scope", label: "Aim & Scope", icon: FileText },
+  { key: "policies", label: "Policies", icon: Shield },
+  { key: "authors", label: "For Authors", icon: User },
+  { key: "review", label: "Review", icon: CircleHelp },
+] as const;
 
 const JOURNAL_MESSAGES: Record<string, { text: string; type: "success" | "error" }> = {
   created: { text: "Journal created successfully.", type: "success" },
@@ -201,13 +213,7 @@ export function AdminJournalsList({
   const [howToPublish, setHowToPublish] = useState("");
   const [feesAndFunding, setFeesAndFunding] = useState("");
 
-  const createSteps = [
-    "Overview",
-    "Aim & Scope",
-    "Policies",
-    "For Authors",
-    "Review",
-  ] as const;
+  const createSteps = JOURNAL_CREATE_STEPS;
   const pageSize = 10;
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -258,30 +264,68 @@ export function AdminJournalsList({
     <div className="space-y-6">
       {mode === "create" ? (
         <Card className="border-border/60 py-4">
-        <CardHeader>
-          {/* <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
-            <Library className="size-4 text-primary" />
-          </div> */}
+        {/* <CardHeader>
+        
           <CardTitle className="text-2xl font-semibold text-primary tracking-tight">Create Journal</CardTitle>
           <CardDescription>Start a new journal and configure its public profile.</CardDescription>
-        </CardHeader>
+        </CardHeader> */}
         <CardContent>
           <form action={handleCreate} className="grid gap-4">
-            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-muted/20 p-3">
+            <div className="hidden sm:flex items-center rounded-xl border border-border/60 bg-muted/20 p-3">
+              {createSteps.map((step, index) => {
+                const Icon = step.icon;
+                const isActive = createStep === index;
+                const isPast = index < createStep;
+                return (
+                  <div key={step.key} className="flex flex-1 items-center">
+                    <button
+                      type="button"
+                      onClick={() => goToCreateStep(index)}
+                      className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                        isActive
+                          ? "bg-primary/10 text-primary"
+                          : isPast
+                            ? "text-foreground"
+                            : "text-muted-foreground"
+                      }`}
+                    >
+                      <span
+                        className={`flex size-6 items-center justify-center rounded-full text-[10px] ${
+                          isActive
+                            ? "bg-primary text-primary-foreground"
+                            : isPast
+                              ? "bg-primary/15 text-primary"
+                              : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {isPast ? <Check className="size-3.5" /> : <Icon className="size-3.5" />}
+                      </span>
+                      <span className="hidden md:inline">{step.label}</span>
+                    </button>
+                    {index < createSteps.length - 1 && (
+                      <div className={`mx-1 h-px flex-1 ${index < createStep ? "bg-primary/30" : "bg-border"}`} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex sm:hidden items-center gap-1 rounded-xl border border-border/60 bg-muted/20 p-2">
               {createSteps.map((step, index) => (
                 <button
-                  key={step}
+                  key={step.key}
                   type="button"
                   onClick={() => goToCreateStep(index)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                    createStep === index
-                      ? "bg-primary text-primary-foreground"
-                      : index < createStep
-                        ? "bg-primary/10 text-primary"
-                        : "bg-background text-muted-foreground"
-                  }`}
+                  className="flex-1"
                 >
-                  {step}
+                  <div
+                    className={`h-1.5 rounded-full ${
+                      index === createStep
+                        ? "bg-primary"
+                        : index < createStep
+                          ? "bg-primary/40"
+                          : "bg-muted"
+                    }`}
+                  />
                 </button>
               ))}
             </div>
@@ -414,7 +458,7 @@ export function AdminJournalsList({
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center justify-between border-t border-border/40 pt-5">
               <Button
                 type="button"
                 variant="ghost"
