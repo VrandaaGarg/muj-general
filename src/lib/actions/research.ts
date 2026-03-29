@@ -83,6 +83,7 @@ function getReturnToPath(formData: FormData, fallback: string) {
 
   const allowed =
     trimmed === "/editor" ||
+    trimmed === "/submit" ||
     /^\/journals\/[^/]+\/new\/submission$/.test(trimmed);
 
   if (!allowed) return fallback;

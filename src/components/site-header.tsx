@@ -26,6 +26,13 @@ interface SiteHeaderProps {
   role?: "reader" | "editor" | "admin";
 }
 
+const secondaryNavLinks = [
+  // { label: "Search", href: "/research" },
+  { label: "Research", href: "/research" },
+  { label: "Journals", href: "/journals" },
+  { label: "Publish with us", href: "/submit" },
+] as const;
+
 export function SiteHeader({ role }: SiteHeaderProps) {
   const { data: session, isPending } = useSession();
   const router = useRouter();
@@ -230,6 +237,19 @@ export function SiteHeader({ role }: SiteHeaderProps) {
               </Link>
             </>
           )}
+        </nav>
+      </div>
+      <div className="border-t border-border/60">
+        <nav className="mx-auto flex max-w-7xl items-center gap-6 overflow-x-auto px-6 md:px-12 lg:px-20">
+          {secondaryNavLinks.map((link) => (
+            <Link
+              key={link.label}
+              href={link.href}
+              className="relative shrink-0 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:rounded-full after:bg-primary after:transition-transform hover:after:scale-x-100"
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
       </div>
     </header>

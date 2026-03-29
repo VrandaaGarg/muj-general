@@ -86,6 +86,11 @@ interface AuthorDraft {
   isCorresponding: boolean;
 }
 
+interface ReferenceDraft {
+  citationText: string;
+  url: string;
+}
+
 interface JournalSubmissionStepFormProps {
   departments: Department[];
   tags: TagOption[];
@@ -159,6 +164,13 @@ function createEmptyAuthor(isCorresponding = false): AuthorDraft {
     affiliation: "",
     orcid: "",
     isCorresponding,
+  };
+}
+
+function createEmptyReference(): ReferenceDraft {
+  return {
+    citationText: "",
+    url: "",
   };
 }
 
@@ -368,6 +380,9 @@ export function JournalSubmissionStepForm({
   const [changeSummary, setChangeSummary] = useState("");
   const [supervisorName, setSupervisorName] = useState("");
   const [programName, setProgramName] = useState("");
+  const [references, setReferences] = useState<ReferenceDraft[]>([
+    createEmptyReference(),
+  ]);
 
   /* Submit state */
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -532,6 +547,24 @@ export function JournalSubmissionStepForm({
     );
   }
 
+  function addReference() {
+    setReferences((prev) => [...prev, createEmptyReference()]);
+  }
+
+  function removeReference(index: number) {
+    setReferences((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function updateReference<K extends keyof ReferenceDraft>(
+    index: number,
+    field: K,
+    value: ReferenceDraft[K],
+  ) {
+    setReferences((prev) =>
+      prev.map((ref, i) => (i === index ? { ...ref, [field]: value } : ref)),
+    );
+  }
+
   /* ---- Files ---- */
   function handlePdfChange(event: ChangeEvent<HTMLInputElement>) {
     setSelectedPdfFile(event.target.files?.[0] ?? null);
@@ -686,7 +719,17 @@ export function JournalSubmissionStepForm({
     }
     if (publicationDate) formData.set("publicationDate", publicationDate);
     formData.set("authors", JSON.stringify(normalizedAuthors));
-    formData.set("references", JSON.stringify([]));
+    formData.set(
+      "references",
+      JSON.stringify(
+        references
+          .filter((ref) => ref.citationText.trim().length > 0)
+          .map((ref) => ({
+            citationText: ref.citationText.trim(),
+            url: ref.url.trim(),
+          })),
+      ),
+    );
     for (const tagId of selectedTagIds) {
       formData.append("tagIds", tagId);
     }
@@ -1495,6 +1538,74 @@ export function JournalSubmissionStepForm({
                   />
                 </div>
 
+                <div className="space-y-3 rounded-xl border border-border/60 p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-semibold tracking-tight">
+                        References
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        Optional bibliography/citation entries.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addReference}
+                      disabled={isSubmitting}
+                    >
+                      <Plus className="size-3.5" />
+                      Add reference
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {references.map((ref, index) => (
+                      <div
+                        key={`reference-${index}`}
+                        className="rounded-lg border border-border/50 bg-muted/20 p-3"
+                      >
+                        <div className="mb-2 flex items-center justify-between">
+                          <p className="text-xs font-medium text-muted-foreground">
+                            Reference {index + 1}
+                          </p>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="xs"
+                            onClick={() => removeReference(index)}
+                            disabled={isSubmitting || references.length === 1}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                        <div className="space-y-2">
+                          <Textarea
+                            value={ref.citationText}
+                            onChange={(e) =>
+                              updateReference(index, "citationText", e.target.value)
+                            }
+                            placeholder="Citation text"
+                            rows={2}
+                            maxLength={2000}
+                            disabled={isSubmitting}
+                            className="max-h-32 overflow-y-auto"
+                          />
+                          <Input
+                            value={ref.url}
+                            onChange={(e) =>
+                              updateReference(index, "url", e.target.value)
+                            }
+                            type="url"
+                            placeholder="https://... (optional)"
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="space-y-1.5">
                   <Label className="text-sm">Notes to admin / editor</Label>
                   <Textarea
@@ -1691,7 +1802,7 @@ export function JournalSubmissionStepForm({
                 </div>
 
                 {/* Declarations summary */}
-                {(license || externalUrl || doi || pageRange || articleNumber || notesToAdmin || changeSummary || supervisorName || programName) && (
+                {(license || externalUrl || doi || pageRange || articleNumber || notesToAdmin || changeSummary || supervisorName || programName || references.some((ref) => ref.citationText.trim().length > 0)) && (
                   <div className="rounded-xl border border-border/60 p-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <h4 className="text-sm font-semibold tracking-tight">
@@ -1758,6 +1869,30 @@ export function JournalSubmissionStepForm({
                         <div>
                           <dt className="text-muted-foreground">Program</dt>
                           <dd className="mt-0.5 font-medium">{programName}</dd>
+                        </div>
+                      )}
+                      {references.some((ref) => ref.citationText.trim().length > 0) && (
+                        <div className="sm:col-span-2">
+                          <dt className="text-muted-foreground">References</dt>
+                          <dd className="mt-1 space-y-1">
+                            {references
+                              .filter((ref) => ref.citationText.trim().length > 0)
+                              .slice(0, 3)
+                              .map((ref, index) => (
+                                <p key={`review-ref-${index}`} className="text-xs">
+                                  {ref.citationText}
+                                </p>
+                              ))}
+                            {references.filter((ref) => ref.citationText.trim().length > 0)
+                              .length > 3 && (
+                              <p className="text-xs text-muted-foreground">
+                                +
+                                {references.filter(
+                                  (ref) => ref.citationText.trim().length > 0,
+                                ).length - 3} more
+                              </p>
+                            )}
+                          </dd>
                         </div>
                       )}
                     </dl>
