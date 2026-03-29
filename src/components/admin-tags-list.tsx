@@ -22,6 +22,7 @@ import {
   deleteTagAction,
   updateTagAction,
 } from "@/lib/actions/admin";
+import { useLocalCache } from "@/hooks/use-local-cache";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -67,6 +68,7 @@ const CREATE_MESSAGES: Record<
 };
 
 export function AdminTagsList({ tags }: AdminTagsListProps) {
+  const { data: cachedTags } = useLocalCache("admin-tags:list", tags);
   const router = useRouter();
   const searchParams = useSearchParams();
   const createParam = searchParams.get("create") ?? searchParams.get("op");
@@ -80,14 +82,14 @@ export function AdminTagsList({ tags }: AdminTagsListProps) {
     router.replace("/admin/tags", { scroll: false });
   }, [createParam, router]);
 
-  const totalResearch = tags.reduce((sum, t) => sum + t.researchCount, 0);
+  const totalResearch = cachedTags.reduce((sum, t) => sum + t.researchCount, 0);
 
   return (
     <div className="space-y-6">
       {/* Summary stats */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-lg border border-border/60 bg-card p-3 text-center">
-          <p className="text-lg font-semibold tracking-tight">{tags.length}</p>
+            <p className="text-lg font-semibold tracking-tight">{cachedTags.length}</p>
           <p className="text-[10px] font-medium text-muted-foreground">Tags</p>
         </div>
         <div className="rounded-lg border border-border/60 bg-card p-3 text-center">
@@ -108,7 +110,7 @@ export function AdminTagsList({ tags }: AdminTagsListProps) {
         <h2 className="text-lg font-semibold tracking-tight text-foreground">
           All tags
         </h2>
-        {tags.length === 0 ? (
+        {cachedTags.length === 0 ? (
           <Card className="border-border/60">
             <CardContent className="py-8 text-center">
               <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-muted">
@@ -122,7 +124,7 @@ export function AdminTagsList({ tags }: AdminTagsListProps) {
           </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
-            {tags.map((tag, idx) => (
+            {cachedTags.map((tag, idx) => (
               <motion.div
                 key={tag.id}
                 initial={{ opacity: 0, y: 8 }}

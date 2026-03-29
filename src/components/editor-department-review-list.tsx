@@ -30,6 +30,7 @@ import {
   invitePeerReviewerAction,
   reviewDepartmentResearchSubmissionAction,
 } from "@/lib/actions/research";
+import { useLocalCache } from "@/hooks/use-local-cache";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -203,6 +204,11 @@ export function EditorDepartmentReviewList({
   items,
   peerInvitesMap,
 }: EditorDepartmentReviewListProps) {
+  const { data: cachedItems } = useLocalCache("editor-review-queue:items", items);
+  const { data: cachedPeerInvitesMap } = useLocalCache(
+    "editor-review-queue:peer-invites",
+    peerInvitesMap ?? {},
+  );
   const router = useRouter();
   const searchParams = useSearchParams();
   const reviewParam = searchParams.get("review");
@@ -236,7 +242,7 @@ export function EditorDepartmentReviewList({
     router.replace("/editor", { scroll: false });
   }, [peerParam, router]);
 
-  const sorted = [...items].sort(
+  const sorted = [...cachedItems].sort(
     (a, b) =>
       new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
   );
@@ -247,10 +253,10 @@ export function EditorDepartmentReviewList({
         <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
           Department review queue
         </h2>
-        {items.length > 0 && (
+        {cachedItems.length > 0 && (
           <span className="flex items-center gap-1.5 rounded-full bg-amber-600/10 px-2.5 py-0.5 text-xs font-medium text-amber-600">
             <Clock className="size-3" />
-            {items.length} pending
+            {cachedItems.length} pending
           </span>
         )}
       </div>
@@ -278,7 +284,7 @@ export function EditorDepartmentReviewList({
             >
               <DepartmentReviewCard
                 item={item}
-                peerInvites={peerInvitesMap?.[item.id]}
+                peerInvites={cachedPeerInvitesMap[item.id]}
               />
             </motion.div>
           ))}

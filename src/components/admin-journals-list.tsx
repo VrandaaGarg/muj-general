@@ -23,6 +23,7 @@ import {
 import { toast } from "sonner";
 
 import { createJournalAction } from "@/lib/actions/admin";
+import { useLocalCache } from "@/hooks/use-local-cache";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -192,6 +193,7 @@ export function AdminJournalsList({
   journals: JournalOverview[];
   mode?: "list" | "create";
 }) {
+  const { data: cachedJournals } = useLocalCache("admin-journals:list", journals);
   const router = useRouter();
   const searchParams = useSearchParams();
   const opParam = searchParams.get("op");
@@ -298,10 +300,10 @@ export function AdminJournalsList({
     }
   }
 
-  const totalPages = Math.max(1, Math.ceil(journals.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(cachedJournals.length / pageSize));
   const safePage = Math.min(currentPage, totalPages);
   const startIndex = (safePage - 1) * pageSize;
-  const paginatedJournals = journals.slice(startIndex, startIndex + pageSize);
+  const paginatedJournals = cachedJournals.slice(startIndex, startIndex + pageSize);
 
   return (
     <div className="space-y-6">
@@ -612,7 +614,7 @@ export function AdminJournalsList({
             </CardContent>
           </Card>
 
-          {journals.length === 0 ? (
+          {cachedJournals.length === 0 ? (
             <Card className="border-border/60">
               <CardContent className="py-10 text-center text-sm text-muted-foreground">
                 No journals launched yet.
@@ -626,7 +628,7 @@ export function AdminJournalsList({
 
               <div className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/20 px-4 py-3">
                 <p className="text-xs text-muted-foreground">
-                  Showing {startIndex + 1}-{Math.min(startIndex + pageSize, journals.length)} of {journals.length} journals
+                  Showing {startIndex + 1}-{Math.min(startIndex + pageSize, cachedJournals.length)} of {cachedJournals.length} journals
                 </p>
                 <div className="flex items-center gap-2">
                   <Button

@@ -23,6 +23,7 @@ import {
   deleteDepartmentAction,
   updateDepartmentAction,
 } from "@/lib/actions/admin";
+import { useLocalCache } from "@/hooks/use-local-cache";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -65,6 +66,10 @@ const CREATE_MESSAGES: Record<string, { text: string; type: "success" | "error" 
 };
 
 export function AdminDepartmentsList({ departments }: AdminDepartmentsListProps) {
+  const { data: cachedDepartments } = useLocalCache(
+    "admin-departments:list",
+    departments,
+  );
   const router = useRouter();
   const searchParams = useSearchParams();
   const createParam = searchParams.get("create") ?? searchParams.get("op");
@@ -78,15 +83,15 @@ export function AdminDepartmentsList({ departments }: AdminDepartmentsListProps)
     router.replace("/admin/departments", { scroll: false });
   }, [createParam, router]);
 
-  const totalUsers = departments.reduce((sum, d) => sum + d.userCount, 0);
-  const totalResearch = departments.reduce((sum, d) => sum + d.researchCount, 0);
+  const totalUsers = cachedDepartments.reduce((sum, d) => sum + d.userCount, 0);
+  const totalResearch = cachedDepartments.reduce((sum, d) => sum + d.researchCount, 0);
 
   return (
     <div className="space-y-6">
       {/* Summary stats */}
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-lg border border-border/60 bg-card p-3 text-center">
-          <p className="text-lg font-semibold tracking-tight">{departments.length}</p>
+            <p className="text-lg font-semibold tracking-tight">{cachedDepartments.length}</p>
           <p className="text-[10px] font-medium text-muted-foreground">Departments</p>
         </div>
         <div className="rounded-lg border border-border/60 bg-card p-3 text-center">
@@ -109,7 +114,7 @@ export function AdminDepartmentsList({ departments }: AdminDepartmentsListProps)
         <h2 className="text-lg font-semibold tracking-tight text-foreground">
           All departments
         </h2>
-        {departments.length === 0 ? (
+        {cachedDepartments.length === 0 ? (
           <Card className="border-border/60">
             <CardContent className="py-8 text-center">
               <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-muted">
@@ -123,7 +128,7 @@ export function AdminDepartmentsList({ departments }: AdminDepartmentsListProps)
           </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
-            {departments.map((dept, idx) => (
+            {cachedDepartments.map((dept, idx) => (
               <motion.div
                 key={dept.id}
                 initial={{ opacity: 0, y: 8 }}

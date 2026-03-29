@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 import { manageEditorResearchItemAction } from "@/lib/actions/research";
+import { useLocalCache } from "@/hooks/use-local-cache";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -147,6 +148,7 @@ function getCardHref(item: SubmittedItem) {
 }
 
 export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
+  const { data: cachedItems } = useLocalCache("editor-submissions:list", items);
   const router = useRouter();
   const searchParams = useSearchParams();
   const itemParam = searchParams.get("item");
@@ -211,14 +213,14 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
         <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
           Your submissions
         </h2>
-        {items.length > 0 && (
+        {cachedItems.length > 0 && (
           <span className="text-xs text-muted-foreground">
-            {items.length} item{items.length !== 1 ? "s" : ""}
+            {cachedItems.length} item{cachedItems.length !== 1 ? "s" : ""}
           </span>
         )}
       </div>
 
-      {items.length === 0 ? (
+      {cachedItems.length === 0 ? (
         <Card className="border-border/60">
           <CardContent className="py-8 text-center">
             <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-muted">
@@ -232,7 +234,7 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
         </Card>
       ) : (
         <div className="space-y-3">
-          {items.map((item, idx) => {
+          {cachedItems.map((item, idx) => {
             const status = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.draft;
             const workflowStatus = item.workflowStage
               ? STATUS_CONFIG[item.workflowStage] ?? status

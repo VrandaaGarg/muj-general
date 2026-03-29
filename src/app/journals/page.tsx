@@ -18,7 +18,7 @@ export default async function JournalsPage() {
     <div className="relative min-h-screen bg-background">
       <SiteHeader />
 
-      <main className="relative z-10 mx-auto max-w-6xl px-6 pb-20 pt-8 md:px-12 lg:px-20">
+      <main className="relative z-10 mx-auto max-w-7xl px-6 pb-20 pt-8 md:px-12 lg:px-20">
         <nav className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
           <Link
             href="/"

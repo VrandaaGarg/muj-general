@@ -29,7 +29,7 @@ export default async function AdminTagsPage() {
 
       <SiteHeader role={appUser.role} />
 
-      <main className="relative z-10 mx-auto max-w-6xl px-6 pb-24 pt-4 md:px-12 lg:px-20">
+      <main className="relative z-10 mx-auto max-w-7xl px-6 pb-24 pt-4 md:px-12 lg:px-20">
         <nav
           aria-label="Breadcrumb"
           className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground"

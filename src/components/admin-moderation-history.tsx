@@ -18,6 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useLocalCache } from "@/hooks/use-local-cache";
 import { AnimatedSelect } from "@/components/ui/animated-select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,10 @@ function formatRelativeDate(date: Date): string {
 export function AdminModerationHistory({
   entries,
 }: AdminModerationHistoryProps) {
+  const { data: cachedEntries } = useLocalCache(
+    "admin-moderation-history:entries",
+    entries,
+  );
   const [query, setQuery] = useState("");
   const [decisionFilter, setDecisionFilter] = useState<"all" | ModerationEntry["decision"]>("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
@@ -90,14 +95,14 @@ export function AdminModerationHistory({
   const departmentOptions = useMemo(
     () =>
       Array.from(
-        new Set(entries.map((entry) => entry.departmentName).filter((value): value is string => Boolean(value))),
+        new Set(cachedEntries.map((entry) => entry.departmentName).filter((value): value is string => Boolean(value))),
       ).sort((a, b) => a.localeCompare(b)),
-    [entries],
+    [cachedEntries],
   );
 
   const filteredEntries = useMemo(
     () =>
-      entries
+      cachedEntries
         .filter((entry) => {
           if (decisionFilter !== "all" && entry.decision !== decisionFilter) {
             return false;
@@ -121,7 +126,7 @@ export function AdminModerationHistory({
             ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
         ),
-    [departmentFilter, decisionFilter, entries, query, sortBy],
+    [departmentFilter, decisionFilter, cachedEntries, query, sortBy],
   );
 
   function exportCsv() {

@@ -143,7 +143,7 @@ export default async function RevisePage({ params }: RevisePageProps) {
 
       <SiteHeader role={appUser.role} />
 
-      <main className="relative z-10 mx-auto max-w-6xl px-6 pt-8 pb-24 md:px-12 md:pt-12 lg:px-20">
+      <main className="relative z-10 mx-auto max-w-7xl px-6 pt-8 pb-24 md:px-12 md:pt-12 lg:px-20">
         {/* Breadcrumb */}
         <nav className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
           <Link href="/" className="font-medium text-primary underline-offset-2 transition-colors hover:underline hover:text-primary/80">

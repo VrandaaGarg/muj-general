@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 
 import { updateUserAdminAction } from "@/lib/actions/admin";
+import { useLocalCache } from "@/hooks/use-local-cache";
 import { AnimatedSelect } from "@/components/ui/animated-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,6 +76,11 @@ function formatDate(date: Date) {
 }
 
 export function AdminUsersList({ users, departments }: AdminUsersListProps) {
+  const { data: cachedUsers } = useLocalCache("admin-users:list", users);
+  const { data: cachedDepartments } = useLocalCache(
+    "admin-users:departments",
+    departments,
+  );
   const router = useRouter();
   const searchParams = useSearchParams();
   const updateParam = searchParams.get("update");
@@ -93,7 +99,7 @@ export function AdminUsersList({ users, departments }: AdminUsersListProps) {
     router.replace("/admin/users", { scroll: false });
   }, [updateParam, router]);
 
-  const filteredUsers = users
+  const filteredUsers = cachedUsers
     .filter((user) => {
       if (roleFilter !== "all" && user.role !== roleFilter) {
         return false;
@@ -171,7 +177,7 @@ export function AdminUsersList({ users, departments }: AdminUsersListProps) {
             onChange={setDepartmentFilter}
             options={[
               { value: "all", label: "All departments" },
-              ...departments.map((department) => ({
+              ...cachedDepartments.map((department) => ({
                 value: department.id,
                 label: department.name,
               })),
@@ -192,11 +198,11 @@ export function AdminUsersList({ users, departments }: AdminUsersListProps) {
 
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
-          {filteredUsers.length} of {users.length} {users.length === 1 ? "user" : "users"}
+          {filteredUsers.length} of {cachedUsers.length} {cachedUsers.length === 1 ? "user" : "users"}
         </p>
         <div className="flex gap-1.5">
           {(["admin", "editor", "reader"] as const).map((role) => {
-            const count = users.filter((u) => u.role === role).length;
+            const count = cachedUsers.filter((u) => u.role === role).length;
             const cfg = ROLE_CONFIG[role];
             return (
               <span
@@ -218,7 +224,7 @@ export function AdminUsersList({ users, departments }: AdminUsersListProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.03, duration: 0.3 }}
           >
-            <UserCard user={u} departments={departments} />
+            <UserCard user={u} departments={cachedDepartments} />
           </motion.div>
         ))}
       </div>

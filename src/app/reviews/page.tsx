@@ -29,7 +29,7 @@ export default async function ReviewsPage() {
 
       <SiteHeader role={appUser.role} />
 
-      <main className="relative z-10 mx-auto max-w-6xl px-6 pt-8 pb-24 md:px-12 md:pt-12 lg:px-20">
+      <main className="relative z-10 mx-auto max-w-7xl px-6 pt-8 pb-24 md:px-12 md:pt-12 lg:px-20">
         {/* Breadcrumb */}
         <nav className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
           <Link

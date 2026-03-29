@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 
 import { reviewEditorAccessRequestAction } from "@/lib/actions/editor-access";
+import { useLocalCache } from "@/hooks/use-local-cache";
 import {
   Card,
   CardHeader,
@@ -66,6 +67,10 @@ export function AdminPendingRequests({
   limit,
   showAllHref = "/admin/editor-requests",
 }: AdminPendingRequestsProps) {
+  const { data: cachedRequests } = useLocalCache(
+    "admin-pending-requests:list",
+    requests,
+  );
   const router = useRouter();
   const searchParams = useSearchParams();
   const reviewParam = searchParams.get("review");
@@ -80,8 +85,8 @@ export function AdminPendingRequests({
     router.replace("/admin", { scroll: false });
   }, [reviewParam, router]);
 
-  const displayRequests = limit ? requests.slice(0, limit) : requests;
-  const hasMore = limit ? requests.length > limit : false;
+  const displayRequests = limit ? cachedRequests.slice(0, limit) : cachedRequests;
+  const hasMore = limit ? cachedRequests.length > limit : false;
 
   return (
     <div className="space-y-4">
@@ -89,10 +94,10 @@ export function AdminPendingRequests({
         <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
           Editor access requests
         </h2>
-        {requests.length > 0 && (
+        {cachedRequests.length > 0 && (
           <span className="flex items-center gap-1.5 rounded-full bg-amber-600/10 px-2.5 py-0.5 text-xs font-medium text-amber-600">
             <Clock className="size-3" />
-            {requests.length} pending
+            {cachedRequests.length} pending
           </span>
         )}
       </div>
@@ -130,7 +135,7 @@ export function AdminPendingRequests({
             href={showAllHref}
             className="inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/80"
           >
-            Show all {requests.length} requests
+            Show all {cachedRequests.length} requests
             <ArrowRight className="size-3.5" />
           </Link>
         </div>

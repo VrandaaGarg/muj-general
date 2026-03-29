@@ -229,7 +229,7 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
         <section className="relative">
           <div className="pointer-events-none absolute inset-0 -top-20 bg-linear-to-b from-primary/3 via-transparent to-transparent" />
 
-          <div className="relative mx-auto max-w-6xl px-6 pt-4 pb-12 md:px-12 lg:px-20">
+          <div className="relative mx-auto max-w-7xl px-6 pt-4 pb-12 md:px-12 lg:px-20">
             <nav
               aria-label="Breadcrumb"
               className="flex items-center gap-1.5 text-sm text-muted-foreground"

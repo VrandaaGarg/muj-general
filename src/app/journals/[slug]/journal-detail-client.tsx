@@ -219,7 +219,7 @@ export function JournalDetailClient({ journal }: { journal: JournalData }) {
         variants={fadeUp}
         custom={0}
         aria-label="Breadcrumb"
-        className="mb-6 flex items-center gap-1.5 text-base text-muted-foreground max-w-6xl mx-auto px-6 md:px-12 lg:px-20"
+        className="mb-6 flex items-center gap-1.5 text-base text-muted-foreground max-w-7xl mx-auto px-6 md:px-12 lg:px-20"
       >
         <Link
           href="/"
@@ -246,7 +246,7 @@ export function JournalDetailClient({ journal }: { journal: JournalData }) {
         animate="visible"
         variants={fadeUp}
         custom={1}
-        className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-8 lg:gap-10 max-w-6xl mx-auto px-6 md:px-12 lg:px-20"
+        className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-8 lg:gap-10 max-w-7xl mx-auto px-6 md:px-12 lg:px-20"
       >
         {/* Left: cover */}
         <div className="w-full shrink-0 sm:w-44 lg:w-48 xl:w-52">
@@ -335,7 +335,7 @@ export function JournalDetailClient({ journal }: { journal: JournalData }) {
           custom={2}
           className="sticky top-0 z-30 border-y border-border/60 bg-white backdrop-blur-sm "
         >
-          <div className="flex items-center gap-0 max-w-6xl mx-auto px-6 md:px-12 lg:px-20">
+          <div className="flex items-center gap-0 max-w-7xl mx-auto px-6 md:px-12 lg:px-20">
             {navGroups.map((group) => {
               const isOpen = openGroup === group.label;
               const isGroupActive = group.items.some((i) => i.sectionId === activeSection);
@@ -534,7 +534,7 @@ function DefaultContent({
   onNavigate: (section: SectionId) => void;
 }) {
   return (
-    <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0} className="space-y-10 max-w-6xl mx-auto px-6 md:px-12 lg:px-20">
+    <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0} className="space-y-10 max-w-7xl mx-auto px-6 md:px-12 lg:px-20">
       {/* Brief overview */}
       {journal.description && (
         <section>
@@ -654,7 +654,7 @@ function SectionShell({
   children: React.ReactNode;
 }) {
   return (
-    <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={0} className="max-w-6xl mx-auto px-6 md:px-12 lg:px-20">
+    <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={0} className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20">
       <h2 className="mb-5 flex items-center gap-2.5 text-2xl font-semibold tracking-tight text-primary">
         
         {title}
