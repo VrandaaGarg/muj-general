@@ -6,6 +6,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { sendEmail } from "@/lib/email";
+import { buildEmailHtml, buildEmailText } from "@/lib/email-template";
 import { env } from "@/lib/env";
 
 export const auth = betterAuth({
@@ -25,11 +26,24 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: false,
     sendVerificationEmail: async ({ user, url }) => {
+      const template = {
+        previewText: "Verify your MUJ General account",
+        title: "Verify your MUJ General account",
+        greeting: `Hi ${user.name},`,
+        paragraphs: [
+          "Welcome to MUJ General.",
+          "Please verify your email address to activate your account and continue with submissions and reviews.",
+          "For security, this verification link is unique to your account.",
+        ],
+        actionLabel: "Verify email address",
+        actionUrl: url,
+      };
+
       await sendEmail({
         to: user.email,
         subject: "Verify your MUJ General account",
-        text: `Verify your email by visiting: ${url}`,
-        html: `<p>Verify your MUJ General account by clicking the link below:</p><p><a href="${url}">${url}</a></p>`,
+        text: buildEmailText(template),
+        html: buildEmailHtml(template),
       });
     },
   },

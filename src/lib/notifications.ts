@@ -1,6 +1,8 @@
 import "server-only";
 
 import { sendEmail } from "@/lib/email";
+import { buildEmailHtml, buildEmailText } from "@/lib/email-template";
+import { env } from "@/lib/env";
 
 export async function sendEditorAccessDecisionEmail(params: {
   to: string;
@@ -13,34 +15,39 @@ export async function sendEditorAccessDecisionEmail(params: {
       ? "Your MUJ General editor access has been approved"
       : "Your MUJ General editor access request was reviewed";
 
-  const text =
+  const template =
     params.decision === "approved"
-      ? `Hi ${params.name},
-
-Your request for editor access on MUJ General has been approved. You can now sign in and submit research for review.
-
-Thanks,
-MUJ General`
-      : `Hi ${params.name},
-
-Your request for editor access on MUJ General was reviewed and is not approved right now.${params.rejectionReason ? `
-
-Reason: ${params.rejectionReason}` : ""}
-
-You can review the feedback in your dashboard and apply again later if needed.
-
-Thanks,
-MUJ General`;
+      ? {
+          previewText: "Your editor access request has been approved",
+          title: "Editor access approved",
+          greeting: `Hi ${params.name},`,
+          paragraphs: [
+            "Your request for editor access on MUJ General has been approved.",
+            "You can now sign in and submit research for editorial and admin review.",
+          ],
+          actionLabel: "Open MUJ General",
+          actionUrl: env.NEXT_PUBLIC_APP_URL,
+        }
+      : {
+          previewText: "Your editor access request has been reviewed",
+          title: "Editor access request reviewed",
+          greeting: `Hi ${params.name},`,
+          paragraphs: [
+            "Your request for editor access on MUJ General was reviewed and is not approved at this time.",
+            ...(params.rejectionReason
+              ? [`Reason provided: ${params.rejectionReason}`]
+              : []),
+            "You may review the feedback and apply again later if needed.",
+          ],
+          actionLabel: "Open dashboard",
+          actionUrl: env.NEXT_PUBLIC_APP_URL,
+        };
 
   await sendEmail({
     to: params.to,
     subject,
-    text,
-    html: `<p>Hi ${params.name},</p><p>${
-      params.decision === "approved"
-        ? "Your request for editor access on <strong>MUJ General</strong> has been approved. You can now sign in and submit research for review."
-        : `Your request for editor access on <strong>MUJ General</strong> was reviewed and is not approved right now.${params.rejectionReason ? `</p><p><strong>Reason:</strong> ${params.rejectionReason}` : ""}<p>You can review the feedback in your dashboard and apply again later if needed.`
-    }</p><p>Thanks,<br />MUJ General</p>`,
+    text: buildEmailText(template),
+    html: buildEmailHtml(template),
   });
 }
 
@@ -59,40 +66,39 @@ export async function sendResearchModerationEmail(params: {
       ? `Your research was published on MUJ General`
       : `Changes requested for your MUJ General submission`;
 
-  const text =
+  const template =
     params.decision === "publish"
-      ? `Hi ${params.name},
-
-Your submission "${params.researchTitle}" has been published on MUJ General.
-
-View it here: ${itemUrl}
-
-Thanks,
-MUJ General`
-      : `Hi ${params.name},
-
-Your submission "${params.researchTitle}" needs some updates before it can be published.${params.comment ? `
-
-Reviewer feedback: ${params.comment}` : ""}
-
-Please sign in to MUJ General and revise your submission.
-
-Thanks,
-MUJ General`;
+      ? {
+          previewText: "Your submission has been published",
+          title: "Submission published",
+          greeting: `Hi ${params.name},`,
+          paragraphs: [
+            `Your submission \"${params.researchTitle}\" has been published on MUJ General.`,
+            "You can now view and share the published version.",
+          ],
+          actionLabel: "View published item",
+          actionUrl: itemUrl,
+        }
+      : {
+          previewText: "Changes were requested on your submission",
+          title: "Changes requested",
+          greeting: `Hi ${params.name},`,
+          paragraphs: [
+            `Your submission \"${params.researchTitle}\" needs updates before publication.`,
+            ...(params.comment
+              ? [`Reviewer feedback: ${params.comment}`]
+              : []),
+            "Please sign in and submit a revised version.",
+          ],
+          actionLabel: "Open dashboard",
+          actionUrl: `${params.appUrl.replace(/\/$/, "")}/editor`,
+        };
 
   await sendEmail({
     to: params.to,
     subject,
-    text,
-    html: `<p>Hi ${params.name},</p><p>${
-      params.decision === "publish"
-        ? `Your submission <strong>${params.researchTitle}</strong> has been published on MUJ General.`
-        : `Your submission <strong>${params.researchTitle}</strong> needs some updates before it can be published.`
-    }</p>${params.comment ? `<p><strong>Reviewer feedback:</strong> ${params.comment}</p>` : ""}${
-      params.decision === "publish"
-        ? `<p><a href="${itemUrl}">View your published item</a></p>`
-        : `<p>Please sign in to MUJ General and revise your submission.</p>`
-    }<p>Thanks,<br />MUJ General</p>`,
+    text: buildEmailText(template),
+    html: buildEmailHtml(template),
   });
 }
 
@@ -107,27 +113,24 @@ export async function sendSubmitterConfirmationRequestEmail(params: {
   const confirmUrl = `${params.appUrl.replace(/\/$/, "")}/submissions/confirm/${params.researchItemId}`;
   const subject = `Final confirmation required for your MUJ General submission`;
 
-  const text = `Hi ${params.name},
-
-Your submission "${params.researchTitle}" has reached final review.
-
-Please confirm one of the following:
-- Confirm publication
-- Request revisions
-- Decline publication
-
-Review and respond here: ${confirmUrl}${params.comment ? `
-
-Admin note: ${params.comment}` : ""}
-
-Thanks,
-MUJ General`;
+  const template = {
+    previewText: "Final confirmation is required for your submission",
+    title: "Final confirmation required",
+    greeting: `Hi ${params.name},`,
+    paragraphs: [
+      `Your submission \"${params.researchTitle}\" has reached final review.`,
+      "Please choose one of the available confirmation actions: confirm publication, request revisions, or decline publication.",
+      ...(params.comment ? [`Admin note: ${params.comment}`] : []),
+    ],
+    actionLabel: "Review and respond",
+    actionUrl: confirmUrl,
+  };
 
   await sendEmail({
     to: params.to,
     subject,
-    text,
-    html: `<p>Hi ${params.name},</p><p>Your submission <strong>${params.researchTitle}</strong> has reached final review.</p><p>Please confirm one of the following: confirm publication, request revisions, or decline publication.</p>${params.comment ? `<p><strong>Admin note:</strong> ${params.comment}</p>` : ""}<p><a href="${confirmUrl}">Review and submit your confirmation</a></p><p>Thanks,<br />MUJ General</p>`,
+    text: buildEmailText(template),
+    html: buildEmailHtml(template),
   });
 }
 
@@ -140,21 +143,22 @@ export async function sendPeerReviewInviteEmail(params: {
 }) {
   const subject = `Peer review invitation for MUJ General`;
 
-  const text = `Hi ${params.name},
-
-${params.invitedByName} invited you to provide a peer review for "${params.researchTitle}".
-
-Open your review dashboard: ${params.reviewUrl}
-
-If you do not have an account, sign up with this same email and verify it to access the review.
-
-Thanks,
-MUJ General`;
+  const template = {
+    previewText: "You have been invited to peer review a manuscript",
+    title: "Peer review invitation",
+    greeting: `Hi ${params.name},`,
+    paragraphs: [
+      `${params.invitedByName} has invited you to provide a peer review for \"${params.researchTitle}\".`,
+      "If you do not already have an account, sign up using this same email address and verify it to access the review dashboard.",
+    ],
+    actionLabel: "Open review dashboard",
+    actionUrl: params.reviewUrl,
+  };
 
   await sendEmail({
     to: params.to,
     subject,
-    text,
-    html: `<p>Hi ${params.name},</p><p>${params.invitedByName} invited you to provide a peer review for <strong>${params.researchTitle}</strong>.</p><p><a href="${params.reviewUrl}">Open review dashboard</a></p><p>If you do not have an account, sign up with this same email and verify it to access the review.</p><p>Thanks,<br />MUJ General</p>`,
+    text: buildEmailText(template),
+    html: buildEmailHtml(template),
   });
 }
