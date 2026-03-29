@@ -42,3 +42,7 @@ Implement journals as a publication layer on top of `research_items`, not a sepa
 3. **Native selects → AnimatedSelect**: Replace 2 remaining native `<select>` elements in `admin-journals-list.tsx` (journal status + volume selection) with `AnimatedSelect`.
 4. **Section heading hierarchy**: Standardize section headings across admin/editor/journal pages — use `text-lg font-semibold tracking-tight text-foreground` for primary section titles instead of the old `text-xs font-semibold uppercase` or `text-sm font-semibold` patterns. Key files: `author-profile.tsx`, `admin/review/[id]/page.tsx`, `research-filters.tsx`, `admin-review-actions.tsx`, `journal-detail-client.tsx`, `editor-submissions-list.tsx`, `admin-pending-requests.tsx`, `admin-research-moderation.tsx`, `admin-research-moderation-full.tsx`.
 5. **Editor form localStorage persistence**: Add localStorage draft persistence to `editor-submission-form.tsx` and `editor-revision-form.tsx` so form fields survive page reloads. Save on input change (debounced), restore on mount, clear on successful submission.
+
+<!-- Added: 2026-03-29 -->
+## Saved Research (Zustand Store)
+Use `useSavedResearchStore` from `src/stores/saved-research-store.ts` for the bookmark/save feature. This is a Zustand store persisted to localStorage only (no DB). The store starts empty during SSR and is hydrated client-side via `SavedResearchHydrator` in the root layout to avoid hydration mismatches. Stores live in `src/stores/` with one store per domain.
