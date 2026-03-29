@@ -15,7 +15,6 @@ import { toast } from "sonner";
 import { useSavedResearchStore, type SavedResearchItem } from "@/stores/saved-research-store";
 import { getTypeLabel } from "@/lib/research-types";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 
 function formatSavedDate(timestamp: number) {
   return new Date(timestamp).toLocaleDateString("en-US", {
@@ -32,7 +31,7 @@ export function SavedItemsList() {
   const count = items.length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <Link
           href="/"
@@ -48,46 +47,40 @@ export function SavedItemsList() {
         <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
           Saved Research
         </h1>
-        <p className="mt-1 text-base text-muted-foreground">
-          {count > 0
-            ? `${count} saved item${count !== 1 ? "s" : ""} stored locally in your browser.`
-            : "Items you save will appear here. Saved data is stored locally in your browser."}
+        <p className="mt-2 text-base text-muted-foreground">
+          Start building your personal library by saving research items you want to
         </p>
       </div>
 
       {count === 0 ? (
-        <Card className="border-border/60">
-          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-            <div className="flex size-12 items-center justify-center rounded-xl bg-muted">
-              <Bookmark className="size-6 text-muted-foreground/50" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                No saved items yet
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Browse research and click the Save button to bookmark articles
-                for later.
-              </p>
-            </div>
-            <Link
-              href="/research"
-              className="mt-2 text-sm font-medium text-primary transition-colors hover:text-primary/80"
-            >
-              Browse research
-            </Link>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-border/60 bg-card/50 p-12 text-center">
+          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-muted">
+            <Bookmark className="size-6 text-muted-foreground/50" />
+          </div>
+          <p className="text-base font-semibold text-foreground">
+            No saved items yet
+          </p>
+          <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
+            Browse research and click the Save button to bookmark articles for
+            later reading.
+          </p>
+          <Link
+            href="/research"
+            className="mt-5 inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            Browse research
+          </Link>
+        </div>
       ) : (
         <>
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
+          <div className="flex items-center justify-between border-b border-border/60 pb-3">
+            <p className="text-sm text-muted-foreground">
               {count} item{count !== 1 ? "s" : ""}
             </p>
             <Button
               variant="ghost"
               size="sm"
-              className="text-xs text-destructive hover:text-destructive"
+              className="gap-1.5 text-xs text-muted-foreground hover:text-destructive"
               onClick={() => {
                 clearAll();
                 toast("All saved items cleared");
@@ -98,16 +91,16 @@ export function SavedItemsList() {
             </Button>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             <AnimatePresence mode="popLayout">
-              {items.map((item) => (
+              {items.map((item, index) => (
                 <motion.div
                   key={item.id}
                   layout
-                  initial={{ opacity: 0, y: 8 }}
+                  initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2 }}
+                  exit={{ opacity: 0, x: -24 }}
+                  transition={{ duration: 0.2, delay: index * 0.03 }}
                 >
                   <SavedItemCard
                     item={item}
@@ -134,81 +127,73 @@ function SavedItemCard({
   onRemove: () => void;
 }) {
   return (
-    <Card className="group border-border/60 transition-colors hover:border-primary/20">
-      <CardContent className="p-4">
-        <div className="flex gap-4">
-          {item.coverImageUrl ? (
-            <Link
-              href={`/research/${item.slug}`}
-              className="relative hidden h-24 w-20 shrink-0 overflow-hidden rounded-lg border border-border/50 sm:block"
-            >
-              <Image
-                src={item.coverImageUrl}
-                alt={item.title}
-                fill
-                sizes="80px"
-                className="object-cover transition-transform group-hover:scale-105"
-              />
-            </Link>
-          ) : (
-            <Link
-              href={`/research/${item.slug}`}
-              className="hidden h-24 w-20 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-muted/40 sm:flex"
-            >
-              <FileText className="size-6 text-muted-foreground/40" />
-            </Link>
+    <div className="group rounded-xl border border-border/60 bg-card/50 p-5 transition-colors hover:border-primary/20 hover:bg-card/80">
+      <div className="flex gap-5">
+        {item.coverImageUrl ? (
+          <Link
+            href={`/research/${item.slug}`}
+            className="relative hidden h-28 w-22 shrink-0 overflow-hidden rounded-lg border border-border/50 sm:block"
+          >
+            <Image
+              src={item.coverImageUrl}
+              alt={item.title}
+              fill
+              sizes="88px"
+              className="object-cover"
+            />
+          </Link>
+        ) : (
+          <Link
+            href={`/research/${item.slug}`}
+            className="hidden h-28 w-22 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-muted/30 sm:flex"
+          >
+            <FileText className="size-6 text-muted-foreground/40" />
+          </Link>
+        )}
+
+        <div className="min-w-0 flex-1">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span className="text-sm font-semibold text-primary">
+              {getTypeLabel(item.itemType)}
+            </span>
+            {item.departmentName && (
+              <span className="rounded-md bg-muted/60 px-2 py-0.5 text-sm font-medium text-muted-foreground">
+                {item.departmentName}
+              </span>
+            )}
+            <span className="text-xs text-muted-foreground">
+              {item.publicationYear}
+            </span>
+          </div>
+
+          <Link href={`/research/${item.slug}`} className="block">
+            <h3 className="line-clamp-2 text-base font-bold leading-snug tracking-tight text-foreground transition-colors group-hover:text-primary">
+              {item.title}
+            </h3>
+          </Link>
+
+          {item.authors.length > 0 && (
+            <p className="mt-1.5 line-clamp-1 text-sm leading-relaxed text-muted-foreground">
+              {item.authors.join(", ")}
+            </p>
           )}
 
-          <div className="min-w-0 flex-1">
-            <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
-                {getTypeLabel(item.itemType)}
-              </span>
-              <span className="text-[11px] text-muted-foreground">
-                {item.publicationYear}
-              </span>
-              {item.departmentName && (
-                <>
-                  <span className="text-border">·</span>
-                  <span className="text-[11px] text-muted-foreground">
-                    {item.departmentName}
-                  </span>
-                </>
-              )}
-            </div>
-
-            <Link
-              href={`/research/${item.slug}`}
-              className="block"
+          <div className="mt-3 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              Saved {formatSavedDate(item.savedAt)}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onRemove}
+              className="h-7 gap-1.5 px-2.5 text-xs text-muted-foreground hover:text-destructive"
             >
-              <h3 className="line-clamp-2 text-base font-semibold tracking-tight text-foreground transition-colors group-hover:text-primary">
-                {item.title}
-              </h3>
-            </Link>
-
-            {item.authors.length > 0 && (
-              <p className="mt-1 line-clamp-1 text-sm text-muted-foreground">
-                {item.authors.join(", ")}
-              </p>
-            )}
-
-            <div className="mt-2 flex items-center justify-between">
-              <span className="text-[11px] text-muted-foreground">
-                Saved {formatSavedDate(item.savedAt)}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onRemove}
-                className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-destructive"
-              >
-                <BookmarkX className="size-3" />
-                Remove
-              </Button>
-            </div>
+              <BookmarkX className="size-3.5" />
+              Remove
+            </Button>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
