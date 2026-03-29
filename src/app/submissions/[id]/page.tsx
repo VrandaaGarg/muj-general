@@ -16,6 +16,7 @@ import { AdminReviewActions } from "@/components/admin-review-actions";
 import { AdminVersionDiff } from "@/components/admin-version-diff";
 import { ResearchThumbnail } from "@/components/pdf-thumbnail-viewer";
 import { SiteHeader } from "@/components/site-header";
+import { SubmissionSidebarNav } from "@/components/submission-sidebar-nav";
 import { SubmitterConfirmationForm } from "@/components/submitter-confirmation-form";
 import { buttonVariants } from "@/components/ui/button-variants";
 import {
@@ -589,24 +590,10 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
                 )}
               </div>
 
-              <aside className="hidden w-64 shrink-0 lg:block">
-                <div className="sticky top-8 space-y-6">
-                  <div>
-                    <p className="mb-3 text-sm font-semibold text-foreground">Sections</p>
-                    <nav className="space-y-0.5 border-l border-border/60">
-                      {sections.map((section) => (
-                        <a
-                          key={section.id}
-                          href={`#${section.id}`}
-                          className="block border-l-2 border-transparent py-2 pl-4 text-sm text-primary underline-offset-2 transition-colors hover:border-primary hover:underline"
-                        >
-                          {section.label}
-                        </a>
-                      ))}
-                    </nav>
-                  </div>
-                </div>
-              </aside>
+              <SubmissionSidebarNav
+                sections={sections}
+                references={item.references}
+              />
             </div>
           </div>
         </section>

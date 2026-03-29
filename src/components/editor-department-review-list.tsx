@@ -574,7 +574,7 @@ function DepartmentReviewCard({
 }
 
 function PeerInvitesList({ invites }: { invites: PeerInvite[] }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   const completedCount = invites.filter(
     (i) => i.status === "completed",
@@ -584,34 +584,37 @@ function PeerInvitesList({ invites }: { invites: PeerInvite[] }) {
   ).length;
 
   return (
-    <div className="rounded-lg border border-border/40 bg-muted/20">
+    <div className="rounded-xl border border-border/60 bg-card/50">
       <button
         type="button"
         onClick={() => setExpanded((prev) => !prev)}
-        className="flex w-full items-center gap-2 px-3 py-2.5 text-left"
+        className="flex w-full items-center gap-2.5 px-4 py-3 text-left transition-colors hover:bg-muted/30"
       >
-        <UserPlus className="size-3.5 shrink-0 text-muted-foreground" />
-        <span className="text-xs font-medium text-foreground">
+        <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+          <UserPlus className="size-3.5 text-primary" />
+        </div>
+        <span className="text-sm font-semibold tracking-tight text-foreground">
           Peer Reviews
         </span>
-        <span className="ml-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+        <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
           {invites.length}
         </span>
 
-        {completedCount > 0 && (
-          <span className="rounded-full bg-emerald-600/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">
-            {completedCount} completed
-          </span>
-        )}
-        {pendingCount > 0 && (
-          <span className="rounded-full bg-amber-600/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600">
-            {pendingCount} awaiting
-          </span>
-        )}
-
-        <ChevronDown
-          className={`ml-auto size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
-        />
+        <div className="ml-auto flex items-center gap-2">
+          {completedCount > 0 && (
+            <span className="rounded-md bg-emerald-600/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
+              {completedCount} completed
+            </span>
+          )}
+          {pendingCount > 0 && (
+            <span className="rounded-md bg-amber-600/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600">
+              {pendingCount} awaiting
+            </span>
+          )}
+          <ChevronDown
+            className={`size-4 shrink-0 text-muted-foreground transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+          />
+        </div>
       </button>
 
       {expanded && (
@@ -619,9 +622,9 @@ function PeerInvitesList({ invites }: { invites: PeerInvite[] }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.15 }}
-          className="border-t border-border/40 px-3 pb-3 pt-2"
+          className="border-t border-border/60 p-4"
         >
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             {invites.map((invite) => (
               <PeerInviteCard key={invite.id} invite={invite} />
             ))}
@@ -642,48 +645,49 @@ function PeerInviteCard({ invite }: { invite: PeerInvite }) {
   const hasReviewContent = invite.reviewComment || invite.confidentialComment;
 
   return (
-    <div className="rounded-lg border border-border/40 bg-background px-3 py-2.5">
-      {/* Reviewer identity row */}
-      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-        <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted">
-          <User className="size-3 text-muted-foreground" />
+    <div className="rounded-xl border border-border/50 bg-background p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
+            <User className="size-3.5 text-muted-foreground" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground">
+              {invite.inviteeName || invite.inviteeEmail}
+            </p>
+            {invite.inviteeName && (
+              <p className="text-xs text-muted-foreground">
+                {invite.inviteeEmail}
+              </p>
+            )}
+          </div>
         </div>
-        <span className="text-sm font-medium text-foreground">
-          {invite.inviteeName || invite.inviteeEmail}
-        </span>
-        {invite.inviteeName && (
-          <span className="text-xs text-muted-foreground">
-            {invite.inviteeEmail}
-          </span>
-        )}
         <span
-          className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${statusCfg.className}`}
+          className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-semibold ${statusCfg.className}`}
         >
           {statusCfg.label}
         </span>
       </div>
 
-      {/* Recommendation badge — prominent when present */}
       {recCfg && (
-        <div className="mt-2 flex items-center gap-2">
+        <div className="mt-3 flex items-center gap-3 rounded-lg border border-border/40 bg-muted/30 px-3 py-2">
           <span
-            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold ${recCfg.className}`}
+            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold ${recCfg.className}`}
           >
             {recCfg.icon}
             {recCfg.label}
           </span>
           {invite.reviewSubmittedAt && (
-            <span className="text-[11px] text-muted-foreground">
-              {formatDate(invite.reviewSubmittedAt)}
+            <span className="text-xs text-muted-foreground">
+              Submitted {formatDate(invite.reviewSubmittedAt)}
             </span>
           )}
         </div>
       )}
 
-      {/* Review comment */}
       {invite.reviewComment && (
-        <div className="mt-2">
-          <p className="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+        <div className="mt-3 rounded-lg border border-border/40 bg-muted/20 px-3.5 py-3">
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Review feedback
           </p>
           <p className="text-sm leading-relaxed text-foreground/90">
@@ -692,29 +696,30 @@ function PeerInviteCard({ invite }: { invite: PeerInvite }) {
         </div>
       )}
 
-      {/* Confidential note — editor-only callout */}
       {invite.confidentialComment && (
-        <div className="mt-2 rounded-md border border-amber-600/20 bg-amber-600/5 px-2.5 py-2">
-          <p className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-amber-700 dark:text-amber-500">
+        <div className="mt-3 rounded-lg border border-amber-600/20 bg-amber-600/5 px-3.5 py-3">
+          <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
             <Lock className="size-2.5" />
-            Confidential note
+            Confidential note for editor
           </p>
-          <p className="mt-0.5 text-sm leading-relaxed text-foreground/90">
+          <p className="text-sm leading-relaxed text-foreground/90">
             {invite.confidentialComment}
           </p>
         </div>
       )}
 
-      {/* Date fallback when no review content yet */}
       {!hasReviewContent && !recCfg && invite.reviewSubmittedAt && (
-        <p className="mt-1.5 text-[11px] text-muted-foreground">
+        <p className="mt-3 text-xs text-muted-foreground">
           Reviewed {formatDate(invite.reviewSubmittedAt)}
         </p>
       )}
       {!hasReviewContent && !recCfg && !invite.reviewSubmittedAt && (
-        <p className="mt-1.5 text-[11px] italic text-muted-foreground/60">
-          Awaiting review
-        </p>
+        <div className="mt-3 flex items-center gap-2 rounded-lg border border-dashed border-border/60 px-3 py-2">
+          <Clock className="size-3 text-muted-foreground/60" />
+          <p className="text-xs text-muted-foreground/70">
+            Awaiting review from this reviewer
+          </p>
+        </div>
       )}
     </div>
   );

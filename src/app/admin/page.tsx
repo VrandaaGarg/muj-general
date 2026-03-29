@@ -17,6 +17,7 @@ import {
   countPendingEditorAccessRequests,
   listPendingResearchModerationItems,
   countPendingResearchModerationItems,
+  listPeerReviewInvitesForResearchItems,
 } from "@/lib/db/queries";
 import {
   Card,
@@ -44,6 +45,10 @@ export default async function AdminPage() {
     listPendingResearchModerationItems(),
     countPendingResearchModerationItems(),
   ]);
+
+  const peerInvitesMap = await listPeerReviewInvitesForResearchItems(
+    pendingResearchItems.map((item) => item.id),
+  );
 
   const totalPending = pendingRequestCount + pendingResearchCount;
 
@@ -205,7 +210,7 @@ export default async function AdminPage() {
         </div>
         <div className="mb-8">
           <Suspense fallback={<div className="h-32 animate-pulse rounded-xl border border-border/60 bg-muted/20" />}>
-            <AdminResearchModeration items={pendingResearchItems} limit={5} />
+            <AdminResearchModeration items={pendingResearchItems} peerInvitesMap={peerInvitesMap} limit={5} />
           </Suspense>
         </div>
       </main>
