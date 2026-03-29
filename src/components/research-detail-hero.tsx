@@ -13,6 +13,7 @@ import {
 
 import { trackDownload } from "@/lib/actions/research";
 import { ResearchThumbnail } from "@/components/pdf-thumbnail-viewer";
+import { SaveResearchButton } from "@/components/save-research-button";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
 import { getTypeLabel } from "@/lib/research-types";
@@ -33,6 +34,7 @@ const fadeUp: Variants = {
 
 interface ResearchDetailHeroProps {
   title: string;
+  slug: string;
   abstract: string;
   itemType: string;
   publicationYear: number;
@@ -59,6 +61,7 @@ interface ResearchDetailHeroProps {
 
 export function ResearchDetailHero({
   title,
+  slug,
   abstract,
   itemType,
   publicationYear,
@@ -86,7 +89,7 @@ export function ResearchDetailHero({
     <section className="relative">
       <div className="pointer-events-none absolute inset-0 -top-20 bg-linear-to-b from-primary/3 via-transparent to-transparent" />
 
-      <div className="relative mx-auto max-w-6xl px-6 pt-4 pb-12 md:px-12 lg:px-20">
+      <div className="relative mx-auto max-w-7xl px-6 pt-4 pb-12 md:px-12 lg:px-20">
         {/* Breadcrumb */}
         <motion.nav
           custom={0}
@@ -244,6 +247,18 @@ export function ResearchDetailHero({
                   DOI: {doi}
                 </a>
               )}
+              <SaveResearchButton
+                item={{
+                  id: researchItemId,
+                  slug,
+                  title,
+                  itemType,
+                  publicationYear,
+                  departmentName,
+                  authors: authors.map((a) => a.name),
+                  coverImageUrl,
+                }}
+              />
             </motion.div>
 
             {/* Published date + views */}

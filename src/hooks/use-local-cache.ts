@@ -23,6 +23,31 @@ function reviveDates<T>(value: T): T {
   return value;
 }
 
+const USER_ID_KEY = "muj-cache-uid";
+
+/**
+ * Store the current user ID so per-user cache keys can be generated.
+ * Call this once when the session is available.
+ */
+export function setCacheUserId(userId: string | null) {
+  if (typeof window === "undefined") return;
+  if (userId) {
+    window.localStorage.setItem(USER_ID_KEY, userId);
+  } else {
+    window.localStorage.removeItem(USER_ID_KEY);
+  }
+}
+
+function getCacheUserId(): string {
+  if (typeof window === "undefined") return "anon";
+  return window.localStorage.getItem(USER_ID_KEY) ?? "anon";
+}
+
+function resolveKey(key: string): string {
+  const uid = getCacheUserId();
+  return `${uid}:${key}`;
+}
+
 /**
  * Stale-while-revalidate hook backed by localStorage.
  *
@@ -30,7 +55,10 @@ function reviveDates<T>(value: T): T {
  * When `serverData` arrives from the server component prop, the cache
  * is silently updated and the returned value switches to the fresh data.
  *
- * @param key - localStorage key (should be unique per data type)
+ * Cache keys are automatically namespaced per user so admin/editor data
+ * does not leak across accounts on the same browser.
+ *
+ * @param key - logical cache key (should be unique per data type)
  * @param serverData - fresh data passed from the server component
  * @param options.maxAge - max cache age in ms (default: 1 hour)
  */
@@ -48,7 +76,7 @@ export function useLocalCache<T>(
     }
 
     try {
-      const raw = window.localStorage.getItem(key);
+      const raw = window.localStorage.getItem(resolveKey(key));
       if (raw) {
         const cached = JSON.parse(raw) as { data: T; timestamp: number };
         const age = Date.now() - cached.timestamp;
@@ -88,7 +116,7 @@ export function useLocalCache<T>(
         data: state.data,
         timestamp: Date.now(),
       });
-      window.localStorage.setItem(key, payload);
+      window.localStorage.setItem(resolveKey(key), payload);
     } catch {
       // quota exceeded or private browsing — silently ignore
     }

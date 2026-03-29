@@ -67,7 +67,7 @@ export function DepartmentProfile({ department }: DepartmentProfileProps) {
     <section className="relative">
       <div className="pointer-events-none absolute inset-0 -top-20 bg-gradient-to-b from-primary/[0.06] via-transparent to-transparent" />
 
-      <div className="relative mx-auto max-w-4xl px-6 pt-4 pb-12 md:px-12">
+      <div className="relative mx-auto max-w-7xl px-6 pt-4 pb-12 md:px-12 lg:px-20">
         {/* Breadcrumb */}
         <motion.nav
           custom={0}

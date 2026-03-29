@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight,
+  Bookmark,
   ChevronDown,
   FileText,
   LogOut,
@@ -17,6 +18,8 @@ import {
 import { useState, useRef, useEffect } from "react";
 
 import { useSession, signOut } from "@/lib/auth-client";
+import { setCacheUserId } from "@/hooks/use-local-cache";
+import { useSavedResearchStore } from "@/stores/saved-research-store";
 import type { AppRole } from "@/lib/auth/permissions";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Button } from "@/components/ui/button";
@@ -27,7 +30,6 @@ interface SiteHeaderProps {
 }
 
 const secondaryNavLinks = [
-  // { label: "Search", href: "/research" },
   { label: "Research", href: "/research" },
   { label: "Journals", href: "/journals" },
   { label: "Publish with us", href: "/submit" },
@@ -35,6 +37,7 @@ const secondaryNavLinks = [
 
 export function SiteHeader({ role }: SiteHeaderProps) {
   const { data: session, isPending } = useSession();
+  const savedCount = useSavedResearchStore((s) => s.items.length);
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [resolvedRole, setResolvedRole] = useState<AppRole | undefined>(role);
@@ -55,6 +58,10 @@ export function SiteHeader({ role }: SiteHeaderProps) {
   useEffect(() => {
     setResolvedRole(role);
   }, [role]);
+
+  useEffect(() => {
+    setCacheUserId(session?.user?.id ?? null);
+  }, [session?.user?.id]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -250,6 +257,18 @@ export function SiteHeader({ role }: SiteHeaderProps) {
               {link.label}
             </Link>
           ))}
+          <Link
+            href="/saved"
+            className="relative ml-auto flex shrink-0 items-center gap-1.5 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:rounded-full after:bg-primary after:transition-transform hover:after:scale-x-100"
+          >
+            <Bookmark className="size-3.5" />
+            Saved
+            {savedCount > 0 && (
+              <span className="flex size-4.5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                {savedCount > 99 ? "99+" : savedCount}
+              </span>
+            )}
+          </Link>
         </nav>
       </div>
     </header>

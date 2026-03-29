@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import "./globals.css";
 
 import { AuthUiStoreProvider } from "@/stores/auth-ui-store";
+import { SavedResearchHydrator } from "@/components/saved-research-hydrator";
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -35,7 +36,10 @@ export default function RootLayout({
       <body
         className={`${roboto.variable} ${jetbrainsMono.variable} antialiased`}
       >
-        <AuthUiStoreProvider>{children}</AuthUiStoreProvider>
+        <AuthUiStoreProvider>
+          <SavedResearchHydrator />
+          {children}
+        </AuthUiStoreProvider>
         <Toaster richColors position="top-right" />
       </body>
     </html>
