@@ -6,26 +6,13 @@ const slugSchema = z
   .min(2)
   .regex(/^[a-z0-9-]+$/, "Slug must use lowercase letters, numbers, and hyphens");
 
-const optionalStructuredSectionsSchema = z.preprocess(
+const optionalMarkdownSchema = z.preprocess(
   (value) => {
     if (typeof value !== "string") return undefined;
     const trimmed = value.trim();
-    if (!trimmed) return undefined;
-    try {
-      return JSON.parse(trimmed);
-    } catch {
-      return value;
-    }
+    return trimmed.length > 0 ? trimmed : undefined;
   },
-  z
-    .array(
-      z.object({
-        heading: z.string().trim().min(1).max(200),
-        content: z.string().trim().min(1).max(5000),
-      }),
-    )
-    .max(30)
-    .optional(),
+  z.string().max(20000).optional(),
 );
 
 const optionalDateSchema = z.preprocess(
@@ -77,7 +64,7 @@ export const updateTagSchema = z.object({
 export const createJournalSchema = z.object({
   name: z.string().trim().min(2).max(255),
   slug: slugSchema.max(280),
-  description: z.string().trim().max(1000).optional().or(z.literal("")),
+  description: z.string().trim().max(5000).optional().or(z.literal("")),
   coverImageKey: z
     .string()
     .trim()
@@ -93,14 +80,14 @@ export const createJournalSchema = z.object({
   aimAndScope: z.string().trim().max(5000).optional().or(z.literal("")),
   topics: z.string().trim().max(5000).optional().or(z.literal("")),
   contentTypes: z.string().trim().max(5000).optional().or(z.literal("")),
-  ethicsPolicy: optionalStructuredSectionsSchema,
-  disclosuresPolicy: optionalStructuredSectionsSchema,
-  rightsPermissions: optionalStructuredSectionsSchema,
-  contactInfo: optionalStructuredSectionsSchema,
-  submissionChecklist: optionalStructuredSectionsSchema,
-  submissionGuidelines: optionalStructuredSectionsSchema,
-  howToPublish: optionalStructuredSectionsSchema,
-  feesAndFunding: optionalStructuredSectionsSchema,
+  ethicsPolicy: optionalMarkdownSchema,
+  disclosuresPolicy: optionalMarkdownSchema,
+  rightsPermissions: optionalMarkdownSchema,
+  contactInfo: optionalMarkdownSchema,
+  submissionChecklist: optionalMarkdownSchema,
+  submissionGuidelines: optionalMarkdownSchema,
+  howToPublish: optionalMarkdownSchema,
+  feesAndFunding: optionalMarkdownSchema,
   editorialBoardCanReviewSubmissions: checkboxBooleanSchema.default(true),
 });
 

@@ -106,11 +106,6 @@ export const peerReviewRecommendationEnum = pgEnum(
   ["accept", "minor_revision", "major_revision", "reject"],
 );
 
-type JournalStructuredSection = {
-  heading: string;
-  content: string;
-};
-
 const timestamps = {
   createdAt: timestamp("created_at", {
     withTimezone: true,
@@ -322,14 +317,14 @@ export const journals = pgTable(
     aimAndScope: text("aim_and_scope"),
     topics: text("topics"),
     contentTypes: text("content_types"),
-    ethicsPolicy: jsonb("ethics_policy").$type<JournalStructuredSection[]>(),
-    disclosuresPolicy: jsonb("disclosures_policy").$type<JournalStructuredSection[]>(),
-    rightsPermissions: jsonb("rights_permissions").$type<JournalStructuredSection[]>(),
-    contactInfo: jsonb("contact_info").$type<JournalStructuredSection[]>(),
-    submissionChecklist: jsonb("submission_checklist").$type<JournalStructuredSection[]>(),
-    submissionGuidelines: jsonb("submission_guidelines").$type<JournalStructuredSection[]>(),
-    howToPublish: jsonb("how_to_publish").$type<JournalStructuredSection[]>(),
-    feesAndFunding: jsonb("fees_and_funding").$type<JournalStructuredSection[]>(),
+    ethicsPolicy: jsonb("ethics_policy").$type<string>(),
+    disclosuresPolicy: jsonb("disclosures_policy").$type<string>(),
+    rightsPermissions: jsonb("rights_permissions").$type<string>(),
+    contactInfo: jsonb("contact_info").$type<string>(),
+    submissionChecklist: jsonb("submission_checklist").$type<string>(),
+    submissionGuidelines: jsonb("submission_guidelines").$type<string>(),
+    howToPublish: jsonb("how_to_publish").$type<string>(),
+    feesAndFunding: jsonb("fees_and_funding").$type<string>(),
     editorialBoardCanReviewSubmissions: boolean(
       "editorial_board_can_review_submissions",
     )

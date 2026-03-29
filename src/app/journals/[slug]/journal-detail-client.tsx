@@ -11,17 +11,13 @@ import {
   User,
 } from "lucide-react";
 
+import { MarkdownContent } from "@/components/ui/markdown-content";
 import { ResearchCard } from "@/components/research-card";
 import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
-
-interface StructuredSection {
-  heading: string;
-  content: string;
-}
 
 interface EditorialBoardMember {
   id: string;
@@ -67,14 +63,14 @@ interface JournalData {
   aimAndScope: string | null;
   topics: string | null;
   contentTypes: string | null;
-  ethicsPolicy: StructuredSection[] | null;
-  disclosuresPolicy: StructuredSection[] | null;
-  rightsPermissions: StructuredSection[] | null;
-  contactInfo: StructuredSection[] | null;
-  submissionChecklist: StructuredSection[] | null;
-  submissionGuidelines: StructuredSection[] | null;
-  howToPublish: StructuredSection[] | null;
-  feesAndFunding: StructuredSection[] | null;
+  ethicsPolicy: string | null;
+  disclosuresPolicy: string | null;
+  rightsPermissions: string | null;
+  contactInfo: string | null;
+  submissionChecklist: string | null;
+  submissionGuidelines: string | null;
+  howToPublish: string | null;
+  feesAndFunding: string | null;
   editorialBoard: EditorialBoardMember[];
   onlineFirstItems: ResearchItem[];
   issues: IssueGroup[];
@@ -390,18 +386,24 @@ export function JournalDetailClient({ journal }: { journal: JournalData }) {
           <SectionShell title="Aim & Scope">
             <div className="space-y-7 ">
               {journal.aimAndScope && (
-                <p className="text-lg leading-[1.85] text-foreground/85">{journal.aimAndScope}</p>
+                <MarkdownContent
+                  content={journal.aimAndScope}
+                  className="text-foreground/85"
+                />
               )}
               {journal.topics && (
                 <div>
                   <h3 className="mb-2 text-xl font-semibold text-primary">Topics</h3>
-                  <p className="text-lg leading-relaxed text-foreground/85">{journal.topics}</p>
+                  <MarkdownContent content={journal.topics} className="text-foreground/85" />
                 </div>
               )}
               {journal.contentTypes && (
                 <div>
                   <h3 className="mb-2 text-xl font-semibold text-primary">Content Types</h3>
-                  <p className="text-lg leading-relaxed text-foreground/85">{journal.contentTypes}</p>
+                  <MarkdownContent
+                    content={journal.contentTypes}
+                    className="text-foreground/85"
+                  />
                 </div>
               )}
             </div>
@@ -420,16 +422,16 @@ export function JournalDetailClient({ journal }: { journal: JournalData }) {
           <SectionShell title="Policies, Ethics & Disclosures">
             <div className="space-y-8">
               {journal.ethicsPolicy?.length && journal.ethicsPolicy.length > 0 && (
-                <StructuredSubSection title="Ethics Policy" sections={journal.ethicsPolicy} />
+                <MarkdownSectionBlock title="Ethics Policy" content={journal.ethicsPolicy} />
               )}
               {journal.disclosuresPolicy?.length && journal.disclosuresPolicy.length > 0 && (
-                <StructuredSubSection title="Disclosures" sections={journal.disclosuresPolicy} />
+                <MarkdownSectionBlock title="Disclosures" content={journal.disclosuresPolicy} />
               )}
               {journal.rightsPermissions?.length && journal.rightsPermissions.length > 0 && (
-                <StructuredSubSection title="Rights & Permissions" sections={journal.rightsPermissions} />
+                <MarkdownSectionBlock title="Rights & Permissions" content={journal.rightsPermissions} />
               )}
               {journal.contactInfo?.length && journal.contactInfo.length > 0 && (
-                <StructuredSubSection title="Contact Information" sections={journal.contactInfo} />
+                <MarkdownSectionBlock title="Contact Information" content={journal.contactInfo} />
               )}
             </div>
           </SectionShell>
@@ -484,16 +486,16 @@ export function JournalDetailClient({ journal }: { journal: JournalData }) {
 
         {/* For Authors sections */}
         {activeSection === "submission-guidelines" && (
-          <StructuredSectionView title="Submission Guidelines" sections={journal.submissionGuidelines} />
+          <RichTextSectionView title="Submission Guidelines" content={journal.submissionGuidelines} />
         )}
         {activeSection === "submission-checklist" && (
-          <StructuredSectionView title="Submission Checklist" sections={journal.submissionChecklist} />
+          <RichTextSectionView title="Submission Checklist" content={journal.submissionChecklist} />
         )}
         {activeSection === "how-to-publish" && (
-          <StructuredSectionView title="How to Publish" sections={journal.howToPublish} />
+          <RichTextSectionView title="How to Publish" content={journal.howToPublish} />
         )}
         {activeSection === "fees-and-funding" && (
-          <StructuredSectionView title="Fees & Funding" sections={journal.feesAndFunding} />
+          <RichTextSectionView title="Fees & Funding" content={journal.feesAndFunding} />
         )}
       </div>
     </>
@@ -523,7 +525,7 @@ function DefaultContent({
       {journal.description && (
         <section>
           <h2 className="mb-3 text-2xl font-semibold tracking-tight text-primary">Overview</h2>
-          <p className="line-clamp-4 text-base leading-[1.85] text-foreground/85">{journal.description}</p>
+          <MarkdownContent content={journal.description} className="text-foreground/85" />
         </section>
       )}
 
@@ -648,56 +650,34 @@ function SectionShell({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Structured JSONB sub-section (within a combined section)           */
-/* ------------------------------------------------------------------ */
-
-function StructuredSubSection({
+function MarkdownSectionBlock({
   title,
-  sections,
+  content,
 }: {
   title: string;
-  sections: StructuredSection[];
+  content: string;
 }) {
   return (
     <div>
       <h3 className="mb-3 text-lg font-semibold tracking-tight text-foreground">{title}</h3>
       <div className="mt-2 border-t border-primary/20" />
-      <div className="mt-5 space-y-6">
-        {sections.map((section, idx) => (
-          <div key={idx}>
-            <h4 className="mb-2 text-base font-semibold text-primary">{section.heading}</h4>
-            <p className="whitespace-pre-line text-base leading-relaxed text-foreground/80">{section.content}</p>
-          </div>
-        ))}
-      </div>
+      <MarkdownContent content={content} className="mt-5 text-foreground/85" />
     </div>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Structured JSONB full section view (for For Authors items)         */
-/* ------------------------------------------------------------------ */
-
-function StructuredSectionView({
+function RichTextSectionView({
   title,
-  sections,
+  content,
 }: {
   title: string;
-  sections: StructuredSection[] | null;
+  content: string | null;
 }) {
-  if (!sections?.length) return null;
+  if (!content?.trim()) return null;
 
   return (
     <SectionShell title={title}>
-      <div className="space-y-6">
-        {sections.map((section, idx) => (
-          <div key={idx}>
-            <h3 className="mb-2 text-base font-semibold text-primary">{section.heading}</h3>
-            <p className="whitespace-pre-line text-base leading-relaxed text-foreground/80">{section.content}</p>
-          </div>
-        ))}
-      </div>
+      <MarkdownContent content={content} className="text-foreground/85" />
     </SectionShell>
   );
 }

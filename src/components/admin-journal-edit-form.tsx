@@ -26,9 +26,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MarkdownToolbarTextarea } from "@/components/ui/markdown-toolbar-textarea";
 import { Textarea } from "@/components/ui/textarea";
-
-type StructuredSection = { heading: string; content: string };
 
 type JournalEditData = {
   id: string;
@@ -41,14 +40,14 @@ type JournalEditData = {
   aimAndScope: string | null;
   topics: string | null;
   contentTypes: string | null;
-  ethicsPolicy: StructuredSection[] | null;
-  disclosuresPolicy: StructuredSection[] | null;
-  rightsPermissions: StructuredSection[] | null;
-  contactInfo: StructuredSection[] | null;
-  submissionChecklist: StructuredSection[] | null;
-  submissionGuidelines: StructuredSection[] | null;
-  howToPublish: StructuredSection[] | null;
-  feesAndFunding: StructuredSection[] | null;
+  ethicsPolicy: string | null;
+  disclosuresPolicy: string | null;
+  rightsPermissions: string | null;
+  contactInfo: string | null;
+  submissionChecklist: string | null;
+  submissionGuidelines: string | null;
+  howToPublish: string | null;
+  feesAndFunding: string | null;
   editorialBoardCanReviewSubmissions: boolean;
   status: "active" | "archived";
   createdAt: Date;
@@ -79,16 +78,6 @@ type JournalEditData = {
   }>;
 };
 
-const STRUCTURED_SECTION_EXAMPLES: Record<string, { heading: string; content: string }> = {
-  ethicsPolicy: { heading: "Research integrity", content: "All submissions must follow COPE ethics standards and include conflict-of-interest declarations." },
-  disclosuresPolicy: { heading: "Conflict disclosures", content: "Authors, editors, and reviewers must disclose financial or personal conflicts related to the manuscript." },
-  rightsPermissions: { heading: "Copyright and reuse", content: "Articles are published under CC BY 4.0 unless otherwise specified. Permission is required for third-party copyrighted material." },
-  contactInfo: { heading: "Editorial office", content: "Email: journal@muj.edu.in | Support hours: Mon-Fri, 10:00 AM - 5:00 PM IST." },
-  submissionChecklist: { heading: "Before you submit", content: "Ensure manuscript formatting, abstract, keywords, references, and ethical declarations are complete." },
-  submissionGuidelines: { heading: "Manuscript format", content: "Submit in DOCX or LaTeX format, include structured abstract, and follow journal citation style." },
-  howToPublish: { heading: "Publishing workflow", content: "Submit manuscript -> editorial screening -> peer review -> revisions -> acceptance -> publication." },
-  feesAndFunding: { heading: "Article processing charges", content: "No APC for student submissions. Funded projects may include publication support as per grant terms." },
-};
 
 function slugifyJournalName(value: string) {
   return value
@@ -140,8 +129,34 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
   const [isSaving, setIsSaving] = useState(false);
   const [editName, setEditName] = useState(journal.name);
   const [editSlug, setEditSlug] = useState(journal.slug);
+  const [editDescription, setEditDescription] = useState(journal.description ?? "");
+  const [editAimAndScope, setEditAimAndScope] = useState(
+    journal.aimAndScope ?? "",
+  );
+  const [editTopics, setEditTopics] = useState(journal.topics ?? "");
+  const [editContentTypes, setEditContentTypes] = useState(
+    journal.contentTypes ?? "",
+  );
   const [editSlugTouched, setEditSlugTouched] = useState(false);
   const [showStructure, setShowStructure] = useState(false);
+  const [ethicsPolicy, setEthicsPolicy] = useState(journal.ethicsPolicy ?? "");
+  const [disclosuresPolicy, setDisclosuresPolicy] = useState(
+    journal.disclosuresPolicy ?? "",
+  );
+  const [rightsPermissions, setRightsPermissions] = useState(
+    journal.rightsPermissions ?? "",
+  );
+  const [contactInfo, setContactInfo] = useState(journal.contactInfo ?? "");
+  const [submissionChecklist, setSubmissionChecklist] = useState(
+    journal.submissionChecklist ?? "",
+  );
+  const [submissionGuidelines, setSubmissionGuidelines] = useState(
+    journal.submissionGuidelines ?? "",
+  );
+  const [howToPublish, setHowToPublish] = useState(journal.howToPublish ?? "");
+  const [feesAndFunding, setFeesAndFunding] = useState(
+    journal.feesAndFunding ?? "",
+  );
 
   function handleEditNameChange(nextName: string) {
     setEditName(nextName);
@@ -272,7 +287,14 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
               </select>
             </div>
           </div>
-          <Field label="Description" name="description" defaultValue={journal.description ?? ""} textarea disabled={isSaving} />
+          <RichTextField
+            label="Description"
+            name="description"
+            value={editDescription}
+            onChange={setEditDescription}
+            placeholder="Write a concise journal overview. Use headings, lists, bold and italic formatting if needed."
+            disabled={isSaving}
+          />
           <label className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
             <input
               type="checkbox"
@@ -292,10 +314,31 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
             <h3 className="text-xl font-semibold tracking-tight text-primary">Aim & Scope</h3>
             <p className="text-sm text-muted-foreground">Define journal scope, topics, and accepted content formats.</p>
           </div>
-          <Field label="Aim and Scope" name="aimAndScope" defaultValue={journal.aimAndScope ?? ""} textarea rows={5} disabled={isSaving} />
+          <RichTextField
+            label="Aim and Scope"
+            name="aimAndScope"
+            value={editAimAndScope}
+            onChange={setEditAimAndScope}
+            placeholder="Define the journal mission, scope, and focus areas."
+            disabled={isSaving}
+          />
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Topics" name="topics" defaultValue={journal.topics ?? ""} textarea rows={4} disabled={isSaving} />
-            <Field label="Content Types" name="contentTypes" defaultValue={journal.contentTypes ?? ""} textarea rows={4} disabled={isSaving} />
+            <RichTextField
+              label="Topics"
+              name="topics"
+              value={editTopics}
+              onChange={setEditTopics}
+              placeholder="List key domains, themes, and research topics."
+              disabled={isSaving}
+            />
+            <RichTextField
+              label="Content Types"
+              name="contentTypes"
+              value={editContentTypes}
+              onChange={setEditContentTypes}
+              placeholder="List accepted manuscript/content types."
+              disabled={isSaving}
+            />
           </div>
         </div>
 
@@ -306,10 +349,10 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
             <p className="text-sm text-muted-foreground">Public policies for ethics, disclosures, rights, and contact.</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <StructuredSectionsEditor label="Ethics Policy" name="ethicsPolicy" initialValue={journal.ethicsPolicy ?? undefined} disabled={isSaving} />
-            <StructuredSectionsEditor label="Disclosures Policy" name="disclosuresPolicy" initialValue={journal.disclosuresPolicy ?? undefined} disabled={isSaving} />
-            <StructuredSectionsEditor label="Rights & Permissions" name="rightsPermissions" initialValue={journal.rightsPermissions ?? undefined} disabled={isSaving} />
-            <StructuredSectionsEditor label="Contact Information" name="contactInfo" initialValue={journal.contactInfo ?? undefined} disabled={isSaving} />
+            <RichTextField label="Ethics Policy" name="ethicsPolicy" value={ethicsPolicy} onChange={setEthicsPolicy} placeholder="Describe publication ethics, misconduct handling, and integrity standards." disabled={isSaving} />
+            <RichTextField label="Disclosures Policy" name="disclosuresPolicy" value={disclosuresPolicy} onChange={setDisclosuresPolicy} placeholder="Describe conflict-of-interest and disclosure requirements." disabled={isSaving} />
+            <RichTextField label="Rights & Permissions" name="rightsPermissions" value={rightsPermissions} onChange={setRightsPermissions} placeholder="Describe copyright, licensing, and reuse permissions." disabled={isSaving} />
+            <RichTextField label="Contact Information" name="contactInfo" value={contactInfo} onChange={setContactInfo} placeholder="Add editorial office contact details and response expectations." disabled={isSaving} />
           </div>
         </div>
 
@@ -320,12 +363,25 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
             <p className="text-sm text-muted-foreground">Author-facing workflow, checklist, guidelines, and fees.</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <StructuredSectionsEditor label="Submission Checklist" name="submissionChecklist" initialValue={journal.submissionChecklist ?? undefined} disabled={isSaving} />
-            <StructuredSectionsEditor label="Submission Guidelines" name="submissionGuidelines" initialValue={journal.submissionGuidelines ?? undefined} disabled={isSaving} />
-            <StructuredSectionsEditor label="How to Publish" name="howToPublish" initialValue={journal.howToPublish ?? undefined} disabled={isSaving} />
-            <StructuredSectionsEditor label="Fees & Funding" name="feesAndFunding" initialValue={journal.feesAndFunding ?? undefined} disabled={isSaving} />
+            <RichTextField label="Submission Checklist" name="submissionChecklist" value={submissionChecklist} onChange={setSubmissionChecklist} placeholder="Share a pre-submission checklist for authors." disabled={isSaving} />
+            <RichTextField label="Submission Guidelines" name="submissionGuidelines" value={submissionGuidelines} onChange={setSubmissionGuidelines} placeholder="Provide manuscript formatting and citation guidance." disabled={isSaving} />
+            <RichTextField label="How to Publish" name="howToPublish" value={howToPublish} onChange={setHowToPublish} placeholder="Explain the workflow from submission to publication." disabled={isSaving} />
+            <RichTextField label="Fees & Funding" name="feesAndFunding" value={feesAndFunding} onChange={setFeesAndFunding} placeholder="Describe APCs, waivers, and funding support details." disabled={isSaving} />
           </div>
         </div>
+
+        <input type="hidden" name="ethicsPolicy" value={ethicsPolicy} readOnly />
+        <input type="hidden" name="description" value={editDescription} readOnly />
+        <input type="hidden" name="aimAndScope" value={editAimAndScope} readOnly />
+        <input type="hidden" name="topics" value={editTopics} readOnly />
+        <input type="hidden" name="contentTypes" value={editContentTypes} readOnly />
+        <input type="hidden" name="disclosuresPolicy" value={disclosuresPolicy} readOnly />
+        <input type="hidden" name="rightsPermissions" value={rightsPermissions} readOnly />
+        <input type="hidden" name="contactInfo" value={contactInfo} readOnly />
+        <input type="hidden" name="submissionChecklist" value={submissionChecklist} readOnly />
+        <input type="hidden" name="submissionGuidelines" value={submissionGuidelines} readOnly />
+        <input type="hidden" name="howToPublish" value={howToPublish} readOnly />
+        <input type="hidden" name="feesAndFunding" value={feesAndFunding} readOnly />
 
         <Button type="submit" disabled={isSaving} className="bg-primary text-white hover:bg-primary/90">
           {isSaving ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
@@ -565,79 +621,31 @@ function BoardMemberRow({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Structured sections editor                                         */
-/* ------------------------------------------------------------------ */
-
-function StructuredSectionsEditor({
+function RichTextField({
   label,
   name,
-  initialValue,
+  value,
+  onChange,
+  placeholder,
   disabled,
 }: {
   label: string;
   name: string;
-  initialValue?: StructuredSection[];
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
   disabled?: boolean;
 }) {
-  const example = STRUCTURED_SECTION_EXAMPLES[name] ?? STRUCTURED_SECTION_EXAMPLES.submissionGuidelines;
-  const [entries, setEntries] = useState<StructuredSection[]>(
-    initialValue && initialValue.length > 0 ? initialValue : [{ heading: "", content: "" }],
-  );
-
-  function addEntry() {
-    setEntries((prev) => [...prev, { heading: "", content: "" }]);
-  }
-  function removeEntry(index: number) {
-    setEntries((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== index)));
-  }
-  function updateEntry(index: number, field: keyof StructuredSection, value: string) {
-    setEntries((prev) => prev.map((entry, i) => (i === index ? { ...entry, [field]: value } : entry)));
-  }
-
-  const serialized = entries.length > 0 ? JSON.stringify(entries) : "";
-
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <Label className="text-xs">{label}</Label>
-        <Button type="button" variant="outline" size="sm" onClick={addEntry} disabled={disabled} className="h-6 text-[10px]">
-          <Plus className="size-3" /> Add item
-        </Button>
-      </div>
-      <input type="hidden" name={name} value={serialized} />
-      <div className="space-y-2">
-        {entries.map((entry, index) => (
-          <div key={index} className="relative rounded-lg border border-border/50 bg-muted/20 p-3 pr-8">
-            <button
-              type="button"
-              onClick={() => removeEntry(index)}
-              disabled={disabled || entries.length === 1}
-              className="absolute right-2 top-2 rounded-md p-0.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
-            >
-              <X className="size-3.5" />
-            </button>
-            <div className="space-y-2">
-              <Input
-                placeholder={`e.g. ${example.heading}`}
-                value={entry.heading}
-                onChange={(e) => updateEntry(index, "heading", e.target.value)}
-                disabled={disabled}
-                className="h-7 overflow-x-auto text-xs"
-              />
-              <Textarea
-                placeholder={example.content}
-                value={entry.content}
-                onChange={(e) => updateEntry(index, "content", e.target.value)}
-                disabled={disabled}
-                rows={2}
-                className="max-h-28 overflow-y-auto text-xs"
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+    <MarkdownToolbarTextarea
+      label={label}
+      name={`${name}Editor`}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      disabled={disabled}
+      rows={8}
+    />
   );
 }
 

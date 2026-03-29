@@ -51,7 +51,7 @@ export default async function AdminJournalsPage() {
         </nav>
 
         <div className="mb-10">
-          <div className="mb-4 flex items-center gap-2">
+          {/* <div className="mb-4 flex items-center gap-2">
             <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
               <Shield className="size-4 text-primary" />
             </div>
@@ -62,7 +62,7 @@ export default async function AdminJournalsPage() {
               <Library className="mr-1 inline size-3" />
               Journals
             </span>
-          </div>
+          </div> */}
           <h1 className="font-sans text-3xl tracking-tight md:text-4xl">Journals</h1>
           <p className="mt-2 text-base text-muted-foreground">
             Manage journals, volumes, and issues for online-first and issue-based publication flows.

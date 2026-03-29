@@ -3,6 +3,7 @@ import "server-only";
 import { and, asc, desc, eq, ilike, inArray, isNull, ne, or, sql } from "drizzle-orm";
 
 import { db } from "@/db";
+import { normalizeJournalRichText } from "@/lib/journal-rich-text";
 import {
   activityLogs,
   appUsers,
@@ -386,6 +387,14 @@ export async function listJournalAdminOverview() {
 
   return rows.map((row) => ({
     ...row,
+    ethicsPolicy: normalizeJournalRichText(row.ethicsPolicy),
+    disclosuresPolicy: normalizeJournalRichText(row.disclosuresPolicy),
+    rightsPermissions: normalizeJournalRichText(row.rightsPermissions),
+    contactInfo: normalizeJournalRichText(row.contactInfo),
+    submissionChecklist: normalizeJournalRichText(row.submissionChecklist),
+    submissionGuidelines: normalizeJournalRichText(row.submissionGuidelines),
+    howToPublish: normalizeJournalRichText(row.howToPublish),
+    feesAndFunding: normalizeJournalRichText(row.feesAndFunding),
     volumes: volumes.filter((volume) => volume.journalId === row.id),
     issues: issues.filter((issue) => issue.journalId === row.id),
     editorialBoard: editorialBoard.filter((member) => member.journalId === row.id),
@@ -469,6 +478,14 @@ export async function getJournalForAdminEdit(journalSlug: string) {
 
   return {
     ...journal,
+    ethicsPolicy: normalizeJournalRichText(journal.ethicsPolicy),
+    disclosuresPolicy: normalizeJournalRichText(journal.disclosuresPolicy),
+    rightsPermissions: normalizeJournalRichText(journal.rightsPermissions),
+    contactInfo: normalizeJournalRichText(journal.contactInfo),
+    submissionChecklist: normalizeJournalRichText(journal.submissionChecklist),
+    submissionGuidelines: normalizeJournalRichText(journal.submissionGuidelines),
+    howToPublish: normalizeJournalRichText(journal.howToPublish),
+    feesAndFunding: normalizeJournalRichText(journal.feesAndFunding),
     volumes,
     issues,
     editorialBoard,
@@ -606,6 +623,14 @@ export async function getPublicJournalBySlug(slug: string) {
 
   return {
     ...journal,
+    ethicsPolicy: normalizeJournalRichText(journal.ethicsPolicy),
+    disclosuresPolicy: normalizeJournalRichText(journal.disclosuresPolicy),
+    rightsPermissions: normalizeJournalRichText(journal.rightsPermissions),
+    contactInfo: normalizeJournalRichText(journal.contactInfo),
+    submissionChecklist: normalizeJournalRichText(journal.submissionChecklist),
+    submissionGuidelines: normalizeJournalRichText(journal.submissionGuidelines),
+    howToPublish: normalizeJournalRichText(journal.howToPublish),
+    feesAndFunding: normalizeJournalRichText(journal.feesAndFunding),
     editorialBoard,
     onlineFirstItems: onlineFirstRows.map((row) => ({
       ...row,

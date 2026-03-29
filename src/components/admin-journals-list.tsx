@@ -5,13 +5,14 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
+  ArrowLeft,
+  ArrowRight,
   BookOpen,
+  Check,
   Layers3,
   Loader2,
   Pencil,
-  Plus,
   ScrollText,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -26,55 +27,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MarkdownToolbarTextarea } from "@/components/ui/markdown-toolbar-textarea";
 import { Textarea } from "@/components/ui/textarea";
-
-type StructuredSection = { heading: string; content: string };
-
-const STRUCTURED_SECTION_EXAMPLES: Record<
-  string,
-  { heading: string; content: string }
-> = {
-  ethicsPolicy: {
-    heading: "Research integrity",
-    content:
-      "All submissions must follow COPE ethics standards and include conflict-of-interest declarations.",
-  },
-  disclosuresPolicy: {
-    heading: "Conflict disclosures",
-    content:
-      "Authors, editors, and reviewers must disclose financial or personal conflicts related to the manuscript.",
-  },
-  rightsPermissions: {
-    heading: "Copyright and reuse",
-    content:
-      "Articles are published under CC BY 4.0 unless otherwise specified. Permission is required for third-party copyrighted material.",
-  },
-  contactInfo: {
-    heading: "Editorial office",
-    content:
-      "Email: journal@muj.edu.in | Support hours: Mon-Fri, 10:00 AM - 5:00 PM IST.",
-  },
-  submissionChecklist: {
-    heading: "Before you submit",
-    content:
-      "Ensure manuscript formatting, abstract, keywords, references, and ethical declarations are complete.",
-  },
-  submissionGuidelines: {
-    heading: "Manuscript format",
-    content:
-      "Submit in DOCX or LaTeX format, include structured abstract, and follow journal citation style.",
-  },
-  howToPublish: {
-    heading: "Publishing workflow",
-    content:
-      "Submit manuscript -> editorial screening -> peer review -> revisions -> acceptance -> publication.",
-  },
-  feesAndFunding: {
-    heading: "Article processing charges",
-    content:
-      "No APC for student submissions. Funded projects may include publication support as per grant terms.",
-  },
-};
 
 function slugifyJournalName(value: string) {
   return value
@@ -96,14 +50,14 @@ type JournalOverview = {
   aimAndScope: string | null;
   topics: string | null;
   contentTypes: string | null;
-  ethicsPolicy: StructuredSection[] | null;
-  disclosuresPolicy: StructuredSection[] | null;
-  rightsPermissions: StructuredSection[] | null;
-  contactInfo: StructuredSection[] | null;
-  submissionChecklist: StructuredSection[] | null;
-  submissionGuidelines: StructuredSection[] | null;
-  howToPublish: StructuredSection[] | null;
-  feesAndFunding: StructuredSection[] | null;
+  ethicsPolicy: string | null;
+  disclosuresPolicy: string | null;
+  rightsPermissions: string | null;
+  contactInfo: string | null;
+  submissionChecklist: string | null;
+  submissionGuidelines: string | null;
+  howToPublish: string | null;
+  feesAndFunding: string | null;
   editorialBoardCanReviewSubmissions: boolean;
   status: "active" | "archived";
   createdAt: Date;
@@ -224,14 +178,52 @@ export function AdminJournalsList({ journals }: { journals: JournalOverview[] })
 
   const [createName, setCreateName] = useState("");
   const [createSlug, setCreateSlug] = useState("");
+  const [createDescription, setCreateDescription] = useState("");
+  const [createAimAndScope, setCreateAimAndScope] = useState("");
+  const [createTopics, setCreateTopics] = useState("");
+  const [createContentTypes, setCreateContentTypes] = useState("");
   const [createSlugTouched, setCreateSlugTouched] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [createStep, setCreateStep] = useState(0);
+
+  const [ethicsPolicy, setEthicsPolicy] = useState("");
+  const [disclosuresPolicy, setDisclosuresPolicy] = useState("");
+  const [rightsPermissions, setRightsPermissions] = useState("");
+  const [contactInfo, setContactInfo] = useState("");
+  const [submissionChecklist, setSubmissionChecklist] = useState("");
+  const [submissionGuidelines, setSubmissionGuidelines] = useState("");
+  const [howToPublish, setHowToPublish] = useState("");
+  const [feesAndFunding, setFeesAndFunding] = useState("");
+
+  const createSteps = [
+    "Overview",
+    "Aim & Scope",
+    "Policies",
+    "For Authors",
+    "Review",
+  ] as const;
 
   function handleCreateNameChange(nextName: string) {
     setCreateName(nextName);
     if (!createSlugTouched) {
       setCreateSlug(slugifyJournalName(nextName));
     }
+  }
+
+  function canAdvanceFromCreateStep(step: number) {
+    if (step === 0) {
+      return createName.trim().length >= 2 && createSlug.trim().length >= 2;
+    }
+    return true;
+  }
+
+  function goToCreateStep(nextStep: number) {
+    if (nextStep < 0 || nextStep >= createSteps.length) return;
+    if (nextStep > createStep && !canAdvanceFromCreateStep(createStep)) {
+      toast.error("Journal name and slug are required before continuing.");
+      return;
+    }
+    setCreateStep(nextStep);
   }
 
   async function handleCreate(formData: FormData) {
@@ -261,9 +253,28 @@ export function AdminJournalsList({ journals }: { journals: JournalOverview[] })
         </CardHeader>
         <CardContent>
           <form action={handleCreate} className="grid gap-4">
-            <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4">
+            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-muted/20 p-3">
+              {createSteps.map((step, index) => (
+                <button
+                  key={step}
+                  type="button"
+                  onClick={() => goToCreateStep(index)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                    createStep === index
+                      ? "bg-primary text-primary-foreground"
+                      : index < createStep
+                        ? "bg-primary/10 text-primary"
+                        : "bg-background text-muted-foreground"
+                  }`}
+                >
+                  {step}
+                </button>
+              ))}
+            </div>
+
+            <div className={createStep === 0 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4" : "hidden"}>
               <div>
-                <h3 className="text-xl font-semibold tracking-tight text-primary">Overview</h3>
+                <h3 className="text-lg font-semibold tracking-tight text-foreground">Overview</h3>
                 <p className="text-sm text-muted-foreground">
                   Core journal identity and metadata shown on the journal page.
                 </p>
@@ -289,7 +300,14 @@ export function AdminJournalsList({ journals }: { journals: JournalOverview[] })
                 <Field label="ISSN" name="issn" placeholder="1234-5678" />
                 <Field label="E-ISSN" name="eissn" placeholder="8765-4321" />
               </div>
-              <Field label="Description" name="description" textarea />
+              <RichTextField
+                label="Description"
+                name="description"
+                value={createDescription}
+                onChange={setCreateDescription}
+                placeholder="Write a concise journal overview. Use headings, lists, bold and italic formatting if needed."
+                disabled={isCreating}
+              />
               <label className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
                 <input
                   type="checkbox"
@@ -302,53 +320,113 @@ export function AdminJournalsList({ journals }: { journals: JournalOverview[] })
               <CoverImageUploadField idBase="create" disabled={isCreating} />
             </div>
 
-            <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4">
+            <div className={createStep === 1 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4" : "hidden"}>
               <div>
-                <h3 className="text-xl font-semibold tracking-tight text-primary">Aim & Scope</h3>
+                <h3 className="text-lg font-semibold tracking-tight text-foreground">Aim &amp; Scope</h3>
                 <p className="text-sm text-muted-foreground">
                   Define journal scope, topics, and accepted content formats.
                 </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Aim and Scope" name="aimAndScope" textarea rows={4} className="sm:col-span-2" />
-                <Field label="Topics" name="topics" textarea rows={4} />
-                <Field label="Content Types" name="contentTypes" textarea rows={4} />
+                <div className="sm:col-span-2">
+                  <RichTextField
+                    label="Aim and Scope"
+                    name="aimAndScope"
+                    value={createAimAndScope}
+                    onChange={setCreateAimAndScope}
+                    placeholder="Define the journal mission, scope, and focus areas."
+                    disabled={isCreating}
+                  />
+                </div>
+                <RichTextField
+                  label="Topics"
+                  name="topics"
+                  value={createTopics}
+                  onChange={setCreateTopics}
+                  placeholder="List key domains, themes, and research topics."
+                  disabled={isCreating}
+                />
+                <RichTextField
+                  label="Content Types"
+                  name="contentTypes"
+                  value={createContentTypes}
+                  onChange={setCreateContentTypes}
+                  placeholder="List accepted manuscript/content types."
+                  disabled={isCreating}
+                />
               </div>
             </div>
 
-            <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4">
+            <div className={createStep === 2 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4" : "hidden"}>
               <div>
-                <h3 className="text-xl font-semibold tracking-tight text-primary">Policies</h3>
+                <h3 className="text-lg font-semibold tracking-tight text-foreground">Policies</h3>
                 <p className="text-sm text-muted-foreground">
-                  Public policies for ethics, disclosures, rights, and contact.
+                  Write policy text with markdown formatting tools.
                 </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <StructuredSectionsEditor label="Ethics Policy" name="ethicsPolicy" />
-                <StructuredSectionsEditor label="Disclosures Policy" name="disclosuresPolicy" />
-                <StructuredSectionsEditor label="Rights & Permissions" name="rightsPermissions" />
-                <StructuredSectionsEditor label="Contact Information" name="contactInfo" />
+                <RichTextField label="Ethics Policy" name="ethicsPolicy" placeholder="Describe publication ethics, misconduct handling, and integrity standards." value={ethicsPolicy} onChange={setEthicsPolicy} disabled={isCreating} />
+                <RichTextField label="Disclosures Policy" name="disclosuresPolicy" placeholder="Describe conflict-of-interest and disclosure requirements." value={disclosuresPolicy} onChange={setDisclosuresPolicy} disabled={isCreating} />
+                <RichTextField label="Rights & Permissions" name="rightsPermissions" placeholder="Describe copyright, licensing, and reuse permissions." value={rightsPermissions} onChange={setRightsPermissions} disabled={isCreating} />
+                <RichTextField label="Contact Information" name="contactInfo" placeholder="Add editorial office contact details and response expectations." value={contactInfo} onChange={setContactInfo} disabled={isCreating} />
               </div>
             </div>
 
-            <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4">
+            <div className={createStep === 3 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4" : "hidden"}>
               <div>
-                <h3 className="text-xl font-semibold tracking-tight text-primary">For Authors</h3>
+                <h3 className="text-lg font-semibold tracking-tight text-foreground">For Authors</h3>
                 <p className="text-sm text-muted-foreground">
-                  Author-facing workflow, checklist, guidelines, and fees.
+                  Provide submission requirements, process guidance, and fee notes.
                 </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <StructuredSectionsEditor label="Submission Checklist" name="submissionChecklist" />
-                <StructuredSectionsEditor label="Submission Guidelines" name="submissionGuidelines" />
-                <StructuredSectionsEditor label="How to Publish" name="howToPublish" />
-                <StructuredSectionsEditor label="Fees & Funding" name="feesAndFunding" />
+                <RichTextField label="Submission Checklist" name="submissionChecklist" placeholder="Share a pre-submission checklist for authors." value={submissionChecklist} onChange={setSubmissionChecklist} disabled={isCreating} />
+                <RichTextField label="Submission Guidelines" name="submissionGuidelines" placeholder="Provide manuscript formatting and citation guidance." value={submissionGuidelines} onChange={setSubmissionGuidelines} disabled={isCreating} />
+                <RichTextField label="How to Publish" name="howToPublish" placeholder="Explain the workflow from submission to publication." value={howToPublish} onChange={setHowToPublish} disabled={isCreating} />
+                <RichTextField label="Fees & Funding" name="feesAndFunding" placeholder="Describe APCs, waivers, and funding support details." value={feesAndFunding} onChange={setFeesAndFunding} disabled={isCreating} />
               </div>
             </div>
-            <Button type="submit" disabled={isCreating} className="w-full sm:w-auto bg-primary text-white hover:bg-primary/90">
-              {isCreating ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
-              Create journal
-            </Button>
+
+            <div className={createStep === 4 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4" : "hidden"}>
+              <div>
+                <h3 className="text-lg font-semibold tracking-tight text-foreground">Review</h3>
+                <p className="text-sm text-muted-foreground">Review core details before creating the journal.</p>
+              </div>
+              <div className="grid gap-3 rounded-lg border border-border/50 bg-background p-3 text-sm">
+                <div><span className="font-medium">Journal name:</span> {createName || "-"}</div>
+                <div><span className="font-medium">Slug:</span> {createSlug || "-"}</div>
+                <div><span className="font-medium">Policies filled:</span> {[ethicsPolicy, disclosuresPolicy, rightsPermissions, contactInfo].filter((v) => v.trim().length > 0).length} / 4</div>
+                <div><span className="font-medium">Author guidance filled:</span> {[submissionChecklist, submissionGuidelines, howToPublish, feesAndFunding].filter((v) => v.trim().length > 0).length} / 4</div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => goToCreateStep(createStep - 1)}
+                disabled={createStep === 0 || isCreating}
+              >
+                <ArrowLeft className="size-3.5" />
+                Back
+              </Button>
+
+              {createStep < createSteps.length - 1 ? (
+                <Button
+                  type="button"
+                  onClick={() => goToCreateStep(createStep + 1)}
+                  disabled={isCreating}
+                >
+                  Next
+                  <ArrowRight className="size-3.5" />
+                </Button>
+              ) : (
+                <Button type="submit" disabled={isCreating} className="bg-primary text-white hover:bg-primary/90">
+                  {isCreating ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+                  Create journal
+                </Button>
+              )}
+            </div>
           </form>
         </CardContent>
       </Card>
@@ -403,104 +481,31 @@ function JournalCard({ journal, index }: { journal: JournalOverview; index: numb
   );
 }
 
-function StructuredSectionsEditor({
+function RichTextField({
   label,
   name,
-  initialValue,
+  placeholder,
   disabled,
+  value,
+  onChange,
 }: {
   label: string;
   name: string;
-  initialValue?: StructuredSection[];
+  placeholder: string;
   disabled?: boolean;
+  value: string;
+  onChange: (value: string) => void;
 }) {
-  const example =
-    STRUCTURED_SECTION_EXAMPLES[name] ??
-    STRUCTURED_SECTION_EXAMPLES.submissionGuidelines;
-
-  const [entries, setEntries] = useState<StructuredSection[]>(
-    initialValue && initialValue.length > 0
-      ? initialValue
-      : [{ heading: "", content: "" }],
-  );
-
-  function addEntry() {
-    setEntries((prev) => [...prev, { heading: "", content: "" }]);
-  }
-
-  function removeEntry(index: number) {
-    setEntries((prev) => {
-      if (prev.length <= 1) return prev;
-      return prev.filter((_, i) => i !== index);
-    });
-  }
-
-  function updateEntry(
-    index: number,
-    field: keyof StructuredSection,
-    value: string,
-  ) {
-    setEntries((prev) =>
-      prev.map((entry, i) =>
-        i === index ? { ...entry, [field]: value } : entry,
-      ),
-    );
-  }
-
-  const serialized = entries.length > 0 ? JSON.stringify(entries) : "";
-
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <Label className="text-sm">{label}</Label>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={addEntry}
-          disabled={disabled}
-          className="h-6 text-xs"
-        >
-          <Plus className="size-4" />
-          Add item
-        </Button>
-      </div>
-      <input type="hidden" name={name} value={serialized} />
-      <div className="space-y-2">
-        {entries.map((entry, index) => (
-          <div
-            key={index}
-            className="relative rounded-lg border border-border/50 bg-muted/20 p-3 pr-8"
-          >
-            <button
-              type="button"
-              onClick={() => removeEntry(index)}
-              disabled={disabled || entries.length === 1}
-              className="absolute right-2 top-2 rounded-md p-0.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
-            >
-              <X className="size-3.5" />
-            </button>
-            <div className="space-y-2">
-              <Input
-                placeholder={`e.g. ${example.heading}`}
-                value={entry.heading}
-                onChange={(e) => updateEntry(index, "heading", e.target.value)}
-                disabled={disabled}
-                className="h-7 overflow-x-auto text-xs"
-              />
-              <Textarea
-                placeholder={example.content}
-                value={entry.content}
-                onChange={(e) => updateEntry(index, "content", e.target.value)}
-                disabled={disabled}
-                rows={2}
-                className="max-h-28 overflow-y-auto text-xs"
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+    <MarkdownToolbarTextarea
+      label={label}
+      name={name}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      disabled={disabled}
+      rows={8}
+    />
   );
 }
 
