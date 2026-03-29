@@ -43,11 +43,11 @@ export default async function ReviewsPage() {
         </nav>
 
         <div className="mb-10">
-          <div className="mb-4 flex items-center gap-2">
+          {/* <div className="mb-4 flex items-center gap-2">
             <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
               <FileSearch className="size-4 text-primary" />
             </div>
-          </div>
+          </div> */}
           <h1 className="font-sans text-3xl tracking-tight md:text-4xl">
             Peer Reviews
           </h1>

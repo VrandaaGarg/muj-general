@@ -6,34 +6,31 @@ import {
   Download,
   ExternalLink,
   LinkIcon,
-  Mail,
-  User,
 } from "lucide-react";
 
 import { ResearchThumbnail } from "@/components/pdf-thumbnail-viewer";
 import { SiteHeader } from "@/components/site-header";
 import { buttonVariants } from "@/components/ui/button-variants";
-import { requireRole } from "@/lib/auth/session";
+import { requireAppSession } from "@/lib/auth/session";
 import {
+  getPeerReviewInviteForUser,
   getResearchItemForAdminReview,
-  listDepartmentResearchItemsForReview,
 } from "@/lib/db/queries";
 import { getTypeLabel } from "@/lib/research-types";
 import { getPublicFileUrl } from "@/lib/storage/r2";
 
-interface EditorReviewPageProps {
+interface PeerReviewSubmissionPageProps {
   params: Promise<{ id: string }>;
 }
 
 export async function generateMetadata({
   params,
-}: EditorReviewPageProps): Promise<Metadata> {
+}: PeerReviewSubmissionPageProps): Promise<Metadata> {
   const { id } = await params;
-  const item = await getResearchItemForAdminReview(id);
-  if (!item) {
-    return { title: "Not Found - Editor Review" };
-  }
-  return { title: `Preview: ${item.title} - Editor` };
+
+  return {
+    title: `Peer Review Submission ${id} - MUJ General`,
+  };
 }
 
 function formatDate(date: Date | null) {
@@ -48,43 +45,30 @@ function formatDate(date: Date | null) {
   });
 }
 
-function formatStageLabel(stage: string) {
-  return stage
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-function formatConfirmationLabel(status: string | null) {
-  if (!status) {
-    return null;
-  }
-
-  return status
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-export default async function EditorReviewPreviewPage({
+export default async function PeerReviewSubmissionPage({
   params,
-}: EditorReviewPageProps) {
-  const session = await requireRole(["editor", "admin"], {
-    returnTo: "/editor",
-    unauthorizedRedirectTo: "/settings",
+}: PeerReviewSubmissionPageProps) {
+  const session = await requireAppSession("/reviews");
+  const { id } = await params;
+
+  const invite = await getPeerReviewInviteForUser({
+    inviteId: id,
+    userId: session.appUser.id,
+    userEmail: session.appUser.email,
   });
 
-  const { id } = await params;
-  const item = await getResearchItemForAdminReview(id);
-
-  if (!item) {
+  if (!invite) {
     notFound();
   }
 
-  const queue = await listDepartmentResearchItemsForReview(session.appUser.id);
-  const allowed = queue.some((entry) => entry.id === id);
-  if (!allowed) {
-    redirect("/editor");
+  if (invite.status === "declined") {
+    redirect("/reviews");
+  }
+
+  const item = await getResearchItemForAdminReview(invite.researchItemId);
+
+  if (!item) {
+    notFound();
   }
 
   const pdfUrl = item.pdfFile ? getPublicFileUrl(item.pdfFile.objectKey) : null;
@@ -93,19 +77,6 @@ export default async function EditorReviewPreviewPage({
     : null;
   const submittedAt = formatDate(item.createdAt);
   const publicationDate = formatDate(item.publicationDate);
-  const confirmationLabel = formatConfirmationLabel(
-    item.submitterConfirmationStatus,
-  );
-  const sections = [
-    { id: "abstract", label: "Abstract" },
-    ...(item.supervisorName || item.programName || item.license
-      ? [{ id: "additional-details", label: "Additional details" }]
-      : []),
-    ...(item.references.length > 0
-      ? [{ id: "references", label: "References" }]
-      : []),
-    { id: "about-this-submission", label: "About this submission" },
-  ];
 
   return (
     <div className="relative min-h-screen bg-background">
@@ -131,16 +102,16 @@ export default async function EditorReviewPreviewPage({
             >
               <Link
                 href="/"
-                className="font-medium text-primary underline-offset-2 transition-colors hover:underline hover:text-primary/80"
+                className="font-medium text-primary underline-offset-2 transition-colors hover:text-primary/80 hover:underline"
               >
                 Home
               </Link>
               <ChevronRight className="size-3.5 text-muted-foreground/50" />
               <Link
-                href="/editor"
+                href="/reviews"
                 className="font-medium transition-colors hover:text-foreground"
               >
-                Editor
+                Peer Reviews
               </Link>
               <ChevronRight className="size-3.5 text-muted-foreground/50" />
               <span className="font-medium text-foreground max-sm:line-clamp-1">
@@ -160,7 +131,7 @@ export default async function EditorReviewPreviewPage({
                     </span>
                   )}
                   <span className="rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5 text-sm font-medium text-primary">
-                    {formatStageLabel(item.workflowStage ?? item.status)}
+                    For peer review
                   </span>
                 </div>
 
@@ -205,7 +176,7 @@ export default async function EditorReviewPreviewPage({
                       className={buttonVariants({ size: "lg" })}
                     >
                       <Download className="size-4" />
-                      Open submitted PDF
+                      Open manuscript PDF
                       {item.pdfFile?.sizeBytes ? (
                         <span className="ml-1 text-xs opacity-70">
                           ({(item.pdfFile.sizeBytes / (1024 * 1024)).toFixed(1)} MB)
@@ -240,7 +211,7 @@ export default async function EditorReviewPreviewPage({
                 <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                   {submittedAt && <span>Submitted {submittedAt}</span>}
                   {submittedAt && item.publicationYear ? (
-                    <span className="text-border">·</span>
+                    <span className="text-border">-</span>
                   ) : null}
                   <span>{item.publicationYear}</span>
                 </div>
@@ -259,8 +230,8 @@ export default async function EditorReviewPreviewPage({
 
             <div className="mt-8 border-t border-border/60" />
 
-            <div className="mt-8 flex flex-col gap-10 lg:flex-row">
-              <div className="min-w-0 flex-1">
+            <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_16rem]">
+              <div className="min-w-0 space-y-10">
                 <section id="abstract">
                   <h2 className="mb-3 text-lg font-bold text-primary">Abstract</h2>
                   <p className="text-base leading-[1.85] text-foreground/85">
@@ -269,7 +240,7 @@ export default async function EditorReviewPreviewPage({
                 </section>
 
                 {(item.supervisorName || item.programName || item.license) && (
-                  <section id="additional-details" className="mt-10">
+                  <section id="additional-details">
                     <h2 className="mb-3 text-lg font-bold text-primary">
                       Additional Details
                     </h2>
@@ -279,9 +250,7 @@ export default async function EditorReviewPreviewPage({
                           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                             Supervisor
                           </p>
-                          <p className="text-base text-foreground">
-                            {item.supervisorName}
-                          </p>
+                          <p className="text-base text-foreground">{item.supervisorName}</p>
                         </div>
                       )}
                       {item.programName && (
@@ -289,9 +258,7 @@ export default async function EditorReviewPreviewPage({
                           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                             Program
                           </p>
-                          <p className="text-base text-foreground">
-                            {item.programName}
-                          </p>
+                          <p className="text-base text-foreground">{item.programName}</p>
                         </div>
                       )}
                       {item.license && (
@@ -307,7 +274,7 @@ export default async function EditorReviewPreviewPage({
                 )}
 
                 {item.references.length > 0 && (
-                  <section id="references" className="mt-10">
+                  <section id="references">
                     <h2 className="mb-3 text-lg font-bold text-primary">
                       References ({item.references.length})
                     </h2>
@@ -342,7 +309,7 @@ export default async function EditorReviewPreviewPage({
                   </section>
                 )}
 
-                <section id="about-this-submission" className="mt-10">
+                <section id="about-this-submission">
                   <h2 className="mb-1 text-xl font-bold text-primary">
                     About this submission
                   </h2>
@@ -376,27 +343,7 @@ export default async function EditorReviewPreviewPage({
                         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                           Requested publication date
                         </p>
-                        <p className="mt-1 text-base text-foreground">
-                          {publicationDate}
-                        </p>
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        Workflow stage
-                      </p>
-                      <p className="mt-1 text-base text-foreground">
-                        {formatStageLabel(item.workflowStage ?? item.status)}
-                      </p>
-                    </div>
-                    {confirmationLabel && (
-                      <div>
-                        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                          Submitter confirmation
-                        </p>
-                        <p className="mt-1 text-base text-foreground">
-                          {confirmationLabel}
-                        </p>
+                        <p className="mt-1 text-base text-foreground">{publicationDate}</p>
                       </div>
                     )}
                     {item.departmentName && (
@@ -404,143 +351,58 @@ export default async function EditorReviewPreviewPage({
                         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                           Department
                         </p>
-                        <p className="mt-1 text-base text-foreground">
-                          {item.departmentName}
-                        </p>
+                        <p className="mt-1 text-base text-foreground">{item.departmentName}</p>
                       </div>
                     )}
                     <div>
                       <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        Submitted by
+                        Publication year
                       </p>
-                      <div className="mt-1 space-y-1 text-base text-foreground">
-                        <p className="flex items-center gap-2">
-                          <User className="size-4 text-muted-foreground" />
-                          {item.submittedByName}
-                        </p>
-                        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Mail className="size-4" />
-                          {item.submittedByEmail}
-                        </p>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        Version
-                      </p>
-                      <p className="mt-1 text-base text-foreground">
-                        Version {item.versionNumber}
-                      </p>
+                      <p className="mt-1 text-base text-foreground">{item.publicationYear}</p>
                     </div>
                   </div>
-
-                  {item.tags.length > 0 && (
-                    <div className="mt-8">
-                      <h3 className="mb-3 text-lg font-bold text-primary">
-                        Keywords
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {item.tags.map((tag) => (
-                          <span
-                            key={tag.id}
-                            className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-sm font-medium text-primary"
-                          >
-                            {tag.name}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {item.changeSummary && (
-                    <div className="mt-8 rounded-xl border border-border/60 bg-card/50 p-5">
-                      <h3 className="text-lg font-bold text-primary">
-                        Change summary
-                      </h3>
-                      <p className="mt-3 text-base leading-relaxed text-foreground/85">
-                        {item.changeSummary}
-                      </p>
-                    </div>
-                  )}
-
-                  {item.notesToAdmin && (
-                    <div className="mt-4 rounded-xl border border-border/60 bg-card/50 p-5">
-                      <h3 className="text-lg font-bold text-primary">
-                        Notes to admin
-                      </h3>
-                      <p className="mt-3 text-base leading-relaxed text-foreground/85">
-                        {item.notesToAdmin}
-                      </p>
-                    </div>
-                  )}
                 </section>
               </div>
 
-              <aside className="hidden w-64 shrink-0 lg:block">
-                <div className="sticky top-8 space-y-6">
-                  <div>
-                    <p className="mb-3 text-sm font-semibold text-foreground">
-                      Sections
-                    </p>
-                    <nav className="space-y-0.5 border-l border-border/60">
-                      {sections.map((section) => (
-                        <a
-                          key={section.id}
-                          href={`#${section.id}`}
-                          className="block border-l-2 border-transparent py-2 pl-4 text-sm text-primary underline-offset-2 transition-colors hover:border-primary hover:underline"
-                        >
-                          {section.label}
-                        </a>
-                      ))}
-                    </nav>
-                  </div>
-
-                  {item.references.length > 0 && (
-                    <div>
-                      <p className="mb-3 text-sm font-semibold text-foreground">
+              <aside className="hidden lg:block">
+                <div className="sticky top-8 rounded-xl border border-border/60 bg-card/50 p-4">
+                  <p className="mb-3 text-sm font-semibold text-foreground">Quick links</p>
+                  <nav className="space-y-0.5 border-l border-border/60">
+                    <a
+                      href="#abstract"
+                      className="block border-l-2 border-transparent py-2 pl-4 text-sm text-primary underline-offset-2 transition-colors hover:border-primary hover:underline"
+                    >
+                      Abstract
+                    </a>
+                    {(item.supervisorName || item.programName || item.license) && (
+                      <a
+                        href="#additional-details"
+                        className="block border-l-2 border-transparent py-2 pl-4 text-sm text-primary underline-offset-2 transition-colors hover:border-primary hover:underline"
+                      >
+                        Additional details
+                      </a>
+                    )}
+                    {item.references.length > 0 && (
+                      <a
+                        href="#references"
+                        className="block border-l-2 border-transparent py-2 pl-4 text-sm text-primary underline-offset-2 transition-colors hover:border-primary hover:underline"
+                      >
                         References
-                      </p>
-                      <div className="space-y-0">
-                        {item.references.map((reference, index) => (
-                          <div
-                            key={`${index}-${reference.citationText}-sidebar`}
-                            className="border-b border-border/40 py-4 first:pt-0 last:border-b-0"
-                          >
-                            <p className="text-sm leading-relaxed text-foreground/85">
-                              {index + 1}. {reference.citationText}
-                            </p>
-                            {reference.url && (
-                              <div className="mt-2 flex justify-end">
-                                <a
-                                  href={reference.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm font-medium text-primary underline-offset-2 transition-colors hover:underline"
-                                >
-                                  Link
-                                </a>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                      </a>
+                    )}
+                    <a
+                      href="#about-this-submission"
+                      className="block border-l-2 border-transparent py-2 pl-4 text-sm text-primary underline-offset-2 transition-colors hover:border-primary hover:underline"
+                    >
+                      About this submission
+                    </a>
+                  </nav>
                 </div>
               </aside>
             </div>
           </div>
         </section>
       </main>
-
-      <footer className="relative z-10 border-t px-6 py-6 md:px-12 lg:px-20">
-        <div className="flex flex-col items-center justify-between gap-3 text-sm text-muted-foreground sm:flex-row">
-          <span>MUJ General - Manipal University Jaipur</span>
-          <span className="text-xs tracking-wider uppercase opacity-60">
-            Research Repository
-          </span>
-        </div>
-      </footer>
     </div>
   );
 }

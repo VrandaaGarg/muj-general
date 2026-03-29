@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent, useEffect, useRef, useState } from "react";
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -137,6 +137,101 @@ const SUBMISSION_MESSAGES: Record<
   },
 };
 
+const SUBMISSION_DRAFT_STORAGE_KEY = "editor-submission-draft:v1";
+
+type SubmissionDraftState = {
+  title: string;
+  abstract: string;
+  itemType: string;
+  publicationYear: string;
+  departmentId: string;
+  publicationDate: string;
+  selectedTagIds: string[];
+  authors: AuthorDraft[];
+  references: ReferenceDraft[];
+  externalUrl: string;
+  doi: string;
+  changeSummary: string;
+  showAdditional: boolean;
+  license: string;
+  supervisorName: string;
+  programName: string;
+  notesToAdmin: string;
+  journalId: string;
+  journalIssueId: string;
+  pageRange: string;
+  articleNumber: string;
+};
+
+function parseSubmissionDraftState(value: string): SubmissionDraftState | null {
+  try {
+    const parsed = JSON.parse(value) as Partial<SubmissionDraftState>;
+    if (!parsed || typeof parsed !== "object") return null;
+    return {
+      title: typeof parsed.title === "string" ? parsed.title : "",
+      abstract: typeof parsed.abstract === "string" ? parsed.abstract : "",
+      itemType: typeof parsed.itemType === "string" ? parsed.itemType : "",
+      publicationYear:
+        typeof parsed.publicationYear === "string" ? parsed.publicationYear : "",
+      departmentId:
+        typeof parsed.departmentId === "string" ? parsed.departmentId : "",
+      publicationDate:
+        typeof parsed.publicationDate === "string" ? parsed.publicationDate : "",
+      selectedTagIds: Array.isArray(parsed.selectedTagIds)
+        ? parsed.selectedTagIds.filter(
+            (value): value is string => typeof value === "string",
+          )
+        : [],
+      authors: Array.isArray(parsed.authors)
+        ? parsed.authors
+            .filter((author) => author && typeof author === "object")
+            .map((author) => ({
+              id: typeof author.id === "string" ? author.id : undefined,
+              displayName:
+                typeof author.displayName === "string" ? author.displayName : "",
+              email: typeof author.email === "string" ? author.email : "",
+              affiliation:
+                typeof author.affiliation === "string" ? author.affiliation : "",
+              orcid: typeof author.orcid === "string" ? author.orcid : "",
+              isCorresponding: Boolean(author.isCorresponding),
+            }))
+        : [createEmptyAuthor(true)],
+      references: Array.isArray(parsed.references)
+        ? parsed.references
+            .filter((reference) => reference && typeof reference === "object")
+            .map((reference) => ({
+              citationText:
+                typeof reference.citationText === "string"
+                  ? reference.citationText
+                  : "",
+              url: typeof reference.url === "string" ? reference.url : "",
+            }))
+        : [{ citationText: "", url: "" }],
+      externalUrl:
+        typeof parsed.externalUrl === "string" ? parsed.externalUrl : "",
+      doi: typeof parsed.doi === "string" ? parsed.doi : "",
+      changeSummary:
+        typeof parsed.changeSummary === "string" ? parsed.changeSummary : "",
+      showAdditional: Boolean(parsed.showAdditional),
+      license: typeof parsed.license === "string" ? parsed.license : "",
+      supervisorName:
+        typeof parsed.supervisorName === "string" ? parsed.supervisorName : "",
+      programName:
+        typeof parsed.programName === "string" ? parsed.programName : "",
+      notesToAdmin:
+        typeof parsed.notesToAdmin === "string" ? parsed.notesToAdmin : "",
+      journalId: typeof parsed.journalId === "string" ? parsed.journalId : "",
+      journalIssueId:
+        typeof parsed.journalIssueId === "string" ? parsed.journalIssueId : "",
+      pageRange: typeof parsed.pageRange === "string" ? parsed.pageRange : "",
+      articleNumber:
+        typeof parsed.articleNumber === "string" ? parsed.articleNumber : "",
+    };
+  } catch {
+    return null;
+  }
+}
+
 function createEmptyAuthor(isCorresponding = false): AuthorDraft {
   return {
     displayName: "",
@@ -165,6 +260,138 @@ export function EditorSubmissionForm({
   const submissionParam = searchParams.get("submission");
   const handledSubmissionParamRef = useRef<string | null>(null);
 
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const storedDraft = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    const rawDraft = window.localStorage.getItem(SUBMISSION_DRAFT_STORAGE_KEY);
+    return rawDraft ? parseSubmissionDraftState(rawDraft) : null;
+  }, []);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadPhase, setUploadPhase] = useState<"idle" | "uploading" | "saving">("idle");
+  const [activeIntent, setActiveIntent] = useState<"submit" | "save_draft">("submit");
+  const [selectedItemType, setSelectedItemType] = useState(storedDraft?.itemType ?? "");
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState(
+    storedDraft?.departmentId ?? "",
+  );
+  const [selectedJournalId, setSelectedJournalId] = useState(
+    storedDraft?.journalId ?? initialJournalId ?? "",
+  );
+  const [selectedJournalIssueId, setSelectedJournalIssueId] = useState(
+    storedDraft?.journalIssueId ?? "",
+  );
+  const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
+  const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
+  const [authors, setAuthors] = useState<AuthorDraft[]>(
+    storedDraft?.authors.length
+      ? storedDraft.authors
+      : [createEmptyAuthor(true)],
+  );
+  const [authorMatches, setAuthorMatches] = useState<
+    Record<number, AuthorSuggestion[]>
+  >({});
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
+    storedDraft?.selectedTagIds ?? [],
+  );
+  const [references, setReferences] = useState<ReferenceDraft[]>(
+    storedDraft?.references.length
+      ? storedDraft.references
+      : [{ citationText: "", url: "" }],
+  );
+  const [title, setTitle] = useState(storedDraft?.title ?? "");
+  const [abstract, setAbstract] = useState(storedDraft?.abstract ?? "");
+  const [publicationYear, setPublicationYear] = useState(
+    storedDraft?.publicationYear ?? "",
+  );
+  const [publicationDate, setPublicationDate] = useState(
+    storedDraft?.publicationDate ?? "",
+  );
+  const [externalUrl, setExternalUrl] = useState(storedDraft?.externalUrl ?? "");
+  const [doi, setDoi] = useState(storedDraft?.doi ?? "");
+  const [changeSummary, setChangeSummary] = useState(
+    storedDraft?.changeSummary ?? "",
+  );
+  const [showAdditional, setShowAdditional] = useState(
+    storedDraft?.showAdditional ?? false,
+  );
+  const [license, setLicense] = useState(storedDraft?.license ?? "");
+  const [supervisorName, setSupervisorName] = useState(
+    storedDraft?.supervisorName ?? "",
+  );
+  const [programName, setProgramName] = useState(storedDraft?.programName ?? "");
+  const [notesToAdmin, setNotesToAdmin] = useState(
+    storedDraft?.notesToAdmin ?? "",
+  );
+  const [pageRange, setPageRange] = useState(storedDraft?.pageRange ?? "");
+  const [articleNumber, setArticleNumber] = useState(
+    storedDraft?.articleNumber ?? "",
+  );
+  const [pendingAuthorConfirm, setPendingAuthorConfirm] = useState<{
+    index: number;
+    suggestion: AuthorSuggestion;
+  } | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const timeout = window.setTimeout(() => {
+      const draft: SubmissionDraftState = {
+        title,
+        abstract,
+        itemType: selectedItemType,
+        publicationYear,
+        departmentId: selectedDepartmentId,
+        publicationDate,
+        selectedTagIds,
+        authors,
+        references,
+        externalUrl,
+        doi,
+        changeSummary,
+        showAdditional,
+        license,
+        supervisorName,
+        programName,
+        notesToAdmin,
+        journalId: selectedJournalId,
+        journalIssueId: selectedJournalIssueId,
+        pageRange,
+        articleNumber,
+      };
+
+      window.localStorage.setItem(
+        SUBMISSION_DRAFT_STORAGE_KEY,
+        JSON.stringify(draft),
+      );
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [
+    title,
+    abstract,
+    selectedItemType,
+    publicationYear,
+    selectedDepartmentId,
+    publicationDate,
+    selectedTagIds,
+    authors,
+    references,
+    externalUrl,
+    doi,
+    changeSummary,
+    showAdditional,
+    license,
+    supervisorName,
+    programName,
+    notesToAdmin,
+    selectedJournalId,
+    selectedJournalIssueId,
+    pageRange,
+    articleNumber,
+  ]);
+
   useEffect(() => {
     if (!submissionParam) return;
     if (handledSubmissionParamRef.current === submissionParam) return;
@@ -177,35 +404,14 @@ export function EditorSubmissionForm({
     } else {
       toast.error(msg.text);
     }
+    if (submissionParam === "submitted") {
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(SUBMISSION_DRAFT_STORAGE_KEY);
+      }
+    }
     router.replace(basePath, { scroll: false });
   }, [submissionParam, router, basePath]);
 
-  const pdfInputRef = useRef<HTMLInputElement>(null);
-  const coverInputRef = useRef<HTMLInputElement>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadPhase, setUploadPhase] = useState<"idle" | "uploading" | "saving">("idle");
-  const [activeIntent, setActiveIntent] = useState<"submit" | "save_draft">("submit");
-  const [selectedItemType, setSelectedItemType] = useState("");
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState("");
-  const [selectedJournalId, setSelectedJournalId] = useState(initialJournalId ?? "");
-  const [selectedJournalIssueId, setSelectedJournalIssueId] = useState("");
-  const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
-  const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
-  const [authors, setAuthors] = useState<AuthorDraft[]>([
-    createEmptyAuthor(true),
-  ]);
-  const [authorMatches, setAuthorMatches] = useState<
-    Record<number, AuthorSuggestion[]>
-  >({});
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [references, setReferences] = useState<ReferenceDraft[]>([
-    { citationText: "", url: "" },
-  ]);
-  const [showAdditional, setShowAdditional] = useState(false);
-  const [pendingAuthorConfirm, setPendingAuthorConfirm] = useState<{
-    index: number;
-    suggestion: AuthorSuggestion;
-  } | null>(null);
   const eligibleForJournal = JOURNAL_ELIGIBLE_TYPES.has(selectedItemType);
   const filteredJournalIssues = journalIssues.filter(
     (issue) => issue.journalId === selectedJournalId,
@@ -511,6 +717,8 @@ export function EditorSubmissionForm({
               <Input
                 id="title"
                 name="title"
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
                 placeholder="e.g. Machine Learning in Healthcare: A Systematic Review"
                 required
                 minLength={5}
@@ -526,6 +734,8 @@ export function EditorSubmissionForm({
               <Textarea
                 id="abstract"
                 name="abstract"
+                value={abstract}
+                onChange={(event) => setAbstract(event.target.value)}
                 placeholder="Provide a concise summary of the research (minimum 50 characters)."
                 required
                 minLength={50}
@@ -550,6 +760,9 @@ export function EditorSubmissionForm({
                     setSelectedItemType(nextType);
                     if (!JOURNAL_ELIGIBLE_TYPES.has(nextType)) {
                       setSelectedJournalId("");
+                      setSelectedJournalIssueId("");
+                      setPageRange("");
+                      setArticleNumber("");
                     }
                   }}
                   disabled={isSubmitting}
@@ -569,6 +782,8 @@ export function EditorSubmissionForm({
                   id="publicationYear"
                   name="publicationYear"
                   type="number"
+                  value={publicationYear}
+                  onChange={(event) => setPublicationYear(event.target.value)}
                   placeholder={new Date().getFullYear().toString()}
                   required
                   min={1900}
@@ -606,6 +821,8 @@ export function EditorSubmissionForm({
                   id="publicationDate"
                   name="publicationDate"
                   type="date"
+                  value={publicationDate}
+                  onChange={(event) => setPublicationDate(event.target.value)}
                   disabled={isSubmitting}
                 />
               </div>
@@ -915,6 +1132,8 @@ export function EditorSubmissionForm({
                   id="externalUrl"
                   name="externalUrl"
                   type="url"
+                  value={externalUrl}
+                  onChange={(event) => setExternalUrl(event.target.value)}
                   placeholder="https://example.com/paper"
                   disabled={isSubmitting}
                 />
@@ -930,6 +1149,8 @@ export function EditorSubmissionForm({
                 <Input
                   id="doi"
                   name="doi"
+                  value={doi}
+                  onChange={(event) => setDoi(event.target.value)}
                   placeholder="10.1000/xyz123"
                   maxLength={255}
                   disabled={isSubmitting}
@@ -944,6 +1165,8 @@ export function EditorSubmissionForm({
               <Textarea
                 id="changeSummary"
                 name="changeSummary"
+                value={changeSummary}
+                onChange={(event) => setChangeSummary(event.target.value)}
                 placeholder="Summarize what this version contains or what makes it important."
                 maxLength={1000}
                 rows={3}
@@ -1035,6 +1258,8 @@ export function EditorSubmissionForm({
                     <Input
                       id="license"
                       name="license"
+                      value={license}
+                      onChange={(event) => setLicense(event.target.value)}
                       placeholder="e.g. CC BY 4.0"
                       maxLength={160}
                       disabled={isSubmitting}
@@ -1048,6 +1273,8 @@ export function EditorSubmissionForm({
                     <Input
                       id="supervisorName"
                       name="supervisorName"
+                      value={supervisorName}
+                      onChange={(event) => setSupervisorName(event.target.value)}
                       placeholder="Dr. Jane Smith"
                       maxLength={160}
                       disabled={isSubmitting}
@@ -1063,6 +1290,8 @@ export function EditorSubmissionForm({
                     <Input
                       id="programName"
                       name="programName"
+                      value={programName}
+                      onChange={(event) => setProgramName(event.target.value)}
                       placeholder="M.Tech Computer Science"
                       maxLength={160}
                       disabled={isSubmitting}
@@ -1076,6 +1305,8 @@ export function EditorSubmissionForm({
                     <Textarea
                       id="notesToAdmin"
                       name="notesToAdmin"
+                      value={notesToAdmin}
+                      onChange={(event) => setNotesToAdmin(event.target.value)}
                       placeholder="Any additional context for the reviewer."
                       maxLength={1000}
                       rows={3}
@@ -1116,13 +1347,20 @@ export function EditorSubmissionForm({
                             onChange={(val) => {
                               setSelectedJournalId(val);
                               setSelectedJournalIssueId("");
+                              if (!val) {
+                                setPageRange("");
+                                setArticleNumber("");
+                              }
                             }}
                             disabled={isSubmitting}
                             placeholder="Standalone / no journal"
-                            options={journals.map((journal) => ({
-                              value: journal.id,
-                              label: journal.name,
-                            }))}
+                            options={[
+                              { value: "", label: "None / standalone" },
+                              ...journals.map((journal) => ({
+                                value: journal.id,
+                                label: journal.name,
+                              })),
+                            ]}
                           />
                         )}
                       </div>
@@ -1145,11 +1383,27 @@ export function EditorSubmissionForm({
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1.5">
                         <Label htmlFor="pageRange" className="text-sm">Page range</Label>
-                        <Input id="pageRange" name="pageRange" placeholder="e.g. 12-28" maxLength={30} disabled={isSubmitting} />
+                        <Input
+                          id="pageRange"
+                          name="pageRange"
+                          value={pageRange}
+                          onChange={(event) => setPageRange(event.target.value)}
+                          placeholder="e.g. 12-28"
+                          maxLength={30}
+                          disabled={isSubmitting || !selectedJournalId}
+                        />
                       </div>
                       <div className="space-y-1.5">
                         <Label htmlFor="articleNumber" className="text-sm">Article number</Label>
-                        <Input id="articleNumber" name="articleNumber" placeholder="e2026-0004" maxLength={30} disabled={isSubmitting} />
+                        <Input
+                          id="articleNumber"
+                          name="articleNumber"
+                          value={articleNumber}
+                          onChange={(event) => setArticleNumber(event.target.value)}
+                          placeholder="e2026-0004"
+                          maxLength={30}
+                          disabled={isSubmitting || !selectedJournalId}
+                        />
                       </div>
                     </div>
                   </div>

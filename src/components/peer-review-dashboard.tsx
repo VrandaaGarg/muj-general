@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Check,
   CheckCircle2,
@@ -26,6 +26,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { AnimatedSelect } from "@/components/ui/animated-select";
 import {
   Card,
   CardContent,
@@ -91,7 +92,7 @@ const RECOMMENDATION_LABELS: Record<string, { label: string; color: string }> = 
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   pending: { label: "Pending", className: "bg-amber-600/10 text-amber-600" },
-  accepted: { label: "Accepted", className: "bg-blue-600/10 text-blue-600" },
+  accepted: { label: "Accepted", className: "bg-primary/10 text-primary" },
   declined: { label: "Declined", className: "bg-muted text-muted-foreground" },
   completed: { label: "Review Submitted", className: "bg-emerald-600/10 text-emerald-600" },
   expired: { label: "Expired", className: "bg-muted text-muted-foreground" },
@@ -255,23 +256,31 @@ function PendingInviteCard({ invite }: { invite: PeerReviewInvite }) {
   }
 
   return (
-    <Card className="border-border/60">
+    <Card className="border-amber-600/20 bg-amber-600/[0.02]">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-semibold tracking-tight">
-          {invite.researchTitle}
-        </CardTitle>
-        <CardDescription className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          {invite.invitedByName && (
-            <span>Invited by {invite.invitedByName}</span>
-          )}
-          <span className="text-border">·</span>
-          <span>{formatDate(invite.invitedAt)}</span>
-        </CardDescription>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <CardTitle className="text-sm font-semibold tracking-tight">
+              {invite.researchTitle}
+            </CardTitle>
+            <CardDescription className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              {invite.invitedByName && (
+                <span>Invited by {invite.invitedByName}</span>
+              )}
+              <span className="text-border">·</span>
+              <span>{formatDate(invite.invitedAt)}</span>
+            </CardDescription>
+          </div>
+          <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-600/10 px-2 py-0.5 text-[10px] font-medium text-amber-600">
+            <Clock className="size-2.5" />
+            Pending
+          </span>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="flex flex-wrap items-center gap-2">
           <Link
-            href={`/research/${invite.researchSlug}`}
+            href={`/reviews/${invite.id}`}
             className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
           >
             <ExternalLink className="size-3.5" />
@@ -308,9 +317,17 @@ function PendingInviteCard({ invite }: { invite: PeerReviewInvite }) {
   );
 }
 
+const RECOMMENDATION_OPTIONS = [
+  { value: "accept", label: "Accept" },
+  { value: "minor_revision", label: "Minor Revision" },
+  { value: "major_revision", label: "Major Revision" },
+  { value: "reject", label: "Reject" },
+];
+
 function AcceptedInviteCard({ invite }: { invite: PeerReviewInvite }) {
   const [showForm, setShowForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [recommendation, setRecommendation] = useState("");
 
   async function handleSubmitReview(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -325,7 +342,7 @@ function AcceptedInviteCard({ invite }: { invite: PeerReviewInvite }) {
   }
 
   return (
-    <Card className="border-blue-600/20 bg-blue-600/[0.02]">
+    <Card className="border-primary/20 bg-primary/[0.02]">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -340,7 +357,7 @@ function AcceptedInviteCard({ invite }: { invite: PeerReviewInvite }) {
               <span>Accepted {invite.respondedAt ? formatDate(invite.respondedAt) : ""}</span>
             </CardDescription>
           </div>
-          <span className="flex shrink-0 items-center gap-1 rounded-full bg-blue-600/10 px-2 py-0.5 text-[10px] font-medium text-blue-600">
+          <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
             <Check className="size-2.5" />
             Accepted
           </span>
@@ -349,7 +366,7 @@ function AcceptedInviteCard({ invite }: { invite: PeerReviewInvite }) {
       <CardContent className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <Link
-            href={`/research/${invite.researchSlug}`}
+            href={`/reviews/${invite.id}`}
             className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
           >
             <ExternalLink className="size-3.5" />
@@ -368,77 +385,77 @@ function AcceptedInviteCard({ invite }: { invite: PeerReviewInvite }) {
           </Button>
         </div>
 
-        {showForm && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <form
-              onSubmit={handleSubmitReview}
-              className="space-y-3 rounded-lg border border-border/40 bg-background p-4"
+        <AnimatePresence>
+          {showForm && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
             >
-              <div className="space-y-1.5">
-                <Label htmlFor={`rec-${invite.id}`} className="text-xs">
-                  Recommendation <span className="text-destructive">*</span>
-                </Label>
-                <select
-                  id={`rec-${invite.id}`}
-                  name="recommendation"
-                  required
-                  disabled={isSubmitting}
-                  className="h-8 w-full rounded-md border border-input bg-white px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
-                >
-                  <option value="">Select recommendation...</option>
-                  <option value="accept">Accept</option>
-                  <option value="minor_revision">Minor Revision</option>
-                  <option value="major_revision">Major Revision</option>
-                  <option value="reject">Reject</option>
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor={`comment-${invite.id}`} className="text-xs">
-                  Review comments <span className="text-destructive">*</span>
-                </Label>
-                <Textarea
-                  id={`comment-${invite.id}`}
-                  name="reviewComment"
-                  placeholder="Provide detailed feedback on the submission..."
-                  rows={4}
-                  required
-                  minLength={10}
-                  maxLength={4000}
-                  disabled={isSubmitting}
-                  className="text-sm"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor={`conf-${invite.id}`} className="text-xs">
-                  Confidential notes to editor{" "}
-                  <span className="text-muted-foreground">(optional)</span>
-                </Label>
-                <Textarea
-                  id={`conf-${invite.id}`}
-                  name="confidentialComment"
-                  placeholder="Private notes visible only to editors/admins..."
-                  rows={2}
-                  maxLength={4000}
-                  disabled={isSubmitting}
-                  className="text-sm"
-                />
-              </div>
-              <Button type="submit" size="sm" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <Send className="size-3.5" />
-                )}
-                {isSubmitting ? "Submitting..." : "Submit review"}
-              </Button>
-            </form>
-          </motion.div>
-        )}
+              <form
+                onSubmit={handleSubmitReview}
+                className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4"
+              >
+                <div className="space-y-1.5">
+                  <Label htmlFor={`rec-${invite.id}`} className="text-xs">
+                    Recommendation <span className="text-destructive">*</span>
+                  </Label>
+                  <AnimatedSelect
+                    id={`rec-${invite.id}`}
+                    name="recommendation"
+                    required
+                    disabled={isSubmitting}
+                    value={recommendation}
+                    onChange={setRecommendation}
+                    placeholder="Select recommendation..."
+                    options={RECOMMENDATION_OPTIONS}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor={`comment-${invite.id}`} className="text-xs">
+                    Review comments <span className="text-destructive">*</span>
+                  </Label>
+                  <Textarea
+                    id={`comment-${invite.id}`}
+                    name="reviewComment"
+                    placeholder="Provide detailed feedback on the submission..."
+                    rows={4}
+                    required
+                    minLength={10}
+                    maxLength={4000}
+                    disabled={isSubmitting}
+                    className="text-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor={`conf-${invite.id}`} className="text-xs">
+                    Confidential notes to editor{" "}
+                    <span className="text-muted-foreground">(optional)</span>
+                  </Label>
+                  <Textarea
+                    id={`conf-${invite.id}`}
+                    name="confidentialComment"
+                    placeholder="Private notes visible only to editors/admins..."
+                    rows={2}
+                    maxLength={4000}
+                    disabled={isSubmitting}
+                    className="text-sm"
+                  />
+                </div>
+                <Button type="submit" size="sm" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Send className="size-3.5" />
+                  )}
+                  {isSubmitting ? "Submitting..." : "Submit review"}
+                </Button>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </CardContent>
     </Card>
   );
@@ -450,7 +467,7 @@ function CompletedInviteCard({ invite }: { invite: PeerReviewInvite }) {
     : null;
 
   return (
-    <Card className="border-border/60">
+    <Card className="border-emerald-600/15">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -463,6 +480,14 @@ function CompletedInviteCard({ invite }: { invite: PeerReviewInvite }) {
               )}
               <span className="text-border">·</span>
               <span>{formatDate(invite.invitedAt)}</span>
+              {recMeta && (
+                <>
+                  <span className="text-border">·</span>
+                  <span className={`font-medium ${recMeta.color}`}>
+                    {recMeta.label}
+                  </span>
+                </>
+              )}
             </CardDescription>
           </div>
           <span className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-600/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600">
@@ -471,29 +496,19 @@ function CompletedInviteCard({ invite }: { invite: PeerReviewInvite }) {
           </span>
         </div>
       </CardHeader>
-      <CardContent className="space-y-2">
-        {recMeta && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">
-              Your recommendation:
-            </span>
-            <span className={`text-xs font-semibold ${recMeta.color}`}>
-              {recMeta.label}
-            </span>
-          </div>
-        )}
+      <CardContent className="space-y-3">
         {invite.reviewComment && (
-          <div className="rounded-lg border border-border/40 bg-muted/30 px-3 py-2">
-            <p className="mb-0.5 text-xs font-medium text-muted-foreground">
+          <div className="rounded-xl border border-border/40 bg-muted/30 px-3 py-2.5">
+            <p className="mb-1 text-xs font-medium text-muted-foreground">
               Your review
             </p>
-            <p className="text-sm text-foreground line-clamp-4">
+            <p className="text-sm leading-relaxed text-foreground line-clamp-4">
               {invite.reviewComment}
             </p>
           </div>
         )}
         <Link
-          href={`/research/${invite.researchSlug}`}
+          href={`/reviews/${invite.id}`}
           className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
         >
           <ExternalLink className="size-3.5" />
@@ -509,14 +524,18 @@ function InviteSummaryCard({ invite }: { invite: PeerReviewInvite }) {
 
   return (
     <Card className="border-border/60">
-      <CardHeader className="pb-2">
+      <CardHeader>
         <div className="flex items-start justify-between gap-3">
           <div>
             <CardTitle className="text-sm font-semibold tracking-tight">
               {invite.researchTitle}
             </CardTitle>
-            <CardDescription>
-              {formatDate(invite.invitedAt)}
+            <CardDescription className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              {invite.invitedByName && (
+                <span>Invited by {invite.invitedByName}</span>
+              )}
+              <span className="text-border">·</span>
+              <span>{formatDate(invite.invitedAt)}</span>
             </CardDescription>
           </div>
           <span

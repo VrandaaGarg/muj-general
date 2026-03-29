@@ -54,6 +54,107 @@ type PublishedResearchListItem = {
   coverImageObjectKey: string | null;
 };
 
+type RevisionRequestSummary = {
+  requestedAt: Date;
+  requestedByName: string | null;
+  requestedByRole: string | null;
+  comment: string | null;
+  source: "editor" | "admin";
+};
+
+function extractActivityLogComment(metadata: string | null) {
+  if (!metadata) return null;
+
+  try {
+    const parsed = JSON.parse(metadata) as { comment?: unknown };
+    return typeof parsed.comment === "string" && parsed.comment.trim()
+      ? parsed.comment.trim()
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+async function getLatestRevisionRequestsForItems(researchItemIds: string[]) {
+  if (researchItemIds.length === 0) {
+    return new Map<string, RevisionRequestSummary>();
+  }
+
+  const [moderationRows, activityRows] = await Promise.all([
+    db
+      .select({
+        researchItemId: moderationDecisions.researchItemId,
+        requestedAt: moderationDecisions.createdAt,
+        requestedByName: user.name,
+        requestedByRole: appUsers.role,
+        comment: moderationDecisions.comment,
+      })
+      .from(moderationDecisions)
+      .innerJoin(appUsers, eq(appUsers.id, moderationDecisions.reviewedByUserId))
+      .leftJoin(user, eq(user.id, appUsers.id))
+      .where(
+        and(
+          inArray(moderationDecisions.researchItemId, researchItemIds),
+          eq(moderationDecisions.decision, "changes_requested"),
+        ),
+      )
+      .orderBy(desc(moderationDecisions.createdAt)),
+    db
+      .select({
+        researchItemId: activityLogs.targetId,
+        requestedAt: activityLogs.createdAt,
+        requestedByName: user.name,
+        requestedByRole: appUsers.role,
+        metadata: activityLogs.metadata,
+      })
+      .from(activityLogs)
+      .leftJoin(appUsers, eq(appUsers.id, activityLogs.actorUserId))
+      .leftJoin(user, eq(user.id, appUsers.id))
+      .where(
+        and(
+          eq(activityLogs.targetType, "research_item"),
+          inArray(activityLogs.targetId, researchItemIds),
+          eq(activityLogs.action, "research_item_editor_changes_requested"),
+        ),
+      )
+      .orderBy(desc(activityLogs.createdAt)),
+  ]);
+
+  const requestMap = new Map<string, RevisionRequestSummary>();
+
+  for (const row of moderationRows) {
+    const existing = requestMap.get(row.researchItemId);
+    if (existing && existing.requestedAt >= row.requestedAt) {
+      continue;
+    }
+
+    requestMap.set(row.researchItemId, {
+      requestedAt: row.requestedAt,
+      requestedByName: row.requestedByName ?? null,
+      requestedByRole: row.requestedByRole,
+      comment: row.comment?.trim() || null,
+      source: row.requestedByRole === "editor" ? "editor" : "admin",
+    });
+  }
+
+  for (const row of activityRows) {
+    const existing = requestMap.get(row.researchItemId);
+    if (existing && existing.requestedAt >= row.requestedAt) {
+      continue;
+    }
+
+    requestMap.set(row.researchItemId, {
+      requestedAt: row.requestedAt,
+      requestedByName: row.requestedByName ?? null,
+      requestedByRole: row.requestedByRole,
+      comment: extractActivityLogComment(row.metadata),
+      source: "editor",
+    });
+  }
+
+  return requestMap;
+}
+
 function buildPublishedResearchWhere(filters: PublishedResearchFilters) {
   const conditions = [eq(researchItems.status, "published")];
 
@@ -884,28 +985,38 @@ export async function listResearchItemsForEditor(userId: string) {
     .orderBy(desc(researchItems.updatedAt));
 
   const itemIds = rows.map((r) => r.id);
-  if (itemIds.length === 0) return rows.map((r) => ({ ...r, coverImageObjectKey: null as string | null }));
+  if (itemIds.length === 0) {
+    return rows.map((r) => ({
+      ...r,
+      coverImageObjectKey: null as string | null,
+      latestRevisionRequest: null as RevisionRequestSummary | null,
+    }));
+  }
 
-  const coverRows = await db
-    .select({
-      researchItemId: files.researchItemId,
-      objectKey: files.objectKey,
-    })
-    .from(files)
-    .innerJoin(researchItems, eq(researchItems.id, files.researchItemId))
-    .where(
-      and(
-        inArray(files.researchItemId, itemIds),
-        eq(files.fileKind, "cover_image"),
-        sql`${files.itemVersionId} = ${researchItems.currentVersionId}`,
+  const [coverRows, revisionRequestMap] = await Promise.all([
+    db
+      .select({
+        researchItemId: files.researchItemId,
+        objectKey: files.objectKey,
+      })
+      .from(files)
+      .innerJoin(researchItems, eq(researchItems.id, files.researchItemId))
+      .where(
+        and(
+          inArray(files.researchItemId, itemIds),
+          eq(files.fileKind, "cover_image"),
+          sql`${files.itemVersionId} = ${researchItems.currentVersionId}`,
+        ),
       ),
-    );
+    getLatestRevisionRequestsForItems(itemIds),
+  ]);
 
   const coverMap = new Map(coverRows.map((r) => [r.researchItemId, r.objectKey]));
 
   return rows.map((r) => ({
     ...r,
     coverImageObjectKey: coverMap.get(r.id) ?? null,
+    latestRevisionRequest: revisionRequestMap.get(r.id) ?? null,
   }));
 }
 
@@ -939,15 +1050,12 @@ export async function listDepartmentResearchItemsForReview(userId: string) {
     "editor_revision_requested",
   ]);
 
-  const departmentFlowFilter =
-    appUserRecord.role === "admin"
-      ? workflowFilter
-      : appUserRecord.departmentId
-        ? and(
-            workflowFilter,
-            eq(researchItems.departmentId, appUserRecord.departmentId),
-          )
-        : sql`false`;
+  const departmentFlowFilter = appUserRecord.departmentId
+    ? and(
+        workflowFilter,
+        eq(researchItems.departmentId, appUserRecord.departmentId),
+      )
+    : sql`false`;
 
   const journalBoardFilter =
     boardJournalIds.length > 0
@@ -1382,11 +1490,12 @@ export async function reviewDepartmentResearchSubmission(params: {
       .select({
         id: researchItems.id,
         slug: researchItems.slug,
-        title: researchItems.title,
-        journalId: researchItems.journalId,
-        departmentId: researchItems.departmentId,
-        submittedByUserId: researchItems.submittedByUserId,
-      })
+      title: researchItems.title,
+      journalId: researchItems.journalId,
+      departmentId: researchItems.departmentId,
+      submittedByUserId: researchItems.submittedByUserId,
+      currentVersionId: researchItems.currentVersionId,
+    })
       .from(researchItems)
       .leftJoin(journals, eq(journals.id, researchItems.journalId))
       .where(
@@ -1428,7 +1537,6 @@ export async function reviewDepartmentResearchSubmission(params: {
       : false;
 
     if (
-      reviewer.role === "editor" &&
       reviewer.departmentId &&
       item.departmentId !== reviewer.departmentId &&
       !isJournalBoardReviewer
@@ -1437,7 +1545,6 @@ export async function reviewDepartmentResearchSubmission(params: {
     }
 
     if (
-      reviewer.role === "editor" &&
       !reviewer.departmentId &&
       !isJournalBoardReviewer
     ) {
@@ -1473,6 +1580,16 @@ export async function reviewDepartmentResearchSubmission(params: {
           );
         }
       }
+    }
+
+    if (params.decision === "request_changes" && item.currentVersionId) {
+      await tx.insert(moderationDecisions).values({
+        researchItemId: item.id,
+        itemVersionId: item.currentVersionId,
+        reviewedByUserId: params.reviewerUserId,
+        decision: "changes_requested",
+        comment: params.comment?.trim() || null,
+      });
     }
 
     await tx
@@ -1553,6 +1670,8 @@ export async function listPeerReviewInvitesForResearchItems(
       inviteeEmail: researchItemPeerReviews.inviteeEmail,
       inviteeName: researchItemPeerReviews.inviteeName,
       recommendation: researchItemPeerReviews.recommendation,
+      reviewComment: researchItemPeerReviews.reviewComment,
+      confidentialComment: researchItemPeerReviews.confidentialComment,
       createdAt: researchItemPeerReviews.createdAt,
       reviewSubmittedAt: researchItemPeerReviews.reviewSubmittedAt,
     })
@@ -1701,6 +1820,34 @@ export async function listPeerReviewInvitesForUser(params: {
       ),
     )
     .orderBy(desc(researchItemPeerReviews.updatedAt));
+}
+
+export async function getPeerReviewInviteForUser(params: {
+  inviteId: string;
+  userId: string;
+  userEmail: string;
+}) {
+  const [invite] = await db
+    .select({
+      id: researchItemPeerReviews.id,
+      status: researchItemPeerReviews.status,
+      researchItemId: researchItemPeerReviews.researchItemId,
+      researchTitle: researchItems.title,
+    })
+    .from(researchItemPeerReviews)
+    .innerJoin(researchItems, eq(researchItems.id, researchItemPeerReviews.researchItemId))
+    .where(
+      and(
+        eq(researchItemPeerReviews.id, params.inviteId),
+        or(
+          eq(researchItemPeerReviews.inviteeUserId, params.userId),
+          sql`lower(${researchItemPeerReviews.inviteeEmail}) = lower(${params.userEmail})`,
+        ),
+      ),
+    )
+    .limit(1);
+
+  return invite ?? null;
 }
 
 export async function respondToPeerReviewInvite(params: {
@@ -2346,15 +2493,27 @@ export async function getOwnedResearchItemForRevision(params: {
     return null;
   }
 
-  const [decisions, versions, authorRows, tagRows, currentFiles, referenceRows] = await Promise.all([
+  const [
+    decisions,
+    versions,
+    authorRows,
+    tagRows,
+    currentFiles,
+    referenceRows,
+    revisionRequestMap,
+  ] = await Promise.all([
     db
       .select({
         id: moderationDecisions.id,
         decision: moderationDecisions.decision,
         comment: moderationDecisions.comment,
         createdAt: moderationDecisions.createdAt,
+        reviewedByName: user.name,
+        reviewedByRole: appUsers.role,
       })
       .from(moderationDecisions)
+      .innerJoin(appUsers, eq(appUsers.id, moderationDecisions.reviewedByUserId))
+      .leftJoin(user, eq(user.id, appUsers.id))
       .where(eq(moderationDecisions.researchItemId, item.id))
       .orderBy(desc(moderationDecisions.createdAt)),
     db
@@ -2421,6 +2580,7 @@ export async function getOwnedResearchItemForRevision(params: {
       .from(researchItemReferences)
       .where(eq(researchItemReferences.researchItemId, item.id))
       .orderBy(asc(researchItemReferences.referenceOrder)),
+    getLatestRevisionRequestsForItems([item.id]),
   ]);
 
   const currentPdf =
@@ -2444,6 +2604,7 @@ export async function getOwnedResearchItemForRevision(params: {
     references: referenceRows,
     pdfFile: currentPdf,
     coverImageFile: currentCoverImage,
+    latestRevisionRequest: revisionRequestMap.get(item.id) ?? null,
     decisions,
     versions,
   };

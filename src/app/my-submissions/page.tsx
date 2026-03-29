@@ -42,10 +42,10 @@ export default async function MySubmissionsPage() {
         </nav>
 
         <div className="mb-8">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+          {/* <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
             <FileText className="size-3.5" />
             Submission Tracker
-          </div>
+          </div> */}
           <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
             My Submissions
           </h1>

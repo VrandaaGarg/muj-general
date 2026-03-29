@@ -77,8 +77,9 @@ export default async function EditorPage() {
             Editor workspace
           </h1>
           <p className="mt-2 text-base text-muted-foreground">
-            Review department submissions, request peer review, and forward
-            finalized decisions to admin.
+            Review only submissions routed to your department or journals where
+            you are on the editorial board, then forward finalized decisions to
+            admin.
           </p>
         </div>
 

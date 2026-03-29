@@ -19,6 +19,13 @@ interface SubmissionItem {
   departmentName: string | null;
   journalName: string | null;
   coverImageUrl: string | null;
+  latestRevisionRequest: {
+    requestedAt: Date;
+    requestedByName: string | null;
+    requestedByRole: string | null;
+    comment: string | null;
+    source: "editor" | "admin";
+  } | null;
 }
 
 const STATUS_CONFIG: Record<
@@ -105,6 +112,26 @@ function truncateAbstract(text: string, maxLength = 180) {
   return `${text.slice(0, maxLength).trimEnd()}...`;
 }
 
+function truncateComment(text: string, maxLength = 220) {
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength).trimEnd()}...`;
+}
+
+function getRevisionRequesterLabel(item: SubmissionItem) {
+  const request = item.latestRevisionRequest;
+  if (!request) return "Reviewer";
+
+  if (request.requestedByRole === "admin") {
+    return request.requestedByName ? `Admin ${request.requestedByName}` : "Admin";
+  }
+
+  if (request.requestedByRole === "editor") {
+    return request.requestedByName ? `Editor ${request.requestedByName}` : "Editor";
+  }
+
+  return request.requestedByName ?? "Reviewer";
+}
+
 export function MySubmissionsList({ items }: { items: SubmissionItem[] }) {
   if (items.length === 0) {
     return (
@@ -130,9 +157,21 @@ export function MySubmissionsList({ items }: { items: SubmissionItem[] }) {
           STATUS_CONFIG[item.status] ??
           STATUS_CONFIG.draft;
         const StatusIcon = status.icon;
+        const canRevise =
+          item.status === "draft" ||
+          item.status === "changes_requested" ||
+          item.workflowStage === "editor_revision_requested";
+        const hasRevisionRequest =
+          item.workflowStage === "editor_revision_requested" ||
+          item.status === "changes_requested";
+        const needsConfirmation =
+          item.workflowStage === "awaiting_submitter_confirmation";
 
         return (
-          <Card key={item.id} className="border-border/60">
+          <Card
+            key={item.id}
+            className={hasRevisionRequest ? "border-primary/30 bg-primary/5" : "border-border/60"}
+          >
             <CardContent className="p-4">
               <div className="flex gap-4">
                 {item.coverImageUrl ? (
@@ -175,10 +214,48 @@ export function MySubmissionsList({ items }: { items: SubmissionItem[] }) {
                     {truncateAbstract(item.abstract)}
                   </p>
 
+                  {hasRevisionRequest && item.latestRevisionRequest && (
+                    <div className="mt-3 rounded-xl border border-primary/20 bg-background/90 p-3">
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 font-semibold text-primary">
+                          <MessageSquareWarning className="size-3" />
+                          Revision request
+                        </span>
+                        <span className="text-muted-foreground">
+                          from {getRevisionRequesterLabel(item)}
+                        </span>
+                        <span className="text-muted-foreground">
+                          on {formatDate(item.latestRevisionRequest.requestedAt)}
+                        </span>
+                      </div>
+                      {item.latestRevisionRequest.comment && (
+                        <p className="mt-2 text-sm leading-relaxed text-foreground/90">
+                          {truncateComment(item.latestRevisionRequest.comment)}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
                     <span>Updated {formatDate(item.updatedAt)}</span>
                     {item.journalName && <span>{item.journalName}</span>}
                     {item.departmentName && <span>{item.departmentName}</span>}
+                    {canRevise && (
+                      <Link
+                        href={`/editor/${item.slug}/revise`}
+                        className="font-medium text-primary underline-offset-2 hover:underline"
+                      >
+                        Update submission
+                      </Link>
+                    )}
+                    {needsConfirmation && (
+                      <Link
+                        href={`/submissions/confirm/${item.id}`}
+                        className="font-medium text-primary underline-offset-2 hover:underline"
+                      >
+                        Submit final confirmation
+                      </Link>
+                    )}
                     {item.status === "published" && (
                       <Link
                         href={`/research/${item.slug}`}

@@ -8,14 +8,18 @@ import {
   ArrowUpRight,
   BookCheck,
   Building2,
-  Check,
   ChevronDown,
   Clock,
   Eye,
+  FileText,
   Loader2,
+  Lock,
   Mail,
   MessageSquareWarning,
   Send,
+  ShieldAlert,
+  ThumbsDown,
+  ThumbsUp,
   User,
   UserPlus,
   X,
@@ -63,6 +67,8 @@ interface PeerInvite {
   inviteeEmail: string;
   inviteeName: string | null;
   recommendation: string | null;
+  reviewComment: string | null;
+  confidentialComment: string | null;
   createdAt: Date;
   reviewSubmittedAt: Date | null;
 }
@@ -159,11 +165,30 @@ const INVITE_STATUS_CONFIG: Record<
   revoked: { label: "Revoked", className: "bg-muted text-muted-foreground" },
 };
 
-const RECOMMENDATION_LABELS: Record<string, string> = {
-  accept: "Accept",
-  minor_revision: "Minor Revision",
-  major_revision: "Major Revision",
-  reject: "Reject",
+const RECOMMENDATION_CONFIG: Record<
+  string,
+  { label: string; className: string; icon: ReactNode }
+> = {
+  accept: {
+    label: "Accept",
+    className: "bg-emerald-600/10 text-emerald-600",
+    icon: <ThumbsUp className="size-3" />,
+  },
+  minor_revision: {
+    label: "Minor Revision",
+    className: "bg-blue-600/10 text-blue-600",
+    icon: <FileText className="size-3" />,
+  },
+  major_revision: {
+    label: "Major Revision",
+    className: "bg-orange-600/10 text-orange-600",
+    icon: <ShieldAlert className="size-3" />,
+  },
+  reject: {
+    label: "Reject",
+    className: "bg-red-600/10 text-red-600",
+    icon: <ThumbsDown className="size-3" />,
+  },
 };
 
 function formatDate(date: Date) {
@@ -550,60 +575,145 @@ function DepartmentReviewCard({
 
 function PeerInvitesList({ invites }: { invites: PeerInvite[] }) {
   const [expanded, setExpanded] = useState(false);
-  const visibleInvites = expanded ? invites : invites.slice(0, 2);
-  const hasMore = invites.length > 2;
+
+  const completedCount = invites.filter(
+    (i) => i.status === "completed",
+  ).length;
+  const pendingCount = invites.filter(
+    (i) => i.status === "pending" || i.status === "accepted",
+  ).length;
 
   return (
-    <div className="rounded-lg border border-border/40 bg-muted/20 px-3 py-2">
+    <div className="rounded-lg border border-border/40 bg-muted/20">
       <button
         type="button"
-        onClick={() => hasMore && setExpanded((prev) => !prev)}
-        className="mb-1.5 flex w-full items-center gap-1.5 text-xs font-medium text-muted-foreground"
+        onClick={() => setExpanded((prev) => !prev)}
+        className="flex w-full items-center gap-2 px-3 py-2.5 text-left"
       >
-        <UserPlus className="size-3" />
-        Peer reviewers ({invites.length})
-        {hasMore && (
-          <ChevronDown
-            className={`ml-auto size-3 transition-transform ${expanded ? "rotate-180" : ""}`}
-          />
+        <UserPlus className="size-3.5 shrink-0 text-muted-foreground" />
+        <span className="text-xs font-medium text-foreground">
+          Peer Reviews
+        </span>
+        <span className="ml-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+          {invites.length}
+        </span>
+
+        {completedCount > 0 && (
+          <span className="rounded-full bg-emerald-600/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">
+            {completedCount} completed
+          </span>
         )}
+        {pendingCount > 0 && (
+          <span className="rounded-full bg-amber-600/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600">
+            {pendingCount} awaiting
+          </span>
+        )}
+
+        <ChevronDown
+          className={`ml-auto size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+        />
       </button>
-      <div className="space-y-1">
-        {visibleInvites.map((invite) => {
-          const statusCfg =
-            INVITE_STATUS_CONFIG[invite.status] ?? INVITE_STATUS_CONFIG.pending;
-          return (
-            <div
-              key={invite.id}
-              className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs"
-            >
-              <span className="text-foreground">
-                {invite.inviteeName || invite.inviteeEmail}
-              </span>
-              {invite.inviteeName && (
-                <span className="text-muted-foreground">
-                  {invite.inviteeEmail}
-                </span>
-              )}
-              <span
-                className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${statusCfg.className}`}
-              >
-                {statusCfg.label}
-              </span>
-              {invite.recommendation && (
-                <span className="flex items-center gap-0.5 text-[10px] font-medium text-primary">
-                  <Check className="size-2.5" />
-                  {RECOMMENDATION_LABELS[invite.recommendation] ??
-                    invite.recommendation}
-                </span>
-              )}
-            </div>
-          );
-        })}
+
+      {expanded && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.15 }}
+          className="border-t border-border/40 px-3 pb-3 pt-2"
+        >
+          <div className="space-y-2.5">
+            {invites.map((invite) => (
+              <PeerInviteCard key={invite.id} invite={invite} />
+            ))}
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+function PeerInviteCard({ invite }: { invite: PeerInvite }) {
+  const statusCfg =
+    INVITE_STATUS_CONFIG[invite.status] ?? INVITE_STATUS_CONFIG.pending;
+  const recCfg = invite.recommendation
+    ? (RECOMMENDATION_CONFIG[invite.recommendation] ?? null)
+    : null;
+
+  const hasReviewContent = invite.reviewComment || invite.confidentialComment;
+
+  return (
+    <div className="rounded-lg border border-border/40 bg-background px-3 py-2.5">
+      {/* Reviewer identity row */}
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+        <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted">
+          <User className="size-3 text-muted-foreground" />
+        </div>
+        <span className="text-sm font-medium text-foreground">
+          {invite.inviteeName || invite.inviteeEmail}
+        </span>
+        {invite.inviteeName && (
+          <span className="text-xs text-muted-foreground">
+            {invite.inviteeEmail}
+          </span>
+        )}
+        <span
+          className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${statusCfg.className}`}
+        >
+          {statusCfg.label}
+        </span>
       </div>
-      {hasMore && !expanded && (
-        <p className="mt-1 text-[10px] text-muted-foreground">
-          +{invites.length - 2} more
+
+      {/* Recommendation badge — prominent when present */}
+      {recCfg && (
+        <div className="mt-2 flex items-center gap-2">
+          <span
+            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold ${recCfg.className}`}
+          >
+            {recCfg.icon}
+            {recCfg.label}
+          </span>
+          {invite.reviewSubmittedAt && (
+            <span className="text-[11px] text-muted-foreground">
+              {formatDate(invite.reviewSubmittedAt)}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Review comment */}
+      {invite.reviewComment && (
+        <div className="mt-2">
+          <p className="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            Review feedback
+          </p>
+          <p className="text-sm leading-relaxed text-foreground/90">
+            {invite.reviewComment}
+          </p>
+        </div>
+      )}
+
+      {/* Confidential note — editor-only callout */}
+      {invite.confidentialComment && (
+        <div className="mt-2 rounded-md border border-amber-600/20 bg-amber-600/5 px-2.5 py-2">
+          <p className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-amber-700 dark:text-amber-500">
+            <Lock className="size-2.5" />
+            Confidential note
+          </p>
+          <p className="mt-0.5 text-sm leading-relaxed text-foreground/90">
+            {invite.confidentialComment}
+          </p>
+        </div>
+      )}
+
+      {/* Date fallback when no review content yet */}
+      {!hasReviewContent && !recCfg && invite.reviewSubmittedAt && (
+        <p className="mt-1.5 text-[11px] text-muted-foreground">
+          Reviewed {formatDate(invite.reviewSubmittedAt)}
+        </p>
+      )}
+      {!hasReviewContent && !recCfg && !invite.reviewSubmittedAt && (
+        <p className="mt-1.5 text-[11px] italic text-muted-foreground/60">
+          Awaiting review
         </p>
       )}
     </div>
