@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, type Variants } from "framer-motion";
 import {
   ChevronDown,
@@ -57,6 +58,7 @@ interface IssueGroup {
 interface JournalData {
   name: string;
   slug: string;
+  coverImageUrl: string | null;
   description: string | null;
   issn: string | null;
   eissn: string | null;
@@ -246,13 +248,25 @@ export function JournalDetailClient({ journal }: { journal: JournalData }) {
         custom={1}
         className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-8 lg:gap-10 max-w-6xl mx-auto px-6 md:px-12 lg:px-20"
       >
-        {/* Left: cover placeholder */}
+        {/* Left: cover */}
         <div className="w-full shrink-0 sm:w-44 lg:w-48 xl:w-52">
-          <div className="flex aspect-[4/5] w-full items-end justify-start overflow-hidden rounded-xl bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-5 shadow-md">
-            <p className="text-2xl font-bold leading-snug tracking-tight text-primary-foreground">
-              {journal.name}
-            </p>
-          </div>
+          {journal.coverImageUrl ? (
+            <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl border border-border/50 shadow-md">
+              <Image
+                src={journal.coverImageUrl}
+                alt={`${journal.name} cover`}
+                fill
+                sizes="(max-width: 640px) 100vw, 220px"
+                className="object-cover"
+              />
+            </div>
+          ) : (
+            <div className="flex aspect-[4/5] w-full items-end justify-start overflow-hidden rounded-xl bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-5 shadow-md">
+              <p className="text-2xl font-bold leading-snug tracking-tight text-primary-foreground">
+                {journal.name}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Right: name + stats */}

@@ -1,12 +1,17 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, Library, ScrollText } from "lucide-react";
 
 import { listPublicJournals } from "@/lib/db/queries";
+import { getPublicFileUrl } from "@/lib/storage/r2";
 import { SiteHeader } from "@/components/site-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function JournalsPage() {
-  const journals = await listPublicJournals();
+  const journals = (await listPublicJournals()).map((journal) => ({
+    ...journal,
+    coverImageUrl: journal.coverImageKey ? getPublicFileUrl(journal.coverImageKey) : null,
+  }));
 
   return (
     <div className="relative min-h-screen bg-background">
@@ -31,10 +36,22 @@ export default async function JournalsPage() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {journals.map((journal) => (
             <Link key={journal.id} href={`/journals/${journal.slug}`} className="group">
-              <Card className="h-full border-border/60 transition-colors group-hover:border-amber-600/30 group-hover:bg-amber-600/[0.02]">
-                <CardHeader>
-                  <div className="flex size-10 items-center justify-center rounded-lg bg-amber-600/10">
-                    <ScrollText className="size-4 text-amber-700" />
+                <Card className="h-full border-border/60 transition-colors group-hover:border-amber-600/30 group-hover:bg-amber-600/[0.02]">
+                  <CardHeader>
+                  <div className="relative h-40 w-full overflow-hidden rounded-lg border border-border/40 bg-muted/40">
+                    {journal.coverImageUrl ? (
+                      <Image
+                        src={journal.coverImageUrl}
+                        alt={`${journal.name} cover`}
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-amber-600/10">
+                        <ScrollText className="size-5 text-amber-700" />
+                      </div>
+                    )}
                   </div>
                   <CardTitle className="font-sans text-xl tracking-tight">{journal.name}</CardTitle>
                   <CardDescription className="font-mono text-[11px]">/{journal.slug}</CardDescription>

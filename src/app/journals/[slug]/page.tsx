@@ -37,6 +37,9 @@ export default async function JournalDetailPage({ params }: { params: Promise<{ 
   const clientData = {
     name: journal.name,
     slug: journal.slug,
+    coverImageUrl: journal.coverImageKey
+      ? getPublicFileUrl(journal.coverImageKey)
+      : null,
     description: journal.description,
     issn: journal.issn,
     eissn: journal.eissn,
