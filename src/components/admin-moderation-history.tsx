@@ -18,6 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { AnimatedSelect } from "@/components/ui/animated-select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -204,40 +205,38 @@ export function AdminModerationHistory({
             placeholder="Search title/reviewer/comment"
             className="h-8"
           />
-          <select
+          <AnimatedSelect
             value={decisionFilter}
-            onChange={(event) =>
-              setDecisionFilter(
-                event.target.value as "all" | "approved" | "changes_requested" | "archived",
-              )
+            onChange={(v) =>
+              setDecisionFilter(v as "all" | "approved" | "changes_requested" | "archived")
             }
-            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
-          >
-            <option value="all">All decisions</option>
-            <option value="approved">Approved</option>
-            <option value="changes_requested">Changes requested</option>
-            <option value="archived">Archived</option>
-          </select>
-          <select
+            options={[
+              { value: "all", label: "All decisions" },
+              { value: "approved", label: "Approved" },
+              { value: "changes_requested", label: "Changes requested" },
+              { value: "archived", label: "Archived" },
+            ]}
+          />
+          <AnimatedSelect
             value={departmentFilter}
-            onChange={(event) => setDepartmentFilter(event.target.value)}
-            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
-          >
-            <option value="all">All departments</option>
-            {departmentOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-          <select
+            onChange={setDepartmentFilter}
+            placeholder="All departments"
+            options={[
+              { value: "all", label: "All departments" },
+              ...departmentOptions.map((option) => ({
+                value: option,
+                label: option,
+              })),
+            ]}
+          />
+          <AnimatedSelect
             value={sortBy}
-            onChange={(event) => setSortBy(event.target.value as "newest" | "oldest")}
-            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
-          >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-          </select>
+            onChange={(v) => setSortBy(v as "newest" | "oldest")}
+            options={[
+              { value: "newest", label: "Newest first" },
+              { value: "oldest", label: "Oldest first" },
+            ]}
+          />
           <Button type="button" variant="outline" size="sm" onClick={exportCsv}>
             Export CSV
           </Button>

@@ -32,6 +32,7 @@ import { reviewResearchSubmissionAction } from "@/lib/actions/research";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { AnimatedSelect } from "@/components/ui/animated-select";
 import { Input } from "@/components/ui/input";
 import {
   Card,
@@ -474,17 +475,15 @@ export function AdminResearchModerationFull({
               selected={activeSelectedYears}
               onSelectionChange={handleYearsChange}
             />
-            <div className="ml-auto">
-              <select
+            <div className="ml-auto w-36">
+              <AnimatedSelect
                 value={sortBy}
-                onChange={(event) =>
-                  setSortBy(event.target.value as "newest" | "oldest")
-                }
-                className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
-              >
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-              </select>
+                onChange={(v) => setSortBy(v as "newest" | "oldest")}
+                options={[
+                  { value: "newest", label: "Newest first" },
+                  { value: "oldest", label: "Oldest first" },
+                ]}
+              />
             </div>
           </div>
         </CardContent>

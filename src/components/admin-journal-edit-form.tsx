@@ -25,6 +25,7 @@ import {
   updateJournalEditorialBoardAction,
   deleteJournalEditorialBoardAction,
 } from "@/lib/actions/admin";
+import { AnimatedSelect } from "@/components/ui/animated-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -139,7 +140,9 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
   const [editContentTypes, setEditContentTypes] = useState(
     journal.contentTypes ?? "",
   );
+  const [editStatus, setEditStatus] = useState(journal.status);
   const [editSlugTouched, setEditSlugTouched] = useState(false);
+  const [selectedVolumeId, setSelectedVolumeId] = useState("");
   const [showStructure, setShowStructure] = useState(false);
   const [ethicsPolicy, setEthicsPolicy] = useState(journal.ethicsPolicy ?? "");
   const [disclosuresPolicy, setDisclosuresPolicy] = useState(
@@ -338,16 +341,17 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
             <Field label="E-ISSN" name="eissn" defaultValue={journal.eissn ?? ""} disabled={isSaving} placeholder="8765-4321" />
             <div className="space-y-1.5">
               <Label htmlFor="status" className="text-xs">Status</Label>
-              <select
+              <AnimatedSelect
                 id="status"
                 name="status"
-                defaultValue={journal.status}
+                value={editStatus}
+                onChange={(v) => setEditStatus(v as "active" | "archived")}
                 disabled={isSaving}
-                className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-              >
-                <option value="active">Active</option>
-                <option value="archived">Archived</option>
-              </select>
+                options={[
+                  { value: "active", label: "Active" },
+                  { value: "archived", label: "Archived" },
+                ]}
+              />
             </div>
           </div>
           <RichTextField
@@ -533,18 +537,19 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
                   <input type="hidden" name="journalId" value={journal.id} />
                   <div className="space-y-1.5">
                     <Label htmlFor="volumeId" className="text-xs">Volume</Label>
-                    <select
+                    <AnimatedSelect
                       id="volumeId"
                       name="volumeId"
                       required
                       disabled={isSaving}
-                      className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                    >
-                      <option value="">Select volume...</option>
-                      {journal.volumes.map((v) => (
-                        <option key={v.id} value={v.id}>Vol. {v.volumeNumber} ({v.year})</option>
-                      ))}
-                    </select>
+                      value={selectedVolumeId}
+                      onChange={setSelectedVolumeId}
+                      placeholder="Select volume..."
+                      options={journal.volumes.map((v) => ({
+                        value: v.id,
+                        label: `Vol. ${v.volumeNumber} (${v.year})`,
+                      }))}
+                    />
                   </div>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field label="Issue number" name="issueNumber" type="number" required disabled={isSaving} />
