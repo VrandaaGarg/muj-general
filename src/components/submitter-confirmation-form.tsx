@@ -109,7 +109,7 @@ export function SubmitterConfirmationForm({
               onClick={() =>
                 setSelectedDecision(isActive ? null : key)
               }
-              className={`rounded-xl border p-4 text-left transition-all ${
+              className={`   border p-4 text-left transition-all ${
                 isActive
                   ? "border-primary bg-primary/5 ring-1 ring-primary/20"
                   : "border-border/60 hover:border-border hover:bg-muted/30"

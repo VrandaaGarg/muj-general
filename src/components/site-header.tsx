@@ -136,7 +136,7 @@ export function SiteHeader({ role }: SiteHeaderProps) {
 
         <nav className="flex items-center gap-2">
           {isPending ? (
-            <div className="h-7 w-20 animate-pulse rounded-lg bg-muted" />
+            <div className="h-7 w-20 animate-pulse   bg-muted" />
           ) : session?.user ? (
             <div className="relative" ref={menuRef}>
               <Button
@@ -145,7 +145,7 @@ export function SiteHeader({ role }: SiteHeaderProps) {
                 onClick={() => setMenuOpen((prev) => !prev)}
                 className="gap-2 px-2 py-2 cursor-pointer h-11 text-sm hover:bg-muted data-[state=open]:bg-muted"
               >
-                <div className="flex size-6 items-center justify-center rounded-full bg-primary/10">
+                <div className="flex size-6 items-center justify-center    bg-primary/10">
                   <User className="size-4 text-primary" />
                 </div>
                 <span className="max-w-[140px] truncate text-md font-medium text-foreground">
@@ -166,7 +166,7 @@ export function SiteHeader({ role }: SiteHeaderProps) {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 4, scale: 0.97 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-full mt-1.5 z-50 w-52 rounded-xl border border-border/60 bg-card/95 p-1 shadow-lg backdrop-blur-sm"
+                    className="absolute right-0 top-full mt-1.5 z-50 w-52    border border-border/60 bg-card/95 p-1 shadow-lg backdrop-blur-sm"
                   >
                     <div className="border-b border-border/40 px-3 py-2 mb-1">
                       <p className="text-sm font-medium truncate">
@@ -181,7 +181,7 @@ export function SiteHeader({ role }: SiteHeaderProps) {
                       <Link
                         href="/admin"
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
+                        className="flex items-center gap-2.5   px-3 py-2 text-sm transition-colors hover:bg-muted"
                       >
                         <Shield className="size-4 text-muted-foreground" />
                         Admin Panel
@@ -191,7 +191,7 @@ export function SiteHeader({ role }: SiteHeaderProps) {
                       <Link
                         href="/editor"
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
+                        className="flex items-center gap-2.5   px-3 py-2 text-sm transition-colors hover:bg-muted"
                       >
                         <PenTool className="size-4 text-muted-foreground" />
                         Editor Panel
@@ -200,7 +200,7 @@ export function SiteHeader({ role }: SiteHeaderProps) {
                     <Link
                       href="/my-submissions"
                       onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
+                      className="flex items-center gap-2.5   px-3 py-2 text-sm transition-colors hover:bg-muted"
                     >
                       <FileText className="size-4 text-muted-foreground" />
                       My Submissions
@@ -208,7 +208,7 @@ export function SiteHeader({ role }: SiteHeaderProps) {
                     <Link
                       href="/settings"
                       onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
+                      className="flex items-center gap-2.5   px-3 py-2 text-sm transition-colors hover:bg-muted"
                     >
                       <Settings className="size-4 text-muted-foreground" />
                       Settings
@@ -218,7 +218,7 @@ export function SiteHeader({ role }: SiteHeaderProps) {
 
                     <button
                       onClick={handleSignOut}
-                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/5"
+                      className="flex w-full items-center gap-2.5   px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/5"
                     >
                       <LogOut className="size-4" />
                       Sign out
@@ -252,19 +252,19 @@ export function SiteHeader({ role }: SiteHeaderProps) {
             <Link
               key={link.label}
               href={link.href}
-              className="relative shrink-0 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:rounded-full after:bg-primary after:transition-transform hover:after:scale-x-100"
+              className="relative shrink-0 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:   after:bg-primary after:transition-transform hover:after:scale-x-100"
             >
               {link.label}
             </Link>
           ))}
           <Link
             href="/saved"
-            className="relative ml-auto flex shrink-0 items-center gap-1.5 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:rounded-full after:bg-primary after:transition-transform hover:after:scale-x-100"
+            className="relative ml-auto flex shrink-0 items-center gap-1.5 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:   after:bg-primary after:transition-transform hover:after:scale-x-100"
           >
             <Bookmark className="size-3.5" />
             Saved
             {savedCount > 0 && (
-              <span className="flex size-4.5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+              <span className="flex size-4.5 items-center justify-center    bg-primary text-[10px] font-bold text-primary-foreground">
                 {savedCount > 99 ? "99+" : savedCount}
               </span>
             )}

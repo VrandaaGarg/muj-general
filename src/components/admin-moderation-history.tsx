@@ -181,7 +181,7 @@ export function AdminModerationHistory({
     return (
       <Card className="border-border/60">
         <CardContent className="py-8 text-center">
-          <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-muted">
+          <div className="mx-auto mb-3 flex size-10 items-center justify-center   bg-muted">
             <Clock className="size-5 text-muted-foreground" />
           </div>
           <p className="text-sm font-medium">No moderation history</p>
@@ -249,7 +249,7 @@ export function AdminModerationHistory({
       </Card>
 
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-lg border border-border/60 bg-card p-3 text-center">
+        <div className="  border border-border/60 bg-card p-3 text-center">
           <p className="text-lg font-semibold tracking-tight text-emerald-600">
             {approvedCount}
           </p>
@@ -257,7 +257,7 @@ export function AdminModerationHistory({
             Approved
           </p>
         </div>
-        <div className="rounded-lg border border-border/60 bg-card p-3 text-center">
+        <div className="  border border-border/60 bg-card p-3 text-center">
           <p className="text-lg font-semibold tracking-tight text-amber-600">
             {changesCount}
           </p>
@@ -265,7 +265,7 @@ export function AdminModerationHistory({
             Changes requested
           </p>
         </div>
-        <div className="rounded-lg border border-border/60 bg-card p-3 text-center">
+        <div className="  border border-border/60 bg-card p-3 text-center">
           <p className="text-lg font-semibold tracking-tight text-destructive">
             {archivedCount}
           </p>
@@ -305,7 +305,7 @@ function HistoryCard({ entry }: { entry: ModerationEntry }) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">
             <div
-              className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${config.className}`}
+              className={`flex size-9 shrink-0 items-center justify-center   ${config.className}`}
             >
               <DecisionIcon className="size-4" />
             </div>
@@ -320,7 +320,7 @@ function HistoryCard({ entry }: { entry: ModerationEntry }) {
               </CardTitle>
               <CardDescription className="flex flex-wrap items-center gap-x-1.5 text-[10px]">
                 <span
-                  className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-px font-medium ${config.className}`}
+                  className={`inline-flex items-center gap-0.5    px-1.5 py-px font-medium ${config.className}`}
                 >
                   {config.label}
                 </span>
@@ -344,7 +344,7 @@ function HistoryCard({ entry }: { entry: ModerationEntry }) {
 
       {entry.comment && (
         <CardContent>
-          <div className="flex gap-2 rounded-md bg-muted/40 px-3 py-2">
+          <div className="flex gap-2     bg-muted/40 px-3 py-2">
             <MessageSquare className="mt-0.5 size-3 shrink-0 text-muted-foreground" />
             <p className="text-xs leading-relaxed text-muted-foreground">
               {entry.comment}

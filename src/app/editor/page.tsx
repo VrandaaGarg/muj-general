@@ -66,10 +66,10 @@ export default async function EditorPage() {
         {/* Title section */}
         <div className="mb-10">
           {/* <div className="mb-4 flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+            <div className="flex size-8 items-center justify-center   bg-primary/10">
               <PenTool className="size-4 text-primary" />
             </div>
-            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+            <span className="   bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
               Editor Panel
             </span>
           </div> */}
@@ -87,7 +87,7 @@ export default async function EditorPage() {
         <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Card className="border-border/60">
             <CardHeader className="pb-2">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-muted">
+              <div className="flex size-9 items-center justify-center   bg-muted">
                 <Eye className="size-4 text-muted-foreground" />
               </div>
               <CardTitle className="text-sm font-semibold tracking-tight">
@@ -106,7 +106,7 @@ export default async function EditorPage() {
 
           <Card className="border-border/60">
             <CardHeader className="pb-2">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-muted">
+              <div className="flex size-9 items-center justify-center   bg-muted">
                 <Clock3 className="size-4 text-muted-foreground" />
               </div>
               <CardTitle className="text-sm font-semibold tracking-tight">
@@ -125,7 +125,7 @@ export default async function EditorPage() {
 
           <Card className="border-border/60">
             <CardHeader className="pb-2">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-muted">
+              <div className="flex size-9 items-center justify-center   bg-muted">
                 <Clock3 className="size-4 text-muted-foreground" />
               </div>
               <CardTitle className="text-sm font-semibold tracking-tight">
@@ -147,7 +147,7 @@ export default async function EditorPage() {
         <div className="mb-10">
           <Suspense
             fallback={
-              <div className="h-32 animate-pulse rounded-xl border border-border/60 bg-muted/20" />
+              <div className="h-32 animate-pulse    border border-border/60 bg-muted/20" />
             }
           >
             <EditorDepartmentReviewList items={departmentReviewItems} peerInvitesMap={peerInvitesMap} />

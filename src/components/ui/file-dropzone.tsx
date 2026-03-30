@@ -191,7 +191,7 @@ export function FileDropzone({
   const SelectedIcon = fileIcon ?? <FileUp className="size-4 text-primary" />;
 
   return (
-    <div className="space-y-2 rounded-xl border border-border/60 p-4">
+    <div className="space-y-2    border border-border/60 p-4">
       {(headerLabel || description) && (
         <div>
           {headerLabel && (
@@ -210,8 +210,8 @@ export function FileDropzone({
       )}
 
       {existingFile && !file && (
-        <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2">
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted">
+        <div className="flex items-center gap-3   border border-border/60 bg-muted/20 px-3 py-2">
+          <div className="flex size-7 shrink-0 items-center justify-center     bg-muted">
             {fileIcon ?? <FileUp className="size-3.5 text-muted-foreground" />}
           </div>
           <div className="min-w-0 flex-1">
@@ -231,13 +231,13 @@ export function FileDropzone({
       {file ? (
         <div
           className={cn(
-            "flex items-center gap-3 rounded-lg border px-3 py-2.5",
+            "flex items-center gap-3   border px-3 py-2.5",
             existingFile
               ? "border-primary/20 bg-primary/5"
               : "border-border/60 bg-muted/30",
           )}
         >
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+          <div className="flex size-8 shrink-0 items-center justify-center     bg-primary/10">
             {SelectedIcon}
           </div>
           <div className="min-w-0 flex-1">
@@ -268,7 +268,7 @@ export function FileDropzone({
           <label
             htmlFor={id}
             className={cn(
-              "flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed py-6 text-center transition-all",
+              "flex cursor-pointer flex-col items-center gap-2   border border-dashed py-6 text-center transition-all",
               isDragActive
                 ? "border-primary bg-primary/8 ring-2 ring-primary/25"
                 : "border-border/80 bg-muted/20 hover:border-primary/40 hover:bg-primary/5",
@@ -277,7 +277,7 @@ export function FileDropzone({
           >
             <div
               className={cn(
-                "flex size-10 items-center justify-center rounded-full transition-colors",
+                "flex size-10 items-center justify-center    transition-colors",
                 isDragActive ? "bg-primary/15" : "bg-muted",
               )}
             >

@@ -663,7 +663,7 @@ export function EditorSubmissionForm({
       <Card className="border-border/60">
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
+            <div className="flex size-9 items-center justify-center   bg-primary/10">
               <Send className="size-4 text-primary" />
             </div>
             <div>
@@ -802,7 +802,7 @@ export function EditorSubmissionForm({
               </div>
             </div>
 
-            <div className="space-y-3 rounded-xl border border-border/60 p-4">
+            <div className="space-y-3    border border-border/60 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-semibold tracking-tight">Authors</h3>
@@ -818,7 +818,7 @@ export function EditorSubmissionForm({
 
               <div className="space-y-3">
                 {authors.map((author, index) => (
-                  <div key={`author-${index}`} className="space-y-3 rounded-lg border border-border/50 bg-muted/20 p-3">
+                  <div key={`author-${index}`} className="space-y-3   border border-border/50 bg-muted/20 p-3">
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-xs font-medium text-foreground">Author {index + 1}</p>
                       <div className="flex items-center gap-1">
@@ -871,7 +871,7 @@ export function EditorSubmissionForm({
                         )}
 
                         {authorMatches[index] && authorMatches[index].length > 0 && (
-                          <div className="mt-1.5 rounded-md border border-border/60 bg-background p-1.5">
+                          <div className="mt-1.5     border border-border/60 bg-background p-1.5">
                             <p className="mb-1 text-[10px] text-muted-foreground">
                               Matching existing authors
                             </p>
@@ -882,7 +882,7 @@ export function EditorSubmissionForm({
                                   type="button"
                                   onClick={() => applyAuthorSuggestion(index, suggestion)}
                                   disabled={isSubmitting}
-                                  className="flex w-full items-center justify-between rounded px-2 py-1 text-left text-[11px] transition-colors hover:bg-muted"
+                                  className="flex w-full items-center justify-between px-2 py-1 text-left text-[11px] transition-colors hover:bg-muted"
                                 >
                                   <span className="font-medium">{suggestion.displayName}</span>
                                   <span className="text-muted-foreground">
@@ -935,7 +935,7 @@ export function EditorSubmissionForm({
                         />
                       </div>
 
-                      <label className="flex items-center gap-2 rounded-md border border-border/50 px-3 py-2 text-xs font-medium text-foreground">
+                      <label className="flex items-center gap-2     border border-border/50 px-3 py-2 text-xs font-medium text-foreground">
                         <input
                           type="checkbox"
                           checked={author.isCorresponding}
@@ -950,7 +950,7 @@ export function EditorSubmissionForm({
               </div>
             </div>
 
-            <div className="space-y-3 rounded-xl border border-border/60 p-4">
+            <div className="space-y-3    border border-border/60 p-4">
               <div>
                 <h3 className="text-sm font-semibold tracking-tight">Tags</h3>
                 <p className="text-xs text-muted-foreground">
@@ -959,7 +959,7 @@ export function EditorSubmissionForm({
               </div>
 
               {tags.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-border/60 px-3 py-2 text-xs text-muted-foreground">
+                <p className="  border border-dashed border-border/60 px-3 py-2 text-xs text-muted-foreground">
                   No tags are available yet. An admin needs to create them first.
                 </p>
               ) : (
@@ -970,7 +970,7 @@ export function EditorSubmissionForm({
                     return (
                       <label
                         key={tag.id}
-                        className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors ${
+                        className={`flex cursor-pointer items-center gap-2   border px-3 py-2 text-xs transition-colors ${
                           isSelected
                             ? "border-primary/40 bg-primary/5 text-foreground"
                             : "border-border/60 bg-background text-muted-foreground"
@@ -1097,7 +1097,7 @@ export function EditorSubmissionForm({
               {references.map((ref, index) => (
                 <div
                   key={index}
-                  className="flex items-start gap-2 rounded-lg border border-border/60 p-3"
+                  className="flex items-start gap-2   border border-border/60 p-3"
                 >
                   <span className="mt-1.5 text-xs font-medium text-muted-foreground">
                     [{index + 1}]
@@ -1219,7 +1219,7 @@ export function EditorSubmissionForm({
                 </div>
 
                 {eligibleForJournal && (
-                  <div className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-4">
+                  <div className="   border border-border/60 bg-muted/20 p-4 space-y-4">
                     <div>
                       <h3 className="text-sm font-semibold tracking-tight">Journal assignment</h3>
                       <p className="text-xs text-muted-foreground">

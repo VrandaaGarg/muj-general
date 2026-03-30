@@ -124,7 +124,7 @@ export function MarkdownToolbarTextarea({
       </Label>
       <div
         ref={containerRef}
-        className="rounded-lg border overflow-hidden border-border/60 bg-background"
+        className="  border overflow-hidden border-border/60 bg-background"
       >
         <div className="flex flex-wrap items-center gap-1 bg-white border-b border-border/60 px-2 py-1.5">
           <Button

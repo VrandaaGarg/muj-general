@@ -79,14 +79,14 @@ export default async function AdminPage() {
         {/* Title section */}
         <div className="mb-10">
           {/* <div className="mb-4 flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+            <div className="flex size-8 items-center justify-center   bg-primary/10">
               <Shield className="size-4 text-primary" />
             </div>
-            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+            <span className="   bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
               Admin Panel
             </span>
             {totalPending > 0 && (
-              <span className="rounded-full bg-amber-600/10 px-2.5 py-0.5 text-xs font-medium text-amber-600">
+              <span className="   bg-amber-600/10 px-2.5 py-0.5 text-xs font-medium text-amber-600">
                 {totalPending} pending
               </span>
             )}
@@ -104,7 +104,7 @@ export default async function AdminPage() {
           <Link href="/admin/users" className="group">
             <Card className="border-border/60 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.02]">
               <CardHeader className="pb-2">
-                <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/15">
+                <div className="flex size-9 items-center justify-center   bg-primary/10 transition-colors group-hover:bg-primary/15">
                   <Users className="size-4 text-primary" />
                 </div>
                 <CardTitle className="text-sm font-semibold tracking-tight">
@@ -124,7 +124,7 @@ export default async function AdminPage() {
           <Link href="/admin/departments" className="group">
             <Card className="border-border/60 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.02]">
               <CardHeader className="pb-2">
-                <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/15">
+                <div className="flex size-9 items-center justify-center   bg-primary/10 transition-colors group-hover:bg-primary/15">
                   <Building2 className="size-4 text-primary" />
                 </div>
                 <CardTitle className="text-sm font-semibold tracking-tight">
@@ -144,7 +144,7 @@ export default async function AdminPage() {
           <Link href="/admin/tags" className="group">
             <Card className="border-border/60 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.02]">
               <CardHeader className="pb-2">
-                <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/15">
+                <div className="flex size-9 items-center justify-center   bg-primary/10 transition-colors group-hover:bg-primary/15">
                   <Tag className="size-4 text-primary" />
                 </div>
                 <CardTitle className="text-sm font-semibold tracking-tight">
@@ -164,7 +164,7 @@ export default async function AdminPage() {
           <Link href="/admin/journals" className="group">
             <Card className="border-border/60 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.02]">
               <CardHeader className="pb-2">
-                <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/15">
+                <div className="flex size-9 items-center justify-center   bg-primary/10 transition-colors group-hover:bg-primary/15">
                   <Library className="size-4 text-primary" />
                 </div>
                 <CardTitle className="text-sm font-semibold tracking-tight">
@@ -184,7 +184,7 @@ export default async function AdminPage() {
           <Link href="/admin/history" className="group">
             <Card className="border-border/60 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.02]">
               <CardHeader className="pb-2">
-                <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/15">
+                <div className="flex size-9 items-center justify-center   bg-primary/10 transition-colors group-hover:bg-primary/15">
                   <Clock className="size-4 text-primary" />
                 </div>
                 <CardTitle className="text-sm font-semibold tracking-tight">
@@ -204,12 +204,12 @@ export default async function AdminPage() {
 
         {/* Pending sections */}
         <div className="mb-8">
-          <Suspense fallback={<div className="h-32 animate-pulse rounded-xl border border-border/60 bg-muted/20" />}>
+          <Suspense fallback={<div className="h-32 animate-pulse    border border-border/60 bg-muted/20" />}>
             <AdminPendingRequests requests={pendingRequests} limit={5} />
           </Suspense>
         </div>
         <div className="mb-8">
-          <Suspense fallback={<div className="h-32 animate-pulse rounded-xl border border-border/60 bg-muted/20" />}>
+          <Suspense fallback={<div className="h-32 animate-pulse    border border-border/60 bg-muted/20" />}>
             <AdminResearchModeration items={pendingResearchItems} peerInvitesMap={peerInvitesMap} limit={5} />
           </Suspense>
         </div>

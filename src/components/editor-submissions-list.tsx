@@ -223,7 +223,7 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
       {cachedItems.length === 0 ? (
         <Card className="border-border/60">
           <CardContent className="py-8 text-center">
-            <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-muted">
+            <div className="mx-auto mb-3 flex size-10 items-center justify-center   bg-muted">
               <Send className="size-5 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium">No submissions yet</p>
@@ -269,7 +269,7 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
                       <div className="flex gap-0">
                         {/* Cover image */}
                         {item.coverImageUrl ? (
-                          <div className="relative hidden ml-4 w-36 shrink-0 rounded-lg overflow-hidden sm:block md:w-44">
+                          <div className="relative hidden ml-4 w-36 shrink-0   overflow-hidden sm:block md:w-44">
                             <Image
                               src={item.coverImageUrl}
                               alt=""
@@ -279,7 +279,7 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
                             />
                           </div>
                         ) : (
-                          <div className="relative hidden w-36 shrink-0 items-center justify-center overflow-hidden rounded-l-xl bg-muted/40 sm:flex md:w-44">
+                          <div className="relative hidden w-36 shrink-0 items-center justify-center overflow-hidden bg-muted/40 sm:flex md:w-44">
                             <FileText className="size-8 text-muted-foreground/30" />
                           </div>
                         )}
@@ -305,7 +305,7 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
                                 </>
                               )}
                               <span
-                                className={`ml-auto flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${workflowStatus.className}`}
+                                className={`ml-auto flex shrink-0 items-center gap-1    px-2 py-0.5 text-[10px] font-medium ${workflowStatus.className}`}
                               >
                                 {workflowStatus.icon}
                                 {workflowStatus.label}
@@ -338,7 +338,7 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
                               {needsRevision && (
                                 <Link
                                   href={`/editor/${item.slug}/revise`}
-                                  className="inline-flex items-center gap-1 rounded-md bg-orange-600 px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm transition-colors hover:bg-orange-700"
+                                  className="inline-flex items-center gap-1     bg-orange-600 px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm transition-colors hover:bg-orange-700"
                                 >
                                   <RefreshCw className="size-3" />
                                   Revise
@@ -361,7 +361,7 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
                                     void runItemAction(item.id, "delete_draft");
                                   }}
                                   disabled={isBusy}
-                                  className="h-6 rounded-md border-border/60 px-2 py-1 text-[10px] font-medium"
+                                  className="h-6     border-border/60 px-2 py-1 text-[10px] font-medium"
                                 >
                                   <Trash2 className="size-3" />
                                   Delete
@@ -388,14 +388,14 @@ export function EditorSubmissionsList({ items }: EditorSubmissionsListProps) {
                                     );
                                   }}
                                   disabled={isBusy}
-                                  className="h-6 rounded-md border-border/60 px-2 py-1 text-[10px] font-medium"
+                                  className="h-6     border-border/60 px-2 py-1 text-[10px] font-medium"
                                 >
                                   <Undo2 className="size-3" />
                                   Withdraw
                                 </Button>
                               )}
                               {item.journalName && (
-                                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                                <span className="   bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
                                   {item.journalName}
                                 </span>
                               )}

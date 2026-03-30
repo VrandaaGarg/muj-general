@@ -271,13 +271,13 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
       <form action={handleUpdate} className="space-y-5">
         <input type="hidden" name="journalId" value={journal.id} />
 
-        <div className="hidden sm:flex items-center rounded-xl border border-border/60 bg-muted/20 p-3">
+        <div className="hidden sm:flex items-center    border border-border/60 bg-muted/20 p-3">
           {editSteps.map((step, index) => (
             <div key={step} className="flex flex-1 items-center">
               <button
                 type="button"
                 onClick={() => goToEditStep(index)}
-                className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                className={`  px-2.5 py-1.5 text-xs font-medium transition-colors ${
                   editStep === index
                     ? "bg-primary/10 text-primary"
                     : index < editStep
@@ -293,7 +293,7 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
             </div>
           ))}
         </div>
-        <div className="flex sm:hidden items-center gap-1 rounded-xl border border-border/60 bg-muted/20 p-2">
+        <div className="flex sm:hidden items-center gap-1    border border-border/60 bg-muted/20 p-2">
           {editSteps.map((step, index) => (
             <button
               key={step}
@@ -302,7 +302,7 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
               className="flex-1"
             >
               <div
-                className={`h-1.5 rounded-full ${
+                className={`h-1.5    ${
                   index === editStep
                     ? "bg-primary"
                     : index < editStep
@@ -315,7 +315,7 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
         </div>
 
         {/* Overview */}
-        <div className={editStep === 0 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-5" : "hidden"}>
+        <div className={editStep === 0 ? "space-y-4    border border-border/60 bg-muted/20 p-5" : "hidden"}>
           <div>
             <h3 className="text-xl font-semibold tracking-tight text-primary">Overview</h3>
             <p className="text-sm text-muted-foreground">Core journal identity and metadata.</p>
@@ -368,7 +368,7 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
               name="editorialBoardCanReviewSubmissions"
               defaultChecked={journal.editorialBoardCanReviewSubmissions}
               disabled={isSaving}
-              className="size-4 rounded border-input"
+              className="size-4  border-input"
             />
             Editorial board can review submissions
           </label>
@@ -376,7 +376,7 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
         </div>
 
         {/* Aim & Scope */}
-        <div className={editStep === 1 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-5" : "hidden"}>
+        <div className={editStep === 1 ? "space-y-4    border border-border/60 bg-muted/20 p-5" : "hidden"}>
           <div>
             <h3 className="text-xl font-semibold tracking-tight text-primary">Aim & Scope</h3>
             <p className="text-sm text-muted-foreground">Define journal scope, topics, and accepted content formats.</p>
@@ -410,7 +410,7 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
         </div>
 
         {/* Policies */}
-        <div className={editStep === 2 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-5" : "hidden"}>
+        <div className={editStep === 2 ? "space-y-4    border border-border/60 bg-muted/20 p-5" : "hidden"}>
           <div>
             <h3 className="text-xl font-semibold tracking-tight text-primary">Policies</h3>
             <p className="text-sm text-muted-foreground">Public policies for ethics, disclosures, rights, and contact.</p>
@@ -424,7 +424,7 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
         </div>
 
         {/* For Authors */}
-        <div className={editStep === 3 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-5" : "hidden"}>
+        <div className={editStep === 3 ? "space-y-4    border border-border/60 bg-muted/20 p-5" : "hidden"}>
           <div>
             <h3 className="text-xl font-semibold tracking-tight text-primary">For Authors</h3>
             <p className="text-sm text-muted-foreground">Author-facing workflow, checklist, guidelines, and fees.</p>
@@ -450,12 +450,12 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
         <input type="hidden" name="howToPublish" value={howToPublish} readOnly />
         <input type="hidden" name="feesAndFunding" value={feesAndFunding} readOnly />
 
-        <div className={editStep === 4 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-5" : "hidden"}>
+        <div className={editStep === 4 ? "space-y-4    border border-border/60 bg-muted/20 p-5" : "hidden"}>
           <div>
             <h3 className="text-lg font-semibold tracking-tight text-foreground">Review</h3>
             <p className="text-sm text-muted-foreground">Confirm updates and save changes.</p>
           </div>
-          <div className="grid gap-3 rounded-lg border border-border/50 bg-background p-3 text-sm">
+          <div className="grid gap-3   border border-border/50 bg-background p-3 text-sm">
             <div><span className="font-medium">Journal name:</span> {editName || "-"}</div>
             <div><span className="font-medium">Slug:</span> {editSlug || "-"}</div>
             <div><span className="font-medium">Policies filled:</span> {[ethicsPolicy, disclosuresPolicy, rightsPermissions, contactInfo].filter((v) => v.trim().length > 0).length} / 4</div>
@@ -483,7 +483,7 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
       </form>
 
       {/* Structure: Volumes, Issues, Editorial Board */}
-      <div className="rounded-xl border border-border/60 bg-muted/20 p-5">
+      <div className="   border border-border/60 bg-muted/20 p-5">
         <button
           type="button"
           onClick={() => setShowStructure((v) => !v)}
@@ -497,7 +497,7 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
           <div className="mt-5 space-y-5">
             <div className="grid gap-5 lg:grid-cols-2">
               {/* Volumes */}
-              <div className="space-y-3 rounded-xl border border-border/60 p-4">
+              <div className="space-y-3    border border-border/60 p-4">
                 <div>
                   <h4 className="text-base font-semibold tracking-tight">Volumes</h4>
                   <p className="text-xs text-muted-foreground">Create and review volume structure.</p>
@@ -518,7 +518,7 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
                     <p className="text-xs text-muted-foreground">No volumes yet.</p>
                   ) : (
                     journal.volumes.map((v) => (
-                      <div key={v.id} className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2 text-xs">
+                      <div key={v.id} className="  border border-border/50 bg-muted/20 px-3 py-2 text-xs">
                         <div className="font-medium">Vol. {v.volumeNumber} {v.title ? `- ${v.title}` : ""}</div>
                         <div className="text-muted-foreground">{v.year}</div>
                       </div>
@@ -528,7 +528,7 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
               </div>
 
               {/* Issues */}
-              <div className="space-y-3 rounded-xl border border-border/60 p-4">
+              <div className="space-y-3    border border-border/60 p-4">
                 <div>
                   <h4 className="text-base font-semibold tracking-tight">Issues</h4>
                   <p className="text-xs text-muted-foreground">Attach issues to existing volumes.</p>
@@ -565,7 +565,7 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
                     <p className="text-xs text-muted-foreground">No issues yet.</p>
                   ) : (
                     journal.issues.map((issue) => (
-                      <div key={issue.id} className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2 text-xs">
+                      <div key={issue.id} className="  border border-border/50 bg-muted/20 px-3 py-2 text-xs">
                         <div className="font-medium">Issue {issue.issueNumber} {issue.title ? `- ${issue.title}` : ""}</div>
                         <div className="text-muted-foreground">
                           Volume {journal.volumes.find((v) => v.id === issue.volumeId)?.volumeNumber ?? "-"}
@@ -579,11 +579,11 @@ export function AdminJournalEditForm({ journal }: { journal: JournalEditData }) 
             </div>
 
             {/* Editorial Board */}
-            <div className="space-y-3 rounded-xl border border-border/60 p-4">
+            <div className="space-y-3    border border-border/60 p-4">
               <div className="flex items-center gap-2">
                 <Users className="size-4 text-primary" />
                 <h4 className="text-base font-semibold tracking-tight">Editorial Board</h4>
-                <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                <span className="   bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                   {journal.editorialBoard.length}
                 </span>
               </div>
@@ -646,7 +646,7 @@ function BoardMemberRow({
 
   if (isEditing) {
     return (
-      <form action={onUpdate} className="space-y-3 rounded-lg border border-primary/20 bg-muted/20 p-3">
+      <form action={onUpdate} className="space-y-3   border border-primary/20 bg-muted/20 p-3">
         <input type="hidden" name="boardMemberId" value={member.id} />
         <input type="hidden" name="journalId" value={member.journalId} />
         <div className="grid gap-3 sm:grid-cols-3">
@@ -671,11 +671,11 @@ function BoardMemberRow({
   }
 
   return (
-    <div className="group flex items-start justify-between gap-3 rounded-lg border border-border/50 bg-muted/20 px-3 py-2 text-xs">
+    <div className="group flex items-start justify-between gap-3   border border-border/50 bg-muted/20 px-3 py-2 text-xs">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="font-medium">{member.personName}</span>
-          <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+          <span className="   bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
             {member.role}
           </span>
         </div>

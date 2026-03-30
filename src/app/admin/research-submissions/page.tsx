@@ -54,7 +54,7 @@ export default async function ResearchSubmissionsPage() {
 
         <Suspense
           fallback={
-            <div className="h-64 animate-pulse rounded-xl border border-border/60 bg-muted/20" />
+            <div className="h-64 animate-pulse    border border-border/60 bg-muted/20" />
           }
         >
           <AdminResearchModerationFull items={items} peerInvitesMap={peerInvitesMap} />

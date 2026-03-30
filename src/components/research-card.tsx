@@ -91,7 +91,7 @@ export function ResearchCard({ item, index }: ResearchCardProps) {
 
         {/* Right: thumbnail */}
         {item.coverImageUrl ? (
-          <div className="relative hidden size-40 shrink-0 overflow-hidden rounded-lg sm:block lg:size-44">
+          <div className="relative hidden size-40 shrink-0 overflow-hidden   sm:block lg:size-44">
             <Image
               src={item.coverImageUrl}
               alt={item.title}
@@ -101,7 +101,7 @@ export function ResearchCard({ item, index }: ResearchCardProps) {
             />
           </div>
         ) : (
-          <div className="hidden size-40 shrink-0 items-center justify-center rounded-lg bg-muted/50 sm:flex lg:size-44">
+          <div className="hidden size-40 shrink-0 items-center justify-center   bg-muted/50 sm:flex lg:size-44">
             <FileText className="size-8 text-muted-foreground/25" />
           </div>
         )}

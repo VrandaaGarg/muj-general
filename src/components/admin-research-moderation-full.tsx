@@ -235,7 +235,7 @@ function CheckboxDropdown({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition-colors ${
+        className={`inline-flex h-8 items-center gap-1.5   border px-3 text-xs font-medium transition-colors ${
           selected.length > 0
             ? "border-primary/30 bg-primary/5 text-primary"
             : "border-input bg-transparent text-foreground hover:bg-muted/50"
@@ -253,7 +253,7 @@ function CheckboxDropdown({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
             transition={{ duration: 0.15 }}
-            className="absolute left-0 z-50 mt-1.5 min-w-[200px] overflow-hidden rounded-lg border border-border/60 bg-background shadow-lg"
+            className="absolute left-0 z-50 mt-1.5 min-w-[200px] overflow-hidden   border border-border/60 bg-background shadow-lg"
           >
             <div className="max-h-56 overflow-y-auto p-1">
               {options.length === 0 ? (
@@ -268,10 +268,10 @@ function CheckboxDropdown({
                       key={option}
                       type="button"
                       onClick={() => toggle(option)}
-                      className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-muted/60"
+                      className="flex w-full items-center gap-2     px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-muted/60"
                     >
                       <span
-                        className={`flex size-4 shrink-0 items-center justify-center rounded border transition-colors ${
+                        className={`flex size-4 shrink-0 items-center justify-center border transition-colors ${
                           isSelected
                             ? "border-primary bg-primary text-white"
                             : "border-input bg-transparent"
@@ -292,7 +292,7 @@ function CheckboxDropdown({
                 <button
                   type="button"
                   onClick={() => onSelectionChange([])}
-                  className="w-full rounded-md px-2.5 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                  className="w-full     px-2.5 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                 >
                   Clear all
                 </button>
@@ -494,7 +494,7 @@ export function AdminResearchModerationFull({
           Research submissions
         </h2>
         {filteredItems.length > 0 && (
-          <span className="flex items-center gap-1.5 rounded-full bg-amber-600/10 px-2.5 py-0.5 text-xs font-medium text-amber-600">
+          <span className="flex items-center gap-1.5    bg-amber-600/10 px-2.5 py-0.5 text-xs font-medium text-amber-600">
             <Clock className="size-3" />
             {filteredItems.length} pending
           </span>
@@ -504,7 +504,7 @@ export function AdminResearchModerationFull({
       {filteredItems.length === 0 ? (
         <Card className="border-border/60">
           <CardContent className="py-8 text-center">
-            <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-muted">
+            <div className="mx-auto mb-3 flex size-10 items-center justify-center   bg-muted">
               <BookCheck className="size-5 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium">All caught up</p>
@@ -614,7 +614,7 @@ function ModerationReviewCard({ item, peerInvites }: { item: PendingResearchItem
         </div>
 
         {item.notesToAdmin && (
-          <div className="rounded-lg border border-border/40 bg-muted/30 px-3 py-2">
+          <div className="  border border-border/40 bg-muted/30 px-3 py-2">
             <p className="mb-0.5 text-xs font-medium text-muted-foreground">
               Notes from submitter
             </p>
@@ -792,24 +792,24 @@ function PeerReviewSummaryBlockFull({ invites }: { invites: PeerInvite[] }) {
   ).length;
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card/50">
+    <div className="   border border-border/60 bg-card/50">
       <div className="flex items-center gap-2.5 px-4 py-2.5">
-        <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10">
+        <div className="flex size-6 shrink-0 items-center justify-center     bg-primary/10">
           <UserPlus className="size-3 text-primary" />
         </div>
         <span className="text-xs font-semibold text-foreground">
           Peer Reviews
         </span>
-        <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
+        <span className="    bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
           {invites.length}
         </span>
         {completedCount > 0 && (
-          <span className="rounded-md bg-emerald-600/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600">
+          <span className="    bg-emerald-600/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600">
             {completedCount} completed
           </span>
         )}
         {pendingCount > 0 && (
-          <span className="rounded-md bg-amber-600/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600">
+          <span className="    bg-amber-600/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600">
             {pendingCount} awaiting
           </span>
         )}
@@ -825,11 +825,11 @@ function PeerReviewSummaryBlockFull({ invites }: { invites: PeerInvite[] }) {
           return (
             <div
               key={invite.id}
-              className="rounded-lg border border-border/50 bg-background p-3"
+              className="  border border-border/50 bg-background p-3"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted">
+                  <div className="flex size-6 shrink-0 items-center justify-center    bg-muted">
                     <User className="size-3 text-muted-foreground" />
                   </div>
                   <div className="min-w-0">
@@ -844,7 +844,7 @@ function PeerReviewSummaryBlockFull({ invites }: { invites: PeerInvite[] }) {
                   </div>
                 </div>
                 <span
-                  className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${statusCfg.className}`}
+                  className={`shrink-0     px-1.5 py-0.5 text-[10px] font-semibold ${statusCfg.className}`}
                 >
                   {statusCfg.label}
                 </span>
@@ -853,7 +853,7 @@ function PeerReviewSummaryBlockFull({ invites }: { invites: PeerInvite[] }) {
               {recCfg && (
                 <div className="mt-2 flex items-center gap-2">
                   <span
-                    className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold ${recCfg.className}`}
+                    className={`inline-flex items-center gap-1     px-2 py-0.5 text-[10px] font-bold ${recCfg.className}`}
                   >
                     {recCfg.icon}
                     {recCfg.label}
@@ -867,7 +867,7 @@ function PeerReviewSummaryBlockFull({ invites }: { invites: PeerInvite[] }) {
               )}
 
               {invite.reviewComment && (
-                <div className="mt-2 rounded-md border border-border/40 bg-muted/20 px-2.5 py-2">
+                <div className="mt-2     border border-border/40 bg-muted/20 px-2.5 py-2">
                   <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Review feedback
                   </p>
@@ -878,7 +878,7 @@ function PeerReviewSummaryBlockFull({ invites }: { invites: PeerInvite[] }) {
               )}
 
               {invite.confidentialComment && (
-                <div className="mt-2 rounded-md border border-amber-600/20 bg-amber-600/5 px-2.5 py-2">
+                <div className="mt-2     border border-amber-600/20 bg-amber-600/5 px-2.5 py-2">
                   <p className="mb-0.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
                     <Lock className="size-2.5" />
                     Confidential note
@@ -890,7 +890,7 @@ function PeerReviewSummaryBlockFull({ invites }: { invites: PeerInvite[] }) {
               )}
 
               {!recCfg && !invite.reviewComment && !invite.reviewSubmittedAt && (
-                <div className="mt-2 flex items-center gap-1.5 rounded-md border border-dashed border-border/60 px-2.5 py-1.5">
+                <div className="mt-2 flex items-center gap-1.5     border border-dashed border-border/60 px-2.5 py-1.5">
                   <Clock className="size-2.5 text-muted-foreground/60" />
                   <p className="text-[10px] text-muted-foreground/70">
                     Awaiting review

@@ -254,7 +254,7 @@ export function EditorDepartmentReviewList({
           Department review queue
         </h2>
         {cachedItems.length > 0 && (
-          <span className="flex items-center gap-1.5 rounded-full bg-amber-600/10 px-2.5 py-0.5 text-xs font-medium text-amber-600">
+          <span className="flex items-center gap-1.5    bg-amber-600/10 px-2.5 py-0.5 text-xs font-medium text-amber-600">
             <Clock className="size-3" />
             {cachedItems.length} pending
           </span>
@@ -264,7 +264,7 @@ export function EditorDepartmentReviewList({
       {sorted.length === 0 ? (
         <Card className="border-border/60">
           <CardContent className="py-8 text-center">
-            <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-muted">
+            <div className="mx-auto mb-3 flex size-10 items-center justify-center   bg-muted">
               <BookCheck className="size-5 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium">All caught up</p>
@@ -378,7 +378,7 @@ function DepartmentReviewCard({
             </CardDescription>
           </div>
           <span
-            className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${stage.className}`}
+            className={`flex shrink-0 items-center gap-1    px-2 py-0.5 text-[10px] font-medium ${stage.className}`}
           >
             {stage.icon}
             {stage.label}
@@ -409,7 +409,7 @@ function DepartmentReviewCard({
         </div>
 
         {item.notesToAdmin && (
-          <div className="rounded-lg border border-border/40 bg-muted/30 px-3 py-2">
+          <div className="  border border-border/40 bg-muted/30 px-3 py-2">
             <p className="mb-0.5 text-xs font-medium text-muted-foreground">
               Notes from submitter
             </p>
@@ -427,7 +427,7 @@ function DepartmentReviewCard({
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <Link
             href={`/submissions/${item.id}`}
-            className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+            className="inline-flex items-center gap-1     border border-border/60 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
           >
             <Eye className="size-3.5" />
             Preview
@@ -590,30 +590,30 @@ function PeerInvitesList({ invites }: { invites: PeerInvite[] }) {
   ).length;
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card/50">
+    <div className="   border border-border/60 bg-card/50">
       <button
         type="button"
         onClick={() => setExpanded((prev) => !prev)}
         className="flex w-full items-center gap-2.5 px-4 py-3 text-left transition-colors hover:bg-muted/30"
       >
-        <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+        <div className="flex size-7 shrink-0 items-center justify-center   bg-primary/10">
           <UserPlus className="size-3.5 text-primary" />
         </div>
         <span className="text-sm font-semibold tracking-tight text-foreground">
           Peer Reviews
         </span>
-        <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
+        <span className="    bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
           {invites.length}
         </span>
 
         <div className="ml-auto flex items-center gap-2">
           {completedCount > 0 && (
-            <span className="rounded-md bg-emerald-600/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
+            <span className="    bg-emerald-600/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
               {completedCount} completed
             </span>
           )}
           {pendingCount > 0 && (
-            <span className="rounded-md bg-amber-600/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600">
+            <span className="    bg-amber-600/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600">
               {pendingCount} awaiting
             </span>
           )}
@@ -651,10 +651,10 @@ function PeerInviteCard({ invite }: { invite: PeerInvite }) {
   const hasReviewContent = invite.reviewComment || invite.confidentialComment;
 
   return (
-    <div className="rounded-xl border border-border/50 bg-background p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+    <div className="   border border-border/50 bg-background p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
+          <div className="flex size-8 shrink-0 items-center justify-center    bg-muted">
             <User className="size-3.5 text-muted-foreground" />
           </div>
           <div className="min-w-0">
@@ -669,16 +669,16 @@ function PeerInviteCard({ invite }: { invite: PeerInvite }) {
           </div>
         </div>
         <span
-          className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-semibold ${statusCfg.className}`}
+          className={`shrink-0     px-2 py-0.5 text-[10px] font-semibold ${statusCfg.className}`}
         >
           {statusCfg.label}
         </span>
       </div>
 
       {recCfg && (
-        <div className="mt-3 flex items-center gap-3 rounded-lg border border-border/40 bg-muted/30 px-3 py-2">
+        <div className="mt-3 flex items-center gap-3   border border-border/40 bg-muted/30 px-3 py-2">
           <span
-            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold ${recCfg.className}`}
+            className={`inline-flex items-center gap-1.5     px-2.5 py-1 text-xs font-bold ${recCfg.className}`}
           >
             {recCfg.icon}
             {recCfg.label}
@@ -692,7 +692,7 @@ function PeerInviteCard({ invite }: { invite: PeerInvite }) {
       )}
 
       {invite.reviewComment && (
-        <div className="mt-3 rounded-lg border border-border/40 bg-muted/20 px-3.5 py-3">
+        <div className="mt-3   border border-border/40 bg-muted/20 px-3.5 py-3">
           <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Review feedback
           </p>
@@ -703,7 +703,7 @@ function PeerInviteCard({ invite }: { invite: PeerInvite }) {
       )}
 
       {invite.confidentialComment && (
-        <div className="mt-3 rounded-lg border border-amber-600/20 bg-amber-600/5 px-3.5 py-3">
+        <div className="mt-3   border border-amber-600/20 bg-amber-600/5 px-3.5 py-3">
           <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
             <Lock className="size-2.5" />
             Confidential note for editor
@@ -720,7 +720,7 @@ function PeerInviteCard({ invite }: { invite: PeerInvite }) {
         </p>
       )}
       {!hasReviewContent && !recCfg && !invite.reviewSubmittedAt && (
-        <div className="mt-3 flex items-center gap-2 rounded-lg border border-dashed border-border/60 px-3 py-2">
+        <div className="mt-3 flex items-center gap-2   border border-dashed border-border/60 px-3 py-2">
           <Clock className="size-3 text-muted-foreground/60" />
           <p className="text-xs text-muted-foreground/70">
             Awaiting review from this reviewer

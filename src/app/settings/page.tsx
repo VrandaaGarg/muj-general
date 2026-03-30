@@ -69,7 +69,7 @@ export default async function SettingsPage({
 
         {/* Success banner */}
         {confirmationUpdated && (
-          <div className="mb-6 flex items-center gap-2 rounded-xl border border-emerald-600/20 bg-emerald-600/5 px-4 py-3">
+          <div className="mb-6 flex items-center gap-2    border border-emerald-600/20 bg-emerald-600/5 px-4 py-3">
             <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
             <p className="text-sm text-emerald-700">
               Your publication confirmation response has been recorded.
@@ -83,7 +83,7 @@ export default async function SettingsPage({
 
         <div className="max-w-2xl space-y-8">
           {/* Pending confirmations */}
-          <section className="rounded-xl border border-border/60 p-6">
+          <section className="   border border-border/60 p-6">
             <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-primary">
               <ClipboardCheck className="size-5" />
               Pending Confirmations
@@ -95,11 +95,11 @@ export default async function SettingsPage({
                   <Link
                     key={item.id}
                     href={`/submissions/${item.id}`}
-                    className="group block rounded-lg border border-border/60 p-4 transition-colors hover:border-primary/30 hover:bg-muted/30"
+                    className="group block   border border-border/60 p-4 transition-colors hover:border-primary/30 hover:bg-muted/30"
                   >
                     <div className="mb-2 flex flex-wrap items-center gap-2">
                       <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${getTypeColor(item.itemType)}`}
+                        className={`   px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${getTypeColor(item.itemType)}`}
                       >
                         {getTypeLabel(item.itemType)}
                       </span>
@@ -136,7 +136,7 @@ export default async function SettingsPage({
           </section>
 
           {/* Profile info */}
-          <section className="rounded-xl border border-border/60 p-6">
+          <section className="   border border-border/60 p-6">
             <h2 className="mb-4 text-lg font-bold text-primary">Profile</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -171,7 +171,7 @@ export default async function SettingsPage({
           </section>
 
           {/* Department */}
-          <section className="rounded-xl border border-border/60 p-6">
+          <section className="   border border-border/60 p-6">
             <h2 className="mb-4 text-lg font-bold text-primary">Department</h2>
             {appUser.departmentName ? (
               <p className="text-base text-foreground">{appUser.departmentName}</p>
@@ -183,7 +183,7 @@ export default async function SettingsPage({
           </section>
 
           {(appUser.role === "reader" || latestEditorAccessRequest) && (
-            <section className="rounded-xl border border-border/60 p-6">
+            <section className="   border border-border/60 p-6">
               <h2 className="mb-4 text-lg font-bold text-primary">
                 Editor Access
               </h2>
@@ -209,7 +209,7 @@ export default async function SettingsPage({
           )}
 
           {/* Peer Reviews */}
-          <section className="rounded-xl border border-border/60 p-6">
+          <section className="   border border-border/60 p-6">
             <h2 className="mb-2 flex items-center gap-2 text-lg font-bold text-primary">
               <FileSearch className="size-5" />
               Peer Reviews
@@ -219,7 +219,7 @@ export default async function SettingsPage({
             </p>
             <Link
               href="/reviews"
-              className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-background px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              className="inline-flex items-center gap-1.5     border border-border/60 bg-background px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
               Go to Peer Reviews
               <ChevronRight className="size-3.5" />
@@ -227,7 +227,7 @@ export default async function SettingsPage({
           </section>
 
           {/* Password */}
-          <section className="rounded-xl border border-border/60 p-6">
+          <section className="   border border-border/60 p-6">
             <h2 className="mb-2 text-lg font-bold text-primary">Password</h2>
             <p className="text-sm text-muted-foreground">
               Password update is coming soon.
@@ -235,7 +235,7 @@ export default async function SettingsPage({
           </section>
 
           {/* Sign out */}
-          <section className="rounded-xl border border-border/60 p-6">
+          <section className="   border border-border/60 p-6">
             <h2 className="mb-2 text-lg font-bold text-primary">Sign out</h2>
             <p className="mb-4 text-sm text-muted-foreground">
               Sign out of your MUJ General account on this device.

@@ -32,11 +32,11 @@ export function SubmissionSidebarNav({
     <aside className="hidden w-64 shrink-0 lg:block">
       <div className="sticky top-8">
         {hasReferences ? (
-          <div className="flex rounded-lg border border-border/60 text-sm font-medium">
+          <div className="flex   border border-border/60 text-sm font-medium">
             <button
               onClick={() => setActiveTab("sections")}
               className={cn(
-                "flex-1 rounded-l-lg px-4 py-2.5 transition-colors",
+                "flex-1 -l-lg px-4 py-2.5 transition-colors",
                 activeTab === "sections"
                   ? "bg-muted text-foreground"
                   : "text-muted-foreground hover:text-foreground",
@@ -47,7 +47,7 @@ export function SubmissionSidebarNav({
             <button
               onClick={() => setActiveTab("references")}
               className={cn(
-                "flex-1 rounded-r-lg border-l border-border/60 px-4 py-2.5 transition-colors",
+                "flex-1 border-l border-border/60 px-4 py-2.5 transition-colors",
                 activeTab === "references"
                   ? "bg-muted text-foreground"
                   : "text-muted-foreground hover:text-foreground",

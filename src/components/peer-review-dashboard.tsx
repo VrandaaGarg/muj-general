@@ -137,7 +137,7 @@ export function PeerReviewDashboard({ invites }: PeerReviewDashboardProps) {
     return (
       <Card className="border-border/60">
         <CardContent className="py-12 text-center">
-          <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-muted">
+          <div className="mx-auto mb-3 flex size-10 items-center justify-center   bg-muted">
             <Inbox className="size-5 text-muted-foreground" />
           </div>
           <p className="text-sm font-medium">No peer review invitations</p>
@@ -271,7 +271,7 @@ function PendingInviteCard({ invite }: { invite: PeerReviewInvite }) {
               <span>{formatDate(invite.invitedAt)}</span>
             </CardDescription>
           </div>
-          <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-600/10 px-2 py-0.5 text-[10px] font-medium text-amber-600">
+          <span className="flex shrink-0 items-center gap-1    bg-amber-600/10 px-2 py-0.5 text-[10px] font-medium text-amber-600">
             <Clock className="size-2.5" />
             Pending
           </span>
@@ -281,7 +281,7 @@ function PendingInviteCard({ invite }: { invite: PeerReviewInvite }) {
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/submissions/${invite.researchItemId}`}
-            className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+            className="inline-flex items-center gap-1     border border-border/60 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
           >
             <ExternalLink className="size-3.5" />
             View submission
@@ -357,7 +357,7 @@ function AcceptedInviteCard({ invite }: { invite: PeerReviewInvite }) {
               <span>Accepted {invite.respondedAt ? formatDate(invite.respondedAt) : ""}</span>
             </CardDescription>
           </div>
-          <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+          <span className="flex shrink-0 items-center gap-1    bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
             <Check className="size-2.5" />
             Accepted
           </span>
@@ -367,7 +367,7 @@ function AcceptedInviteCard({ invite }: { invite: PeerReviewInvite }) {
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/submissions/${invite.researchItemId}`}
-            className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+            className="inline-flex items-center gap-1     border border-border/60 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
           >
             <ExternalLink className="size-3.5" />
             View submission
@@ -396,7 +396,7 @@ function AcceptedInviteCard({ invite }: { invite: PeerReviewInvite }) {
             >
               <form
                 onSubmit={handleSubmitReview}
-                className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4"
+                className="space-y-4    border border-border/60 bg-muted/20 p-4"
               >
                 <div className="space-y-1.5">
                   <Label htmlFor={`rec-${invite.id}`} className="text-xs">
@@ -490,7 +490,7 @@ function CompletedInviteCard({ invite }: { invite: PeerReviewInvite }) {
               )}
             </CardDescription>
           </div>
-          <span className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-600/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600">
+          <span className="flex shrink-0 items-center gap-1    bg-emerald-600/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600">
             <CheckCircle2 className="size-2.5" />
             Completed
           </span>
@@ -498,7 +498,7 @@ function CompletedInviteCard({ invite }: { invite: PeerReviewInvite }) {
       </CardHeader>
       <CardContent className="space-y-3">
         {invite.reviewComment && (
-          <div className="rounded-xl border border-border/40 bg-muted/30 px-3 py-2.5">
+          <div className="   border border-border/40 bg-muted/30 px-3 py-2.5">
             <p className="mb-1 text-xs font-medium text-muted-foreground">
               Your review
             </p>
@@ -509,7 +509,7 @@ function CompletedInviteCard({ invite }: { invite: PeerReviewInvite }) {
         )}
         <Link
           href={`/submissions/${invite.researchItemId}`}
-          className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+          className="inline-flex items-center gap-1     border border-border/60 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
         >
           <ExternalLink className="size-3.5" />
           View submission
@@ -539,7 +539,7 @@ function InviteSummaryCard({ invite }: { invite: PeerReviewInvite }) {
             </CardDescription>
           </div>
           <span
-            className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${statusCfg.className}`}
+            className={`flex shrink-0 items-center gap-1    px-2 py-0.5 text-[10px] font-medium ${statusCfg.className}`}
           >
             {statusCfg.label}
           </span>

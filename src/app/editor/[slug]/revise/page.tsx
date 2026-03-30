@@ -160,11 +160,11 @@ export default async function RevisePage({ params }: RevisePageProps) {
         {/* Title section */}
         <div className="mb-8">
           {/* <div className="mb-4 flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+            <div className="flex size-8 items-center justify-center   bg-primary/10">
               <RefreshCw className="size-4 text-primary" />
             </div>
             <span
-              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusConfig.className}`}
+              className={`   px-2.5 py-0.5 text-xs font-medium ${statusConfig.className}`}
             >
               {statusConfig.label}
             </span>
@@ -190,7 +190,7 @@ export default async function RevisePage({ params }: RevisePageProps) {
           <Card className="mb-6 border-primary/25 bg-primary/5">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
+                <div className="flex size-9 items-center justify-center   bg-primary/10">
                   <MessageSquareWarning className="size-4 text-primary" />
                 </div>
                 <div>
@@ -223,7 +223,7 @@ export default async function RevisePage({ params }: RevisePageProps) {
             </CardHeader>
             {(item.latestRevisionRequest?.comment || latestDecision?.comment) && (
               <CardContent className="pt-0">
-                <div className="rounded-lg border border-primary/15 bg-background/90 px-3 py-2.5">
+                <div className="  border border-primary/15 bg-background/90 px-3 py-2.5">
                   <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
                     {item.latestRevisionRequest?.comment ?? latestDecision?.comment}
                   </p>
@@ -239,7 +239,7 @@ export default async function RevisePage({ params }: RevisePageProps) {
           <Card className="border-border/60">
             <CardHeader className="pb-2">
               <div className="flex items-center gap-2">
-                <div className="flex size-7 items-center justify-center rounded-md bg-muted">
+                <div className="flex size-7 items-center justify-center     bg-muted">
                   <GitBranch className="size-3.5 text-muted-foreground" />
                 </div>
                 <CardTitle className="text-xs font-semibold tracking-tight">
@@ -257,7 +257,7 @@ export default async function RevisePage({ params }: RevisePageProps) {
                   {item.versions.map((version, idx) => (
                     <div
                       key={version.id}
-                      className={`flex items-center justify-between rounded-md px-2 py-1.5 text-xs ${
+                      className={`flex items-center justify-between     px-2 py-1.5 text-xs ${
                         idx === 0
                           ? "bg-muted/40 font-medium text-foreground"
                           : "text-muted-foreground"
@@ -267,7 +267,7 @@ export default async function RevisePage({ params }: RevisePageProps) {
                         <Clock className="size-3 shrink-0" />v
                         {version.versionNumber}
                         {idx === 0 && (
-                          <span className="rounded bg-primary/10 px-1.5 py-px text-[10px] font-medium text-primary">
+                          <span className=" bg-primary/10 px-1.5 py-px text-[10px] font-medium text-primary">
                             current
                           </span>
                         )}
@@ -286,7 +286,7 @@ export default async function RevisePage({ params }: RevisePageProps) {
           <Card className="border-border/60">
             <CardHeader className="pb-2">
               <div className="flex items-center gap-2">
-                <div className="flex size-7 items-center justify-center rounded-md bg-muted">
+                <div className="flex size-7 items-center justify-center     bg-muted">
                   <FileText className="size-3.5 text-muted-foreground" />
                 </div>
                 <CardTitle className="text-xs font-semibold tracking-tight">
@@ -350,7 +350,7 @@ export default async function RevisePage({ params }: RevisePageProps) {
                   return (
                     <div
                       key={decision.id}
-                      className="rounded-lg border border-border/40 px-3 py-2"
+                      className="  border border-border/40 px-3 py-2"
                     >
                       <div className="flex items-center justify-between">
                         <span
@@ -379,7 +379,7 @@ export default async function RevisePage({ params }: RevisePageProps) {
         {canRevise ? (
           <Suspense
             fallback={
-              <div className="h-64 animate-pulse rounded-xl border border-border/60 bg-muted/20" />
+              <div className="h-64 animate-pulse    border border-border/60 bg-muted/20" />
             }
           >
             <EditorRevisionForm

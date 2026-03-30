@@ -49,8 +49,8 @@ export default async function SubmitPage() {
         </div>
 
         {!session ? (
-          <div className="mx-auto max-w-xl rounded-xl border border-border/60 bg-card p-6 text-center">
-            <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-primary/10">
+          <div className="mx-auto max-w-xl    border border-border/60 bg-card p-6 text-center">
+            <div className="mx-auto mb-3 flex size-10 items-center justify-center   bg-primary/10">
               <LogIn className="size-5 text-primary" />
             </div>
             <h2 className="text-lg font-semibold tracking-tight text-foreground">
@@ -64,14 +64,14 @@ export default async function SubmitPage() {
               href={`/sign-in?redirectTo=${encodeURIComponent("/submit")}`}
               className="mt-4 inline-flex"
             >
-              <span className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">
+              <span className="inline-flex items-center gap-2     bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">
                 <Send className="size-3.5" />
                 Sign in to continue
               </span>
             </Link>
           </div>
         ) : !session.user.emailVerified ? (
-          <div className="mx-auto max-w-xl rounded-xl border border-border/60 bg-card p-6 text-center">
+          <div className="mx-auto max-w-xl    border border-border/60 bg-card p-6 text-center">
             <h2 className="text-lg font-semibold tracking-tight text-foreground">
               Verify your email first
             </h2>
@@ -80,7 +80,7 @@ export default async function SubmitPage() {
             </p>
             <Link
               href={`/verify-email?redirectTo=${encodeURIComponent("/submit")}`}
-              className="mt-4 inline-flex rounded-md border border-border/60 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              className="mt-4 inline-flex     border border-border/60 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
               Go to verification
             </Link>

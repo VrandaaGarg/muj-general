@@ -134,13 +134,13 @@ function FilterSection({
         {visibleItems.map((item) => (
           <label
             key={item.key}
-            className="flex cursor-pointer items-center gap-2.5 rounded-md px-1 py-1.5 text-sm transition-colors hover:bg-muted/50"
+            className="flex cursor-pointer items-center gap-2.5     px-1 py-1.5 text-sm transition-colors hover:bg-muted/50"
           >
             <input
               type="checkbox"
               checked={item.checked}
               onChange={item.onChange}
-              className="size-4 shrink-0 cursor-pointer rounded border-border accent-primary"
+              className="size-4 shrink-0 cursor-pointer border-border accent-primary"
             />
             <span
               className={cn(

@@ -19,9 +19,9 @@ export function MarkdownContent({
         "prose-ul:list-disc prose-ol:list-decimal prose-ul:pl-6 prose-ol:pl-6",
         "prose-h1:text-xl prose-h2:text-lg prose-h3:text-base",
         "prose-strong:text-foreground prose-em:text-foreground/90",
-        "prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5",
+        " prose-code:bg-muted prose-code:px-1 prose-code:py-0.5",
         "prose-a:text-primary prose-a:no-underline hover:prose-a:underline",
-        "prose-pre:rounded-md prose-pre:bg-muted",
+        "   prose-pre:bg-muted",
         className,
       )}
     >

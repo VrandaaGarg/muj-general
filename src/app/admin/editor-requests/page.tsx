@@ -51,7 +51,7 @@ export default async function EditorRequestsPage() {
 
         <Suspense
           fallback={
-            <div className="h-64 animate-pulse rounded-xl border border-border/60 bg-muted/20" />
+            <div className="h-64 animate-pulse    border border-border/60 bg-muted/20" />
           }
         >
           <AdminPendingRequests requests={requests} />

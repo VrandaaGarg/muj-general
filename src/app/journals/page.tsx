@@ -32,10 +32,10 @@ export default async function JournalsPage() {
 
         <div className="mb-10">
           {/* <div className="mb-4 flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+            <div className="flex size-8 items-center justify-center   bg-primary/10">
               <Library className="size-4 text-primary" />
             </div>
-            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+            <span className="   bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
               Journal Collection
             </span>
           </div> */}
@@ -50,7 +50,7 @@ export default async function JournalsPage() {
             <Link key={journal.id} href={`/journals/${journal.slug}`} className="group">
                 <Card className="h-full border-border/60 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.02]">
                   <CardHeader>
-                  <div className="relative h-40 w-full overflow-hidden rounded-lg border border-border/40 bg-muted/40">
+                  <div className="relative h-40 w-full overflow-hidden   border border-border/40 bg-muted/40">
                     {journal.coverImageUrl ? (
                       <Image
                         src={journal.coverImageUrl}
@@ -78,9 +78,9 @@ export default async function JournalsPage() {
                     </div>
                   )}
                   <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
-                    {journal.issn && <span className="rounded-full bg-muted px-2 py-0.5">ISSN {journal.issn}</span>}
-                    {journal.eissn && <span className="rounded-full bg-muted px-2 py-0.5">E-ISSN {journal.eissn}</span>}
-                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">{journal.itemCount} items</span>
+                    {journal.issn && <span className="   bg-muted px-2 py-0.5">ISSN {journal.issn}</span>}
+                    {journal.eissn && <span className="   bg-muted px-2 py-0.5">E-ISSN {journal.eissn}</span>}
+                    <span className="   bg-primary/10 px-2 py-0.5 text-primary">{journal.itemCount} items</span>
                   </div>
                   <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
                     Open journal

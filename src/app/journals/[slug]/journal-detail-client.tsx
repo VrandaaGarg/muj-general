@@ -251,7 +251,7 @@ export function JournalDetailClient({ journal }: { journal: JournalData }) {
         {/* Left: cover */}
         <div className="w-full shrink-0 sm:w-44 lg:w-48 xl:w-52">
           {journal.coverImageUrl ? (
-            <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl border border-border/50 shadow-md">
+            <div className="relative aspect-[4/5] w-full overflow-hidden    border border-border/50 shadow-md">
               <Image
                 src={journal.coverImageUrl}
                 alt={`${journal.name} cover`}
@@ -261,7 +261,7 @@ export function JournalDetailClient({ journal }: { journal: JournalData }) {
               />
             </div>
           ) : (
-            <div className="flex aspect-[4/5] w-full items-end justify-start overflow-hidden rounded-xl bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-5 shadow-md">
+            <div className="flex aspect-[4/5] w-full items-end justify-start overflow-hidden    bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-5 shadow-md">
               <p className="text-2xl font-bold leading-snug tracking-tight text-primary-foreground">
                 {journal.name}
               </p>
@@ -286,7 +286,7 @@ export function JournalDetailClient({ journal }: { journal: JournalData }) {
           <div className="mt-4">
             <Link
               href={`/journals/${journal.slug}/new/submission`}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              className="inline-flex items-center gap-2   bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               <FileUp className="size-4" />
               Upload your manuscript
@@ -356,13 +356,13 @@ export function JournalDetailClient({ journal }: { journal: JournalData }) {
                   </button>
 
                   {isOpen && (
-                    <div className="absolute left-0 top-full z-40 mt-0.5 min-w-[240px] rounded-lg border border-border/60 bg-card p-1.5 shadow-lg">
+                    <div className="absolute left-0 top-full z-40 mt-0.5 min-w-[240px]   border border-border/60 bg-card p-1.5 shadow-lg">
                       {group.items.map((navItem) => (
                         <button
                           key={navItem.sectionId}
                           onClick={() => selectSection(navItem.sectionId)}
                           className={cn(
-                            "flex w-full items-center gap-2 rounded-md px-3.5 py-2.5 text-left text-base transition-colors",
+                            "flex w-full items-center gap-2     px-3.5 py-2.5 text-left text-base transition-colors",
                             activeSection === navItem.sectionId
                               ? "bg-primary/10 font-medium text-primary"
                               : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -468,7 +468,7 @@ export function JournalDetailClient({ journal }: { journal: JournalData }) {
             <div className="space-y-8">
               {journal.issues.map((issue) => (
                 <div key={issue.id}>
-                  <div className="mb-4 rounded-xl border border-border/60 bg-muted/20 px-5 py-4">
+                  <div className="mb-4    border border-border/60 bg-muted/20 px-5 py-4">
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Volume {issue.volumeNumber} ({issue.volumeYear})
                     </p>
@@ -623,7 +623,7 @@ function EditorialBoardFull({
 function EditorRow({ member }: { member: EditorialBoardMember }) {
   return (
     <div className="flex items-center gap-4 py-4">
-      <div className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border/80 bg-muted/50">
+      <div className="flex size-11 shrink-0 items-center justify-center    border border-border/80 bg-muted/50">
         <User className="size-5 text-muted-foreground/70" />
       </div>
       <div className="min-w-0">

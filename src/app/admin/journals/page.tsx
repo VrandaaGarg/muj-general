@@ -52,13 +52,13 @@ export default async function AdminJournalsPage() {
 
         <div className="mb-10">
           {/* <div className="mb-4 flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+            <div className="flex size-8 items-center justify-center   bg-primary/10">
               <Shield className="size-4 text-primary" />
             </div>
-            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+            <span className="   bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
               Admin Panel
             </span>
-            <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+            <span className="   bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
               <Library className="mr-1 inline size-3" />
               Journals
             </span>
@@ -69,7 +69,7 @@ export default async function AdminJournalsPage() {
           </p>
         </div>
 
-        <Suspense fallback={<div className="h-64 animate-pulse rounded-xl border border-border/60 bg-muted/20" />}>
+        <Suspense fallback={<div className="h-64 animate-pulse    border border-border/60 bg-muted/20" />}>
           <AdminJournalsList journals={journals} />
         </Suspense>
       </main>

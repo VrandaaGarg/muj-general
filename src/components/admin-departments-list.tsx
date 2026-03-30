@@ -90,15 +90,15 @@ export function AdminDepartmentsList({ departments }: AdminDepartmentsListProps)
     <div className="space-y-6">
       {/* Summary stats */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-lg border border-border/60 bg-card p-3 text-center">
+        <div className="  border border-border/60 bg-card p-3 text-center">
             <p className="text-lg font-semibold tracking-tight">{cachedDepartments.length}</p>
           <p className="text-[10px] font-medium text-muted-foreground">Departments</p>
         </div>
-        <div className="rounded-lg border border-border/60 bg-card p-3 text-center">
+        <div className="  border border-border/60 bg-card p-3 text-center">
           <p className="text-lg font-semibold tracking-tight">{totalUsers}</p>
           <p className="text-[10px] font-medium text-muted-foreground">Members</p>
         </div>
-        <div className="rounded-lg border border-border/60 bg-card p-3 text-center">
+        <div className="  border border-border/60 bg-card p-3 text-center">
           <p className="text-lg font-semibold tracking-tight">{totalResearch}</p>
           <p className="text-[10px] font-medium text-muted-foreground">Publications</p>
         </div>
@@ -117,7 +117,7 @@ export function AdminDepartmentsList({ departments }: AdminDepartmentsListProps)
         {cachedDepartments.length === 0 ? (
           <Card className="border-border/60">
             <CardContent className="py-8 text-center">
-              <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-muted">
+              <div className="mx-auto mb-3 flex size-10 items-center justify-center   bg-muted">
                 <Building2 className="size-5 text-muted-foreground" />
               </div>
               <p className="text-sm font-medium">No departments yet</p>
@@ -190,7 +190,7 @@ function DepartmentCard({ department }: { department: DepartmentStat }) {
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+            <div className="flex size-9 shrink-0 items-center justify-center   bg-primary/10">
               <Building2 className="size-4 text-primary" />
             </div>
             <div className="min-w-0">
@@ -201,7 +201,7 @@ function DepartmentCard({ department }: { department: DepartmentStat }) {
                 /{department.slug}
               </CardDescription>
               {department.archivedAt && (
-                <p className="mt-1 inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                <p className="mt-1 inline-flex    bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
                   Archived
                 </p>
               )}
@@ -209,11 +209,11 @@ function DepartmentCard({ department }: { department: DepartmentStat }) {
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+            <span className="inline-flex items-center gap-1    border border-border/60 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
               <Users className="size-3" />
               {department.userCount}
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+            <span className="inline-flex items-center gap-1    border border-border/60 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
               <BookOpen className="size-3" />
               {department.researchCount}
             </span>

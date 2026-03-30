@@ -316,7 +316,7 @@ export function AdminJournalsList({
         </CardHeader> */}
         <CardContent>
           <form action={handleCreate} className="grid gap-4">
-            <div className="hidden sm:flex items-center rounded-xl border border-border/60 bg-muted/20 p-3">
+            <div className="hidden sm:flex items-center    border border-border/60 bg-muted/20 p-3">
               {createSteps.map((step, index) => {
                 const Icon = step.icon;
                 const isActive = createStep === index;
@@ -326,7 +326,7 @@ export function AdminJournalsList({
                     <button
                       type="button"
                       onClick={() => goToCreateStep(index)}
-                      className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                      className={`flex items-center gap-2   px-2.5 py-1.5 text-xs font-medium transition-colors ${
                         isActive
                           ? "bg-primary/10 text-primary"
                           : isPast
@@ -335,7 +335,7 @@ export function AdminJournalsList({
                       }`}
                     >
                       <span
-                        className={`flex size-6 items-center justify-center rounded-full text-[10px] ${
+                        className={`flex size-6 items-center justify-center    text-[10px] ${
                           isActive
                             ? "bg-primary text-primary-foreground"
                             : isPast
@@ -354,7 +354,7 @@ export function AdminJournalsList({
                 );
               })}
             </div>
-            <div className="flex sm:hidden items-center gap-1 rounded-xl border border-border/60 bg-muted/20 p-2">
+            <div className="flex sm:hidden items-center gap-1    border border-border/60 bg-muted/20 p-2">
               {createSteps.map((step, index) => (
                 <button
                   key={step.key}
@@ -363,7 +363,7 @@ export function AdminJournalsList({
                   className="flex-1"
                 >
                   <div
-                    className={`h-1.5 rounded-full ${
+                    className={`h-1.5    ${
                       index === createStep
                         ? "bg-primary"
                         : index < createStep
@@ -375,7 +375,7 @@ export function AdminJournalsList({
               ))}
             </div>
 
-            <div className={createStep === 0 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4" : "hidden"}>
+            <div className={createStep === 0 ? "space-y-4    border border-border/60 bg-muted/20 p-4" : "hidden"}>
               <div>
                 <h3 className="text-lg font-semibold tracking-tight text-foreground">Overview</h3>
                 <p className="text-sm text-muted-foreground">
@@ -416,14 +416,14 @@ export function AdminJournalsList({
                   type="checkbox"
                   name="editorialBoardCanReviewSubmissions"
                   defaultChecked
-                  className="size-4 rounded border-input"
+                  className="size-4 border-input"
                 />
                 Editorial board can review submissions
               </label>
               <CoverImageUploadField idBase="create" disabled={isCreating} />
             </div>
 
-            <div className={createStep === 1 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4" : "hidden"}>
+            <div className={createStep === 1 ? "space-y-4    border border-border/60 bg-muted/20 p-4" : "hidden"}>
               <div>
                 <h3 className="text-lg font-semibold tracking-tight text-foreground">Aim &amp; Scope</h3>
                 <p className="text-sm text-muted-foreground">
@@ -460,7 +460,7 @@ export function AdminJournalsList({
               </div>
             </div>
 
-            <div className={createStep === 2 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4" : "hidden"}>
+            <div className={createStep === 2 ? "space-y-4    border border-border/60 bg-muted/20 p-4" : "hidden"}>
               <div>
                 <h3 className="text-lg font-semibold tracking-tight text-foreground">Policies</h3>
                 <p className="text-sm text-muted-foreground">
@@ -475,7 +475,7 @@ export function AdminJournalsList({
               </div>
             </div>
 
-            <div className={createStep === 3 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4" : "hidden"}>
+            <div className={createStep === 3 ? "space-y-4    border border-border/60 bg-muted/20 p-4" : "hidden"}>
               <div>
                 <h3 className="text-lg font-semibold tracking-tight text-foreground">For Authors</h3>
                 <p className="text-sm text-muted-foreground">
@@ -490,7 +490,7 @@ export function AdminJournalsList({
               </div>
             </div>
 
-            <div className={createStep === 4 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4" : "hidden"}>
+            <div className={createStep === 4 ? "space-y-4    border border-border/60 bg-muted/20 p-4" : "hidden"}>
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h3 className="text-lg font-semibold tracking-tight text-foreground">Editorial Board</h3>
@@ -505,13 +505,13 @@ export function AdminJournalsList({
               </div>
 
               {boardMembers.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-border/60 px-3 py-2 text-xs text-muted-foreground">
+                <p className="  border border-dashed border-border/60 px-3 py-2 text-xs text-muted-foreground">
                   No members added yet.
                 </p>
               ) : (
                 <div className="space-y-3">
                   {boardMembers.map((member, index) => (
-                    <div key={`board-${index}`} className="rounded-xl border border-border/60 bg-background p-3">
+                    <div key={`board-${index}`} className="   border border-border/60 bg-background p-3">
                       <div className="mb-2 flex items-center justify-between">
                         <p className="text-xs font-semibold text-foreground">Member {index + 1}</p>
                         <Button type="button" variant="ghost" size="xs" onClick={() => removeBoardMember(index)}>
@@ -531,12 +531,12 @@ export function AdminJournalsList({
               )}
             </div>
 
-            <div className={createStep === 5 ? "space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4" : "hidden"}>
+            <div className={createStep === 5 ? "space-y-4    border border-border/60 bg-muted/20 p-4" : "hidden"}>
               <div>
                 <h3 className="text-lg font-semibold tracking-tight text-foreground">Review</h3>
                 <p className="text-sm text-muted-foreground">Review core details before creating the journal.</p>
               </div>
-              <div className="grid gap-3 rounded-lg border border-border/50 bg-background p-3 text-sm">
+              <div className="grid gap-3   border border-border/50 bg-background p-3 text-sm">
                 <div><span className="font-medium">Journal name:</span> {createName || "-"}</div>
                 <div><span className="font-medium">Slug:</span> {createSlug || "-"}</div>
                 <div><span className="font-medium">Policies filled:</span> {[ethicsPolicy, disclosuresPolicy, rightsPermissions, contactInfo].filter((v) => v.trim().length > 0).length} / 4</div>
@@ -626,7 +626,7 @@ export function AdminJournalsList({
                 <JournalCard key={journal.id} journal={journal} index={index} />
               ))}
 
-              <div className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/20 px-4 py-3">
+              <div className="flex items-center justify-between    border border-border/60 bg-muted/20 px-4 py-3">
                 <p className="text-xs text-muted-foreground">
                   Showing {startIndex + 1}-{Math.min(startIndex + pageSize, cachedJournals.length)} of {cachedJournals.length} journals
                 </p>
@@ -679,7 +679,7 @@ function JournalCard({ journal, index }: { journal: JournalOverview; index: numb
             <div>
               <div className="flex items-center gap-2">
                 <CardTitle className="text-base font-semibold tracking-tight">{journal.name}</CardTitle>
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${journal.status === "active" ? "bg-emerald-600/10 text-emerald-700" : "bg-primary/10 text-primary"}`}>
+                <span className={`   px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${journal.status === "active" ? "bg-emerald-600/10 text-emerald-700" : "bg-primary/10 text-primary"}`}>
                   {journal.status}
                 </span>
               </div>
@@ -739,8 +739,8 @@ function RichTextField({
 
 function Stat({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-3">
-      <div className="mb-2 flex size-8 items-center justify-center rounded-lg bg-primary/10">
+    <div className="  border border-border/50 bg-muted/20 px-3 py-3">
+      <div className="mb-2 flex size-8 items-center justify-center   bg-primary/10">
         <Icon className="size-4 text-primary" />
       </div>
       <p className="text-xl font-semibold tracking-tight">{value}</p>

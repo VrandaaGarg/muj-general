@@ -137,7 +137,7 @@ export function MySubmissionsList({ items }: { items: SubmissionItem[] }) {
     return (
       <Card className="border-border/60">
         <CardContent className="py-8 text-center">
-          <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-muted">
+          <div className="mx-auto mb-3 flex size-10 items-center justify-center   bg-muted">
             <FileText className="size-5 text-muted-foreground" />
           </div>
           <p className="text-sm font-medium">No submissions yet</p>
@@ -175,7 +175,7 @@ export function MySubmissionsList({ items }: { items: SubmissionItem[] }) {
             <CardContent className="p-4">
               <div className="flex gap-4">
                 {item.coverImageUrl ? (
-                  <div className="relative hidden h-28 w-24 shrink-0 overflow-hidden rounded-lg border border-border/50 sm:block">
+                  <div className="relative hidden h-28 w-24 shrink-0 overflow-hidden   border border-border/50 sm:block">
                     <Image
                       src={item.coverImageUrl}
                       alt={item.title}
@@ -185,18 +185,18 @@ export function MySubmissionsList({ items }: { items: SubmissionItem[] }) {
                     />
                   </div>
                 ) : (
-                  <div className="hidden h-28 w-24 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-muted/40 sm:flex">
+                  <div className="hidden h-28 w-24 shrink-0 items-center justify-center   border border-border/50 bg-muted/40 sm:flex">
                     <FileText className="size-6 text-muted-foreground/40" />
                   </div>
                 )}
 
                 <div className="min-w-0 flex-1">
                   <div className="mb-2 flex flex-wrap items-center gap-1.5">
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <span className="   bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       {getTypeLabel(item.itemType)}
                     </span>
                     <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${status.className}`}
+                      className={`inline-flex items-center gap-1    px-2 py-0.5 text-[10px] font-medium ${status.className}`}
                     >
                       <StatusIcon className="size-3" />
                       {status.label}
@@ -215,9 +215,9 @@ export function MySubmissionsList({ items }: { items: SubmissionItem[] }) {
                   </p>
 
                   {hasRevisionRequest && item.latestRevisionRequest && (
-                    <div className="mt-3 rounded-xl border border-primary/20 bg-background/90 p-3">
+                    <div className="mt-3    border border-primary/20 bg-background/90 p-3">
                       <div className="flex flex-wrap items-center gap-2 text-xs">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 font-semibold text-primary">
+                        <span className="inline-flex items-center gap-1    bg-primary/10 px-2 py-0.5 font-semibold text-primary">
                           <MessageSquareWarning className="size-3" />
                           Revision request
                         </span>

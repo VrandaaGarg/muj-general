@@ -207,7 +207,7 @@ export function AdminUsersList({ users, departments }: AdminUsersListProps) {
             return (
               <span
                 key={role}
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${cfg.color}`}
+                className={`inline-flex items-center gap-1    px-2 py-0.5 text-[10px] font-medium ${cfg.color}`}
               >
                 {count} {cfg.label.toLowerCase()}{count !== 1 ? "s" : ""}
               </span>
@@ -269,7 +269,7 @@ function UserCard({
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+            <div className="flex size-9 shrink-0 items-center justify-center   bg-muted">
               <User className="size-4 text-muted-foreground" />
             </div>
             <div className="min-w-0">
@@ -285,7 +285,7 @@ function UserCard({
 
           <div className="flex shrink-0 items-center gap-2">
             <span
-              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${roleCfg.color}`}
+              className={`inline-flex items-center gap-1    px-2 py-0.5 text-[10px] font-semibold ${roleCfg.color}`}
             >
               <RoleIcon className="size-3" />
               {roleCfg.label}
@@ -330,7 +330,7 @@ function UserCard({
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <form action={handleSubmit} className="space-y-3 rounded-lg border border-border/40 bg-muted/20 p-3">
+            <form action={handleSubmit} className="space-y-3   border border-border/40 bg-muted/20 p-3">
               <input type="hidden" name="userId" value={user.id} />
 
               <div className="grid gap-3 sm:grid-cols-2">

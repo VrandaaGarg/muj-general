@@ -97,7 +97,7 @@ export function DepartmentProfile({ department }: DepartmentProfileProps) {
           animate="visible"
           className="mt-8 flex items-start gap-5"
         >
-          {/* <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl border border-primary/20 bg-primary/[0.08] sm:size-20">
+          {/* <div className="flex size-16 shrink-0 items-center justify-center     border border-primary/20 bg-primary/[0.08] sm:size-20">
             <Building2 className="size-7 text-primary sm:size-9" />
           </div> */}
 
@@ -147,13 +147,13 @@ export function DepartmentProfile({ department }: DepartmentProfileProps) {
             <h2 className="text-lg font-semibold tracking-tight text-primary">
               Published Research
             </h2>
-            <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
+            <span className="    bg-muted px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
               {department.items.length}
             </span>
           </div>
 
           {department.items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-card/30 py-16 text-center">
+            <div className="flex flex-col items-center justify-center    border border-dashed border-border/60 bg-card/30 py-16 text-center">
               <p className="font-sans text-lg text-foreground">
                 No publications yet
               </p>
@@ -194,7 +194,7 @@ export function DepartmentProfile({ department }: DepartmentProfileProps) {
                   <h2 className="text-lg font-semibold tracking-tight text-primary">
                     Contributors
                   </h2>
-                  <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
+                  <span className="    bg-muted px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
                     {department.contributors.length}
                   </span>
                 </div>
@@ -233,9 +233,9 @@ function ContributorCard({
   return (
     <Link
       href={`/authors/${contributor.id}`}
-      className="group flex flex-col items-center rounded-xl border border-border/60 bg-white px-4 py-5 text-center transition-all hover:border-primary/30 hover:bg-primary/[0.03] hover:shadow-sm"
+      className="group flex flex-col items-center    border border-border/60 bg-white px-4 py-5 text-center transition-all hover:border-primary/30 hover:bg-primary/[0.03] hover:shadow-sm"
     >
-      <div className="flex size-10 items-center justify-center rounded-full border border-border/80 bg-muted/60 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.08]">
+      <div className="flex size-10 items-center justify-center    border border-border/80 bg-muted/60 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.08]">
         <User className="size-4.5 text-muted-foreground/70 transition-colors group-hover:text-primary" />
       </div>
 

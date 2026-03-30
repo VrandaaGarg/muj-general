@@ -57,10 +57,10 @@ export default async function AdminUsersPage() {
         {/* Title section */}
         <div className="mb-10">
           {/* <div className="mb-4 flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+            <div className="flex size-8 items-center justify-center   bg-primary/10">
               <Shield className="size-4 text-primary" />
             </div>
-            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+            <span className="   bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
               Admin Panel
             </span>
           </div> */}
@@ -78,7 +78,7 @@ export default async function AdminUsersPage() {
               {Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
-                  className="h-28 animate-pulse rounded-xl border border-border/60 bg-muted/20"
+                  className="h-28 animate-pulse    border border-border/60 bg-muted/20"
                 />
               ))}
             </div>

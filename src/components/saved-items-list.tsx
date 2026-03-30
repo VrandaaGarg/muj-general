@@ -53,8 +53,8 @@ export function SavedItemsList() {
       </div>
 
       {count === 0 ? (
-        <div className="rounded-xl border border-border/60 bg-card/50 p-12 text-center">
-          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-muted">
+        <div className="   border border-border/60 bg-card/50 p-12 text-center">
+          <div className="mx-auto mb-4 flex size-14 items-center justify-center     bg-muted">
             <Bookmark className="size-6 text-muted-foreground/50" />
           </div>
           <p className="text-base font-semibold text-foreground">
@@ -66,7 +66,7 @@ export function SavedItemsList() {
           </p>
           <Link
             href="/research"
-            className="mt-5 inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="mt-5 inline-flex items-center gap-1.5   bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             Browse research
           </Link>
@@ -127,12 +127,12 @@ function SavedItemCard({
   onRemove: () => void;
 }) {
   return (
-    <div className="group rounded-xl border border-border/60 bg-card/50 p-5 transition-colors hover:border-primary/20 hover:bg-card/80">
+    <div className="group    border border-border/60 bg-card/50 p-5 transition-colors hover:border-primary/20 hover:bg-card/80">
       <div className="flex gap-5">
         {item.coverImageUrl ? (
           <Link
             href={`/research/${item.slug}`}
-            className="relative hidden h-28 w-22 shrink-0 overflow-hidden rounded-lg border border-border/50 sm:block"
+            className="relative hidden h-28 w-22 shrink-0 overflow-hidden   border border-border/50 sm:block"
           >
             <Image
               src={item.coverImageUrl}
@@ -145,7 +145,7 @@ function SavedItemCard({
         ) : (
           <Link
             href={`/research/${item.slug}`}
-            className="hidden h-28 w-22 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-muted/30 sm:flex"
+            className="hidden h-28 w-22 shrink-0 items-center justify-center   border border-border/50 bg-muted/30 sm:flex"
           >
             <FileText className="size-6 text-muted-foreground/40" />
           </Link>
@@ -157,7 +157,7 @@ function SavedItemCard({
               {getTypeLabel(item.itemType)}
             </span>
             {item.departmentName && (
-              <span className="rounded-md bg-muted/60 px-2 py-0.5 text-sm font-medium text-muted-foreground">
+              <span className="    bg-muted/60 px-2 py-0.5 text-sm font-medium text-muted-foreground">
                 {item.departmentName}
               </span>
             )}

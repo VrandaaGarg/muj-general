@@ -103,7 +103,7 @@ export function AnimatedSelect({
         disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
         className={cn(
-          "flex h-8 w-full items-center justify-between rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors",
+          "flex h-8 w-full items-center justify-between   border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors",
           "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
           "disabled:pointer-events-none disabled:opacity-50",
           !selectedLabel && "text-muted-foreground",
@@ -129,7 +129,7 @@ export function AnimatedSelect({
                 exit={{ opacity: 0, y: -6, scale: 0.97 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
                 style={dropdownStyle}
-                className="overflow-hidden rounded-lg border border-border/60 bg-background shadow-lg"
+                className="overflow-hidden   border border-border/60 bg-background shadow-lg"
               >
                 <motion.div
                   initial="hidden"
@@ -152,7 +152,7 @@ export function AnimatedSelect({
                         setOpen(false);
                       }}
                       className={cn(
-                        "flex w-full items-center rounded-md px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-muted/60",
+                        "flex w-full items-center     px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-muted/60",
                         value === option.value &&
                           "bg-primary/5 font-medium text-primary",
                       )}
