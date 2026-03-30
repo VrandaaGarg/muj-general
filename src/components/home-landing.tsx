@@ -212,6 +212,67 @@ export function HomeLanding({
           </motion.section>
         )}
 
+        {/* ── Quick Actions ── */}
+        <section className="border-b border-border/60">
+          <div className="mx-auto max-w-7xl px-6 py-12 md:px-12 md:py-16 lg:px-20">
+            <div className="mb-10">
+              <h2 className="text-3xl font-bold tracking-tight text-foreground">
+                Explore Our Repository
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Access open research, submit your work, and track publications
+              </p>
+            </div>
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.2 }}
+              className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+            >
+              {[
+                {
+                  title: "Discover open access",
+                  href: "/research",
+                  image: "/image3.png",
+                },
+                {
+                  title: "Publish with us",
+                  href: "/submit",
+                  image: "/image.png",
+                },
+                {
+                  title: "Track your research",
+                  href: "/my-submissions",
+                  image: "/image4.png",
+                },
+              ].map((card) => (
+                <motion.div key={card.title} variants={fadeUp}>
+                  <Link
+                    href={card.href}
+                    className="group block overflow-hidden rounded-lg border border-border/60 bg-card transition-all duration-200 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/[0.06]"
+                  >
+                    <div className="relative aspect-[16/9] w-full overflow-hidden">
+                      <Image
+                        src={card.image}
+                        alt={card.title}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      />
+                    </div>
+                    <div className="px-5 py-4">
+                      <h3 className="text-base font-semibold text-foreground transition-colors group-hover:text-primary">
+                        {card.title}
+                      </h3>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
         {/* ── Browse Journals ── */}
         {journals.length > 0 && (
           <section className="border-b border-border/60 bg-primary/[0.035]">
