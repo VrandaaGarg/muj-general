@@ -226,14 +226,6 @@ export default async function SettingsPage({
             </Link>
           </section>
 
-          {/* Password */}
-          <section className="   border border-border/60 p-6">
-            <h2 className="mb-2 text-lg font-bold text-primary">Password</h2>
-            <p className="text-sm text-muted-foreground">
-              Password update is coming soon.
-            </p>
-          </section>
-
           {/* Sign out */}
           <section className="   border border-border/60 p-6">
             <h2 className="mb-2 text-lg font-bold text-primary">Sign out</h2>

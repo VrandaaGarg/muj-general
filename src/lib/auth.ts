@@ -21,6 +21,27 @@ export const auth = betterAuth({
     enabled: true,
     requireEmailVerification: true,
     autoSignIn: false,
+    sendResetPassword: async ({ user, url }) => {
+      const template = {
+        previewText: "Reset your MUJ General password",
+        title: "Reset your password",
+        greeting: `Hi ${user.name},`,
+        paragraphs: [
+          "We received a request to reset your MUJ General account password.",
+          "Click the button below to choose a new password. This link will expire shortly for security reasons.",
+          "If you did not request a password reset, you can safely ignore this email — your password will remain unchanged.",
+        ],
+        actionLabel: "Reset password",
+        actionUrl: url,
+      };
+
+      await sendEmail({
+        to: user.email,
+        subject: "Reset your MUJ General password",
+        text: buildEmailText(template),
+        html: buildEmailHtml(template),
+      });
+    },
   },
   emailVerification: {
     sendOnSignUp: true,
