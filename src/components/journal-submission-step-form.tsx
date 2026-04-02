@@ -219,7 +219,7 @@ function StepIndicator({
                 type="button"
                 onClick={() => onStepClick(index)}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition-all",
+                  "flex items-center gap-2.5   px-3 py-2 text-xs font-medium transition-all",
                   isActive
                     ? "bg-primary/10 text-primary ring-1 ring-primary/20"
                     : isCompleted || isPast
@@ -229,7 +229,7 @@ function StepIndicator({
               >
                 <div
                   className={cn(
-                    "flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold transition-colors",
+                    "flex size-7 shrink-0 items-center justify-center    text-[11px] font-semibold transition-colors",
                     isActive
                       ? "bg-primary text-primary-foreground"
                       : isCompleted || isPast
@@ -273,7 +273,7 @@ function StepIndicator({
             >
               <div
                 className={cn(
-                  "h-1.5 w-full rounded-full transition-colors",
+                  "h-1.5 w-full    transition-colors",
                   isActive
                     ? "bg-primary"
                     : isPast
@@ -799,9 +799,9 @@ export function JournalSubmissionStepForm({
         transition={{ duration: 0.35, ease: "easeOut" }}
         className="mx-auto max-w-lg"
       >
-        <div className="rounded-xl border border-border/60 bg-card p-6 ring-1 ring-foreground/5 sm:p-8">
+        <div className="   border border-border/60 bg-card p-6 ring-1 ring-foreground/5 sm:p-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+            <div className="flex size-10 items-center justify-center   bg-primary/10">
               <Send className="size-5 text-primary" />
             </div>
             <div>
@@ -1060,7 +1060,7 @@ export function JournalSubmissionStepForm({
                 </div>
 
                 {/* Tags */}
-                <div className="space-y-3 rounded-xl border border-border/60 p-4">
+                <div className="space-y-3    border border-border/60 p-4">
                   <div>
                     <h4 className="text-sm font-semibold tracking-tight">
                       Tags
@@ -1071,7 +1071,7 @@ export function JournalSubmissionStepForm({
                   </div>
 
                   {tags.length === 0 ? (
-                    <p className="rounded-lg border border-dashed border-border/60 px-3 py-2 text-xs text-muted-foreground">
+                    <p className="  border border-dashed border-border/60 px-3 py-2 text-xs text-muted-foreground">
                       No tags are available yet.
                     </p>
                   ) : (
@@ -1082,7 +1082,7 @@ export function JournalSubmissionStepForm({
                           <label
                             key={tag.id}
                             className={cn(
-                              "flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors",
+                              "flex cursor-pointer items-center gap-2   border px-3 py-2 text-xs transition-colors",
                               isSelected
                                 ? "border-primary/40 bg-primary/5 text-foreground"
                                 : "border-border/60 bg-background text-muted-foreground",
@@ -1132,7 +1132,7 @@ export function JournalSubmissionStepForm({
                   {authors.map((author, index) => (
                     <div
                       key={`author-${index}`}
-                      className="space-y-3 rounded-xl border border-border/60 bg-muted/20 p-4"
+                      className="space-y-3    border border-border/60 bg-muted/20 p-4"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-xs font-semibold text-foreground">
@@ -1202,7 +1202,7 @@ export function JournalSubmissionStepForm({
                           )}
                           {authorMatches[index] &&
                             authorMatches[index].length > 0 && (
-                              <div className="mt-1.5 rounded-md border border-border/60 bg-background p-1.5">
+                              <div className="mt-1.5     border border-border/60 bg-background p-1.5">
                                 <p className="mb-1 text-[10px] text-muted-foreground">
                                   Matching existing authors
                                 </p>
@@ -1218,7 +1218,7 @@ export function JournalSubmissionStepForm({
                                         )
                                       }
                                       disabled={isSubmitting}
-                                      className="flex w-full items-center justify-between rounded px-2 py-1 text-left text-[11px] transition-colors hover:bg-muted"
+                                      className="flex w-full items-center justify-between px-2 py-1 text-left text-[11px] transition-colors hover:bg-muted"
                                     >
                                       <span className="font-medium">
                                         {suggestion.displayName}
@@ -1292,7 +1292,7 @@ export function JournalSubmissionStepForm({
                           />
                         </div>
 
-                        <label className="flex items-center gap-2 rounded-md border border-border/50 px-3 py-2 text-xs font-medium text-foreground">
+                        <label className="flex items-center gap-2     border border-border/50 px-3 py-2 text-xs font-medium text-foreground">
                           <input
                             type="checkbox"
                             checked={author.isCorresponding}
@@ -1422,7 +1422,7 @@ export function JournalSubmissionStepForm({
                   />
                 </div>
 
-                <div className="space-y-3 rounded-xl border border-border/60 p-4">
+                <div className="space-y-3    border border-border/60 p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="text-sm font-semibold tracking-tight">
@@ -1447,7 +1447,7 @@ export function JournalSubmissionStepForm({
                     {references.map((ref, index) => (
                       <div
                         key={`reference-${index}`}
-                        className="rounded-lg border border-border/50 bg-muted/20 p-3"
+                        className="  border border-border/50 bg-muted/20 p-3"
                       >
                         <div className="mb-2 flex items-center justify-between">
                           <p className="text-xs font-medium text-muted-foreground">
@@ -1518,7 +1518,7 @@ export function JournalSubmissionStepForm({
                 </div>
 
                 {/* Files summary */}
-                <div className="rounded-xl border border-border/60 p-4 space-y-2">
+                <div className="   border border-border/60 p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-semibold tracking-tight">
                       Files
@@ -1534,7 +1534,7 @@ export function JournalSubmissionStepForm({
                     </Button>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    <div className="flex items-center gap-2 rounded-lg border border-border/40 px-3 py-2">
+                    <div className="flex items-center gap-2   border border-border/40 px-3 py-2">
                       <FileUp className="size-3.5 text-muted-foreground" />
                       <span className="truncate text-xs">
                         {selectedPdfFile
@@ -1545,7 +1545,7 @@ export function JournalSubmissionStepForm({
                         <AlertCircle className="size-3 text-destructive" />
                       )}
                     </div>
-                    <div className="flex items-center gap-2 rounded-lg border border-border/40 px-3 py-2">
+                    <div className="flex items-center gap-2   border border-border/40 px-3 py-2">
                       <FileImage className="size-3.5 text-muted-foreground" />
                       <span className="truncate text-xs">
                         {selectedCoverFile
@@ -1560,7 +1560,7 @@ export function JournalSubmissionStepForm({
                 </div>
 
                 {/* Details summary */}
-                <div className="rounded-xl border border-border/60 p-4 space-y-3">
+                <div className="   border border-border/60 p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-semibold tracking-tight">
                       Details
@@ -1633,7 +1633,7 @@ export function JournalSubmissionStepForm({
                             return tag ? (
                               <span
                                 key={tagId}
-                                className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium text-primary"
+                                className="   bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium text-primary"
                               >
                                 {tag.name}
                               </span>
@@ -1646,7 +1646,7 @@ export function JournalSubmissionStepForm({
                 </div>
 
                 {/* Authors summary */}
-                <div className="rounded-xl border border-border/60 p-4 space-y-2">
+                <div className="   border border-border/60 p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-semibold tracking-tight">
                       Authors ({authors.length})
@@ -1665,7 +1665,7 @@ export function JournalSubmissionStepForm({
                     {authors.map((author, index) => (
                       <div
                         key={`review-author-${index}`}
-                        className="flex items-center gap-2 rounded-lg border border-border/40 px-3 py-2 text-xs"
+                        className="flex items-center gap-2   border border-border/40 px-3 py-2 text-xs"
                       >
                         <span className="font-medium text-foreground">
                           {author.displayName || "(no name)"}
@@ -1676,7 +1676,7 @@ export function JournalSubmissionStepForm({
                           </span>
                         )}
                         {author.isCorresponding && (
-                          <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                          <span className="ml-auto    bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
                             Corresponding
                           </span>
                         )}
@@ -1687,7 +1687,7 @@ export function JournalSubmissionStepForm({
 
                 {/* Declarations summary */}
                 {(license || externalUrl || doi || pageRange || articleNumber || notesToAdmin || changeSummary || supervisorName || programName || references.some((ref) => ref.citationText.trim().length > 0)) && (
-                  <div className="rounded-xl border border-border/60 p-4 space-y-2">
+                  <div className="   border border-border/60 p-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <h4 className="text-sm font-semibold tracking-tight">
                         Declarations

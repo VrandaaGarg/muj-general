@@ -8,7 +8,6 @@ import {
   Building2,
   Calendar,
   CheckCircle2,
-  ChevronDown,
   Loader2,
   Mail,
   Shield,
@@ -20,6 +19,8 @@ import {
 import { toast } from "sonner";
 
 import { updateUserAdminAction } from "@/lib/actions/admin";
+import { useLocalCache } from "@/hooks/use-local-cache";
+import { AnimatedSelect } from "@/components/ui/animated-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,6 +76,11 @@ function formatDate(date: Date) {
 }
 
 export function AdminUsersList({ users, departments }: AdminUsersListProps) {
+  const { data: cachedUsers } = useLocalCache("admin-users:list", users);
+  const { data: cachedDepartments } = useLocalCache(
+    "admin-users:departments",
+    departments,
+  );
   const router = useRouter();
   const searchParams = useSearchParams();
   const updateParam = searchParams.get("update");
@@ -93,7 +99,7 @@ export function AdminUsersList({ users, departments }: AdminUsersListProps) {
     router.replace("/admin/users", { scroll: false });
   }, [updateParam, router]);
 
-  const filteredUsers = users
+  const filteredUsers = cachedUsers
     .filter((user) => {
       if (roleFilter !== "all" && user.role !== roleFilter) {
         return false;
@@ -145,70 +151,63 @@ export function AdminUsersList({ users, departments }: AdminUsersListProps) {
             className="h-8"
           />
 
-          <select
+          <AnimatedSelect
             value={roleFilter}
-            onChange={(event) =>
-              setRoleFilter(event.target.value as "all" | "reader" | "editor" | "admin")
-            }
-            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
-          >
-            <option value="all">All roles</option>
-            <option value="reader">Reader</option>
-            <option value="editor">Editor</option>
-            <option value="admin">Admin</option>
-          </select>
+            onChange={(v) => setRoleFilter(v as "all" | "reader" | "editor" | "admin")}
+            options={[
+              { value: "all", label: "All roles" },
+              { value: "reader", label: "Reader" },
+              { value: "editor", label: "Editor" },
+              { value: "admin", label: "Admin" },
+            ]}
+          />
 
-          <select
+          <AnimatedSelect
             value={verifiedFilter}
-            onChange={(event) =>
-              setVerifiedFilter(event.target.value as "all" | "verified" | "unverified")
-            }
-            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
-          >
-            <option value="all">All verification</option>
-            <option value="verified">Verified</option>
-            <option value="unverified">Unverified</option>
-          </select>
+            onChange={(v) => setVerifiedFilter(v as "all" | "verified" | "unverified")}
+            options={[
+              { value: "all", label: "All verification" },
+              { value: "verified", label: "Verified" },
+              { value: "unverified", label: "Unverified" },
+            ]}
+          />
 
-          <select
+          <AnimatedSelect
             value={departmentFilter}
-            onChange={(event) => setDepartmentFilter(event.target.value)}
-            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
-          >
-            <option value="all">All departments</option>
-            {departments.map((department) => (
-              <option key={department.id} value={department.id}>
-                {department.name}
-              </option>
-            ))}
-          </select>
+            onChange={setDepartmentFilter}
+            options={[
+              { value: "all", label: "All departments" },
+              ...cachedDepartments.map((department) => ({
+                value: department.id,
+                label: department.name,
+              })),
+            ]}
+          />
 
-          <select
+          <AnimatedSelect
             value={sortBy}
-            onChange={(event) =>
-              setSortBy(event.target.value as "newest" | "oldest" | "name")
-            }
-            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
-          >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-            <option value="name">Name A-Z</option>
-          </select>
+            onChange={(v) => setSortBy(v as "newest" | "oldest" | "name")}
+            options={[
+              { value: "newest", label: "Newest first" },
+              { value: "oldest", label: "Oldest first" },
+              { value: "name", label: "Name A-Z" },
+            ]}
+          />
         </CardContent>
       </Card>
 
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
-          {filteredUsers.length} of {users.length} {users.length === 1 ? "user" : "users"}
+          {filteredUsers.length} of {cachedUsers.length} {cachedUsers.length === 1 ? "user" : "users"}
         </p>
         <div className="flex gap-1.5">
           {(["admin", "editor", "reader"] as const).map((role) => {
-            const count = users.filter((u) => u.role === role).length;
+            const count = cachedUsers.filter((u) => u.role === role).length;
             const cfg = ROLE_CONFIG[role];
             return (
               <span
                 key={role}
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${cfg.color}`}
+                className={`inline-flex items-center gap-1    px-2 py-0.5 text-[10px] font-medium ${cfg.color}`}
               >
                 {count} {cfg.label.toLowerCase()}{count !== 1 ? "s" : ""}
               </span>
@@ -225,7 +224,7 @@ export function AdminUsersList({ users, departments }: AdminUsersListProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.03, duration: 0.3 }}
           >
-            <UserCard user={u} departments={departments} />
+            <UserCard user={u} departments={cachedDepartments} />
           </motion.div>
         ))}
       </div>
@@ -270,7 +269,7 @@ function UserCard({
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+            <div className="flex size-9 shrink-0 items-center justify-center   bg-muted">
               <User className="size-4 text-muted-foreground" />
             </div>
             <div className="min-w-0">
@@ -286,7 +285,7 @@ function UserCard({
 
           <div className="flex shrink-0 items-center gap-2">
             <span
-              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${roleCfg.color}`}
+              className={`inline-flex items-center gap-1    px-2 py-0.5 text-[10px] font-semibold ${roleCfg.color}`}
             >
               <RoleIcon className="size-3" />
               {roleCfg.label}
@@ -331,7 +330,7 @@ function UserCard({
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <form action={handleSubmit} className="space-y-3 rounded-lg border border-border/40 bg-muted/20 p-3">
+            <form action={handleSubmit} className="space-y-3   border border-border/40 bg-muted/20 p-3">
               <input type="hidden" name="userId" value={user.id} />
 
               <div className="grid gap-3 sm:grid-cols-2">
@@ -340,23 +339,18 @@ function UserCard({
                   <Label htmlFor={`role-${user.id}`} className="text-xs">
                     Role
                   </Label>
-                  <div className="relative">
-                    <select
-                      id={`role-${user.id}`}
-                      name="role"
-                      value={selectedRole}
-                      onChange={(e) =>
-                        setSelectedRole(e.target.value as "reader" | "editor" | "admin")
-                      }
-                      disabled={saving}
-                      className="h-8 w-full appearance-none rounded-lg border border-input bg-transparent px-2.5 pr-8 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
-                    >
-                      <option value="reader">Reader</option>
-                      <option value="editor">Editor</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                  </div>
+                  <AnimatedSelect
+                    id={`role-${user.id}`}
+                    name="role"
+                    value={selectedRole}
+                    onChange={(v) => setSelectedRole(v as "reader" | "editor" | "admin")}
+                    disabled={saving}
+                    options={[
+                      { value: "reader", label: "Reader" },
+                      { value: "editor", label: "Editor" },
+                      { value: "admin", label: "Admin" },
+                    ]}
+                  />
                   {!user.emailVerified &&
                     (selectedRole === "editor" || selectedRole === "admin") && (
                       <p className="text-[10px] text-amber-600">
@@ -370,24 +364,21 @@ function UserCard({
                   <Label htmlFor={`dept-${user.id}`} className="text-xs">
                     Department
                   </Label>
-                  <div className="relative">
-                    <select
-                      id={`dept-${user.id}`}
-                      name="departmentId"
-                      value={selectedDept}
-                      onChange={(e) => setSelectedDept(e.target.value)}
-                      disabled={saving}
-                      className="h-8 w-full appearance-none rounded-lg border border-input bg-transparent px-2.5 pr-8 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
-                    >
-                      <option value="">No department</option>
-                      {departments.map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.name}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                  </div>
+                  <AnimatedSelect
+                    id={`dept-${user.id}`}
+                    name="departmentId"
+                    value={selectedDept}
+                    onChange={setSelectedDept}
+                    disabled={saving}
+                    placeholder="No department"
+                    options={[
+                      { value: "", label: "No department" },
+                      ...departments.map((d) => ({
+                        value: d.id,
+                        label: d.name,
+                      })),
+                    ]}
+                   />
                 </div>
               </div>
 

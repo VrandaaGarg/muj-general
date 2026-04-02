@@ -117,7 +117,7 @@ export function AuthorProfile({ author }: AuthorProfileProps) {
               <a
                 href={`mailto:${author.email}`}
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card/50 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors",
+                  "inline-flex items-center gap-1.5   border border-border/60 bg-card/50 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors",
                   "hover:border-primary/25 hover:bg-primary/[0.02] hover:text-foreground",
                 )}
               >
@@ -131,7 +131,7 @@ export function AuthorProfile({ author }: AuthorProfileProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card/50 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors",
+                  "inline-flex items-center gap-1.5   border border-border/60 bg-card/50 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors",
                   "hover:border-primary/25 hover:bg-primary/[0.02] hover:text-foreground",
                 )}
               >
@@ -163,13 +163,13 @@ export function AuthorProfile({ author }: AuthorProfileProps) {
             <h2 className="text-xs font-semibold uppercase tracking-wider text-primary">
               Published work
             </h2>
-            <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
+            <span className="    bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
               {author.items.length}
             </span>
           </div>
 
           {author.items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-card/30 py-16 text-center">
+            <div className="flex flex-col items-center justify-center    border border-dashed border-border/60 bg-card/30 py-16 text-center">
               <p className="font-sans text-lg text-foreground">
                 No publications yet
               </p>

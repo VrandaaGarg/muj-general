@@ -320,7 +320,7 @@ function StepIndicator({
 }) {
   return (
     <nav aria-label="Revision steps">
-      <div className="hidden sm:flex items-center justify-between rounded-xl border border-border/60 bg-muted/20 p-3">
+      <div className="hidden sm:flex items-center justify-between    border border-border/60 bg-muted/20 p-3">
         {REVISION_STEPS.map((step, index) => {
           const Icon = step.icon;
           const isActive = currentStep === index;
@@ -333,7 +333,7 @@ function StepIndicator({
                 type="button"
                 onClick={() => onStepClick(index)}
                 className={cn(
-                  "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors",
+                  "flex items-center gap-2   px-2.5 py-1.5 text-xs font-medium transition-colors",
                   isActive
                     ? "bg-primary/10 text-primary"
                     : isPast || isCompleted
@@ -343,7 +343,7 @@ function StepIndicator({
               >
                 <span
                   className={cn(
-                    "flex size-6 items-center justify-center rounded-full text-[10px]",
+                    "flex size-6 items-center justify-center    text-[10px]",
                     isActive
                       ? "bg-primary text-primary-foreground"
                       : isPast || isCompleted
@@ -372,7 +372,7 @@ function StepIndicator({
         })}
       </div>
 
-      <div className="flex items-center gap-1 rounded-xl border border-border/60 bg-muted/20 p-2 sm:hidden">
+      <div className="flex items-center gap-1    border border-border/60 bg-muted/20 p-2 sm:hidden">
         {REVISION_STEPS.map((step, index) => (
           <button
             key={step.key}
@@ -383,7 +383,7 @@ function StepIndicator({
           >
             <div
               className={cn(
-                "h-1.5 rounded-full",
+                "h-1.5   ",
                 index === currentStep
                   ? "bg-primary"
                   : index < currentStep
@@ -986,7 +986,7 @@ export function EditorRevisionForm({
       <Card className="border-border/60">
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
+            <div className="flex size-9 items-center justify-center   bg-primary/10">
               <RefreshCw className="size-4 text-primary" />
             </div>
             <div>
@@ -1008,9 +1008,9 @@ export function EditorRevisionForm({
             ))}
 
             {item.latestRevisionRequest && (
-              <div className="rounded-xl border border-primary/25 bg-primary/5 p-4">
+              <div className="   border border-primary/25 bg-primary/5 p-4">
                 <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 font-semibold text-primary">
+                  <span className="inline-flex items-center gap-1    bg-primary/10 px-2.5 py-0.5 font-semibold text-primary">
                     <AlertCircle className="size-3.5" />
                     Revision requested
                   </span>
@@ -1122,19 +1122,19 @@ export function EditorRevisionForm({
                         <Input id="publicationDate" name="publicationDate" type="date" value={publicationDate} onChange={(event) => setPublicationDate(event.target.value)} disabled={isDisabled} />
                       </div>
                     </div>
-                    <div className="space-y-3 rounded-xl border border-border/60 p-4">
+                    <div className="space-y-3    border border-border/60 p-4">
                       <div>
                         <h3 className="text-sm font-semibold tracking-tight">Tags</h3>
                         <p className="text-xs text-muted-foreground">Update the discovery topics attached to this item.</p>
                       </div>
                       {tags.length === 0 ? (
-                        <p className="rounded-lg border border-dashed border-border/60 px-3 py-2 text-xs text-muted-foreground">No tags are available yet. An admin needs to create them first.</p>
+                        <p className="  border border-dashed border-border/60 px-3 py-2 text-xs text-muted-foreground">No tags are available yet. An admin needs to create them first.</p>
                       ) : (
                         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                           {tags.map((tag) => {
                             const isSelected = selectedTagIds.includes(tag.id);
                             return (
-                              <label key={tag.id} className={cn("flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors", isSelected ? "border-primary/40 bg-primary/5 text-foreground" : "border-border/60 bg-background text-muted-foreground")}>
+                              <label key={tag.id} className={cn("flex cursor-pointer items-center gap-2   border px-3 py-2 text-xs transition-colors", isSelected ? "border-primary/40 bg-primary/5 text-foreground" : "border-border/60 bg-background text-muted-foreground")}>
                                 <input type="checkbox" checked={isSelected} onChange={() => toggleTag(tag.id)} disabled={isDisabled} />
                                 <span className="font-medium">{tag.name}{tag.archivedAt ? " (Archived)" : ""}</span>
                               </label>
@@ -1144,7 +1144,7 @@ export function EditorRevisionForm({
                       )}
                     </div>
                     {eligibleForJournal && (
-                      <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4">
+                      <div className="space-y-4    border border-border/60 bg-muted/20 p-4">
                         <div>
                           <h3 className="text-sm font-semibold tracking-tight">Journal assignment</h3>
                           <p className="text-xs text-muted-foreground">Keep this item standalone, assign it online-first, or place it into a specific issue.</p>
@@ -1165,7 +1165,7 @@ export function EditorRevisionForm({
                 )}
 
                 {currentStep === 2 && (
-                  <div className="space-y-4 rounded-xl border border-border/60 p-4">
+                  <div className="space-y-4    border border-border/60 p-4">
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <h3 className="text-lg font-semibold tracking-tight text-foreground">Authors</h3>
@@ -1178,7 +1178,7 @@ export function EditorRevisionForm({
                     </div>
                     <div className="space-y-3">
                       {authors.map((author, index) => (
-                        <div key={author.id ?? `author-${index}`} className="space-y-3 rounded-lg border border-border/50 bg-muted/20 p-3">
+                        <div key={author.id ?? `author-${index}`} className="space-y-3   border border-border/50 bg-muted/20 p-3">
                           <div className="flex items-center justify-between gap-3">
                             <p className="text-xs font-medium text-foreground">Author {index + 1}</p>
                             <div className="flex items-center gap-1">
@@ -1193,11 +1193,11 @@ export function EditorRevisionForm({
                               <Input id={`author-name-${index}`} value={author.displayName} onChange={(event) => updateAuthor(index, "displayName", event.target.value)} placeholder="Dr. Jane Smith" required disabled={isDisabled} />
                               {author.id && <p className="text-[10px] text-emerald-600">Linked existing author</p>}
                               {authorMatches[index] && authorMatches[index].length > 0 && (
-                                <div className="mt-1.5 rounded-md border border-border/60 bg-background p-1.5">
+                                <div className="mt-1.5     border border-border/60 bg-background p-1.5">
                                   <p className="mb-1 text-[10px] text-muted-foreground">Matching existing authors</p>
                                   <div className="space-y-1">
                                     {authorMatches[index].map((suggestion) => (
-                                      <button key={suggestion.id} type="button" onClick={() => applyAuthorSuggestion(index, suggestion)} disabled={isDisabled} className="flex w-full items-center justify-between rounded px-2 py-1 text-left text-[11px] transition-colors hover:bg-muted">
+                                      <button key={suggestion.id} type="button" onClick={() => applyAuthorSuggestion(index, suggestion)} disabled={isDisabled} className="flex w-full items-center justify-between px-2 py-1 text-left text-[11px] transition-colors hover:bg-muted">
                                         <span className="font-medium">{suggestion.displayName}</span>
                                         <span className="text-muted-foreground">{suggestion.email ?? "No email"}</span>
                                       </button>
@@ -1209,7 +1209,7 @@ export function EditorRevisionForm({
                             <div className="space-y-1.5"><Label htmlFor={`author-affiliation-${index}`} className="text-sm">Affiliation</Label><Input id={`author-affiliation-${index}`} value={author.affiliation} onChange={(event) => updateAuthor(index, "affiliation", event.target.value)} placeholder="Manipal University Jaipur" disabled={isDisabled} /></div>
                             <div className="space-y-1.5"><Label htmlFor={`author-email-${index}`} className="text-sm">Email</Label><Input id={`author-email-${index}`} type="email" value={author.email} onChange={(event) => updateAuthor(index, "email", event.target.value)} placeholder="name@example.com" disabled={isDisabled} /></div>
                             <div className="space-y-1.5"><Label htmlFor={`author-orcid-${index}`} className="text-sm">ORCID</Label><Input id={`author-orcid-${index}`} value={author.orcid} onChange={(event) => updateAuthor(index, "orcid", event.target.value)} placeholder="0000-0000-0000-0000" disabled={isDisabled} /></div>
-                            <label className="flex items-center gap-2 rounded-md border border-border/50 px-3 py-2 text-xs font-medium text-foreground"><input type="checkbox" checked={author.isCorresponding} onChange={(event) => updateAuthor(index, "isCorresponding", event.target.checked)} disabled={isDisabled} />Corresponding author</label>
+                            <label className="flex items-center gap-2     border border-border/50 px-3 py-2 text-xs font-medium text-foreground"><input type="checkbox" checked={author.isCorresponding} onChange={(event) => updateAuthor(index, "isCorresponding", event.target.checked)} disabled={isDisabled} />Corresponding author</label>
                           </div>
                         </div>
                       ))}
@@ -1231,7 +1231,7 @@ export function EditorRevisionForm({
                     <div className="space-y-3">
                       <div className="flex items-center justify-between"><Label className="text-sm">References</Label><Button type="button" variant="outline" size="sm" onClick={addReference} disabled={isDisabled} className="h-7 gap-1 text-xs"><Plus className="size-3" />Add reference</Button></div>
                       {references.map((ref, index) => (
-                        <div key={index} className="flex items-start gap-2 rounded-lg border border-border/60 p-3">
+                        <div key={index} className="flex items-start gap-2   border border-border/60 p-3">
                           <span className="mt-1.5 text-xs font-medium text-muted-foreground">[{index + 1}]</span>
                           <div className="flex-1 space-y-2">
                             <Input value={ref.citationText} onChange={(e) => updateReference(index, "citationText", e.target.value)} placeholder="Author(s), Title, Journal/Conference, Year" disabled={isDisabled} className="text-xs" />
@@ -1243,7 +1243,7 @@ export function EditorRevisionForm({
                     </div>
                     <button type="button" onClick={() => setShowAdditional((current) => !current)} className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">{showAdditional ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}Additional metadata</button>
                     {showAdditional && (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} transition={{ duration: 0.2 }} className="space-y-4 overflow-hidden rounded-xl border border-border/60 bg-muted/20 p-4">
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} transition={{ duration: 0.2 }} className="space-y-4 overflow-hidden    border border-border/60 bg-muted/20 p-4">
                         <div className="grid gap-4 sm:grid-cols-2">
                           <div className="space-y-1.5"><Label htmlFor="license" className="text-sm">License</Label><Input id="license" name="license" placeholder="e.g. CC BY 4.0" value={license} onChange={(event) => setLicense(event.target.value)} maxLength={160} disabled={isDisabled} /></div>
                           <div className="space-y-1.5"><Label htmlFor="supervisorName" className="text-sm">Supervisor name</Label><Input id="supervisorName" name="supervisorName" placeholder="Dr. Jane Smith" value={supervisorName} onChange={(event) => setSupervisorName(event.target.value)} maxLength={160} disabled={isDisabled} /></div>
@@ -1270,7 +1270,7 @@ export function EditorRevisionForm({
                       <p className="text-sm text-muted-foreground">Confirm the updated submission package before saving or resubmitting.</p>
                     </div>
                     <div className="grid gap-4 lg:grid-cols-2">
-                      <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-sm">
+                      <div className="   border border-border/60 bg-muted/20 p-4 text-sm">
                         <p className="font-medium text-foreground">Core details</p>
                         <div className="mt-3 space-y-2 text-muted-foreground">
                           <p><span className="font-medium text-foreground">Title:</span> {title || "-"}</p>
@@ -1280,7 +1280,7 @@ export function EditorRevisionForm({
                           <p><span className="font-medium text-foreground">Journal:</span> {selectedJournalName ?? "Standalone"}</p>
                         </div>
                       </div>
-                      <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-sm">
+                      <div className="   border border-border/60 bg-muted/20 p-4 text-sm">
                         <p className="font-medium text-foreground">Revision package</p>
                         <div className="mt-3 space-y-2 text-muted-foreground">
                           <p><span className="font-medium text-foreground">Authors:</span> {normalizedAuthors.length}</p>
@@ -1292,7 +1292,7 @@ export function EditorRevisionForm({
                       </div>
                     </div>
                     {changeSummary && (
-                      <div className="rounded-xl border border-border/60 bg-background p-4">
+                      <div className="   border border-border/60 bg-background p-4">
                         <p className="text-sm font-medium text-foreground">Change summary</p>
                         <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{changeSummary}</p>
                       </div>

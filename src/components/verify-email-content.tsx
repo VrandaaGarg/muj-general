@@ -67,7 +67,7 @@ export function VerifyEmailContent({ token, error }: VerifyEmailContentProps) {
     <AuthShell>
       <Card>
         <CardHeader className="items-center text-center">
-          <div className="mb-2 flex size-12 items-center justify-center rounded-full bg-amber-600/10">
+          <div className="mb-2 flex size-12 items-center justify-center    bg-amber-600/10">
             {isVerifying ? (
               <Loader2 className="size-5 animate-spin text-amber-600" />
             ) : (

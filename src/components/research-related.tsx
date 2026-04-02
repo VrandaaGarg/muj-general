@@ -114,7 +114,7 @@ function ItemGrid({
             >
               <Link
                 href={`/research/${item.slug}`}
-                className="group flex h-full flex-col overflow-hidden rounded-xl border border-border/60 bg-card/50 transition-all hover:border-primary/25 hover:bg-primary/[0.02] hover:shadow-sm"
+                className="group flex h-full flex-col overflow-hidden    border border-border/60 bg-card/50 transition-all hover:border-primary/25 hover:bg-primary/[0.02] hover:shadow-sm"
               >
                 {/* Thumbnail */}
                 {item.coverImageUrl && (
@@ -133,7 +133,7 @@ function ItemGrid({
                   <div className="mb-2 flex items-center gap-2">
                     <span
                       className={cn(
-                        "inline-flex rounded-md px-2 py-0.5 text-xs font-semibold leading-tight tracking-wide",
+                        "inline-flex     px-2 py-0.5 text-xs font-semibold leading-tight tracking-wide",
                         getTypeColor(item.itemType),
                       )}
                     >

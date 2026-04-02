@@ -68,7 +68,7 @@ export default function SignUpPage() {
           >
             <Card>
               <CardHeader className="items-center text-center">
-                <div className="mb-2 mx-auto flex size-12 items-center justify-center rounded-full bg-amber-600/10">
+                <div className="mb-2 mx-auto flex size-12 items-center justify-center    bg-amber-600/10">
                   <MailCheck className="size-5 text-amber-600" />
                 </div>
                 <CardTitle className="font-sans text-xl tracking-tight">

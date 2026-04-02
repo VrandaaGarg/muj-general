@@ -34,9 +34,9 @@ export function ResearchResults({ items, totalCount, currentPage = 1, pageSize =
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-card/30 py-20 text-center"
+        className="flex flex-col items-center justify-center    border border-dashed border-border/60 bg-card/30 py-20 text-center"
       >
-        <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-muted">
+        <div className="mb-4 flex size-14 items-center justify-center    bg-muted">
           <BookX className="size-6 text-muted-foreground" />
         </div>
         <h3 className="font-sans text-lg text-foreground">

@@ -19,7 +19,7 @@ export default async function EditorRequestsPage() {
     <div className="relative min-h-screen bg-background">
       <SiteHeader role={appUser.role} />
 
-      <main className="relative z-10 mx-auto max-w-6xl px-6 pt-8 pb-24 md:px-12 md:pt-12 lg:px-20">
+      <main className="relative z-10 mx-auto max-w-7xl px-6 pt-8 pb-24 md:px-12 md:pt-12 lg:px-20">
         <nav className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
           <Link
             href="/"
@@ -51,7 +51,7 @@ export default async function EditorRequestsPage() {
 
         <Suspense
           fallback={
-            <div className="h-64 animate-pulse rounded-xl border border-border/60 bg-muted/20" />
+            <div className="h-64 animate-pulse    border border-border/60 bg-muted/20" />
           }
         >
           <AdminPendingRequests requests={requests} />

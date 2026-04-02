@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 
 import { reviewEditorAccessRequestAction } from "@/lib/actions/editor-access";
+import { useLocalCache } from "@/hooks/use-local-cache";
 import {
   Card,
   CardHeader,
@@ -66,6 +67,10 @@ export function AdminPendingRequests({
   limit,
   showAllHref = "/admin/editor-requests",
 }: AdminPendingRequestsProps) {
+  const { data: cachedRequests } = useLocalCache(
+    "admin-pending-requests:list",
+    requests,
+  );
   const router = useRouter();
   const searchParams = useSearchParams();
   const reviewParam = searchParams.get("review");
@@ -80,8 +85,8 @@ export function AdminPendingRequests({
     router.replace("/admin", { scroll: false });
   }, [reviewParam, router]);
 
-  const displayRequests = limit ? requests.slice(0, limit) : requests;
-  const hasMore = limit ? requests.length > limit : false;
+  const displayRequests = limit ? cachedRequests.slice(0, limit) : cachedRequests;
+  const hasMore = limit ? cachedRequests.length > limit : false;
 
   return (
     <div className="space-y-4">
@@ -89,10 +94,10 @@ export function AdminPendingRequests({
         <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
           Editor access requests
         </h2>
-        {requests.length > 0 && (
-          <span className="flex items-center gap-1.5 rounded-full bg-amber-600/10 px-2.5 py-0.5 text-xs font-medium text-amber-600">
+        {cachedRequests.length > 0 && (
+          <span className="flex items-center gap-1.5    bg-amber-600/10 px-2.5 py-0.5 text-xs font-medium text-amber-600">
             <Clock className="size-3" />
-            {requests.length} pending
+            {cachedRequests.length} pending
           </span>
         )}
       </div>
@@ -100,7 +105,7 @@ export function AdminPendingRequests({
       {displayRequests.length === 0 ? (
         <Card className="border-border/60">
           <CardContent className="py-8 text-center">
-            <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-muted">
+            <div className="mx-auto mb-3 flex size-10 items-center justify-center   bg-muted">
               <CheckCircle2 className="size-5 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium">All caught up</p>
@@ -130,7 +135,7 @@ export function AdminPendingRequests({
             href={showAllHref}
             className="inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/80"
           >
-            Show all {requests.length} requests
+            Show all {cachedRequests.length} requests
             <ArrowRight className="size-3.5" />
           </Link>
         </div>
@@ -158,7 +163,7 @@ function RequestReviewCard({ request }: { request: PendingRequest }) {
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-600/10">
+            <div className="flex size-9 shrink-0 items-center justify-center   bg-amber-600/10">
               <User className="size-4 text-amber-600" />
             </div>
             <div className="min-w-0">
@@ -185,7 +190,7 @@ function RequestReviewCard({ request }: { request: PendingRequest }) {
         )}
 
         {request.message && (
-          <div className="rounded-lg border border-border/40 bg-muted/30 px-3 py-2">
+          <div className="  border border-border/40 bg-muted/30 px-3 py-2">
             <p className="text-xs font-medium text-muted-foreground mb-0.5">
               Message
             </p>

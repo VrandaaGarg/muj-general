@@ -18,6 +18,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useLocalCache } from "@/hooks/use-local-cache";
+import { AnimatedSelect } from "@/components/ui/animated-select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -81,6 +83,10 @@ function formatRelativeDate(date: Date): string {
 export function AdminModerationHistory({
   entries,
 }: AdminModerationHistoryProps) {
+  const { data: cachedEntries } = useLocalCache(
+    "admin-moderation-history:entries",
+    entries,
+  );
   const [query, setQuery] = useState("");
   const [decisionFilter, setDecisionFilter] = useState<"all" | ModerationEntry["decision"]>("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
@@ -89,14 +95,14 @@ export function AdminModerationHistory({
   const departmentOptions = useMemo(
     () =>
       Array.from(
-        new Set(entries.map((entry) => entry.departmentName).filter((value): value is string => Boolean(value))),
+        new Set(cachedEntries.map((entry) => entry.departmentName).filter((value): value is string => Boolean(value))),
       ).sort((a, b) => a.localeCompare(b)),
-    [entries],
+    [cachedEntries],
   );
 
   const filteredEntries = useMemo(
     () =>
-      entries
+      cachedEntries
         .filter((entry) => {
           if (decisionFilter !== "all" && entry.decision !== decisionFilter) {
             return false;
@@ -120,7 +126,7 @@ export function AdminModerationHistory({
             ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
         ),
-    [departmentFilter, decisionFilter, entries, query, sortBy],
+    [departmentFilter, decisionFilter, cachedEntries, query, sortBy],
   );
 
   function exportCsv() {
@@ -175,7 +181,7 @@ export function AdminModerationHistory({
     return (
       <Card className="border-border/60">
         <CardContent className="py-8 text-center">
-          <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-muted">
+          <div className="mx-auto mb-3 flex size-10 items-center justify-center   bg-muted">
             <Clock className="size-5 text-muted-foreground" />
           </div>
           <p className="text-sm font-medium">No moderation history</p>
@@ -204,40 +210,38 @@ export function AdminModerationHistory({
             placeholder="Search title/reviewer/comment"
             className="h-8"
           />
-          <select
+          <AnimatedSelect
             value={decisionFilter}
-            onChange={(event) =>
-              setDecisionFilter(
-                event.target.value as "all" | "approved" | "changes_requested" | "archived",
-              )
+            onChange={(v) =>
+              setDecisionFilter(v as "all" | "approved" | "changes_requested" | "archived")
             }
-            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
-          >
-            <option value="all">All decisions</option>
-            <option value="approved">Approved</option>
-            <option value="changes_requested">Changes requested</option>
-            <option value="archived">Archived</option>
-          </select>
-          <select
+            options={[
+              { value: "all", label: "All decisions" },
+              { value: "approved", label: "Approved" },
+              { value: "changes_requested", label: "Changes requested" },
+              { value: "archived", label: "Archived" },
+            ]}
+          />
+          <AnimatedSelect
             value={departmentFilter}
-            onChange={(event) => setDepartmentFilter(event.target.value)}
-            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
-          >
-            <option value="all">All departments</option>
-            {departmentOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-          <select
+            onChange={setDepartmentFilter}
+            placeholder="All departments"
+            options={[
+              { value: "all", label: "All departments" },
+              ...departmentOptions.map((option) => ({
+                value: option,
+                label: option,
+              })),
+            ]}
+          />
+          <AnimatedSelect
             value={sortBy}
-            onChange={(event) => setSortBy(event.target.value as "newest" | "oldest")}
-            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
-          >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-          </select>
+            onChange={(v) => setSortBy(v as "newest" | "oldest")}
+            options={[
+              { value: "newest", label: "Newest first" },
+              { value: "oldest", label: "Oldest first" },
+            ]}
+          />
           <Button type="button" variant="outline" size="sm" onClick={exportCsv}>
             Export CSV
           </Button>
@@ -245,7 +249,7 @@ export function AdminModerationHistory({
       </Card>
 
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-lg border border-border/60 bg-card p-3 text-center">
+        <div className="  border border-border/60 bg-card p-3 text-center">
           <p className="text-lg font-semibold tracking-tight text-emerald-600">
             {approvedCount}
           </p>
@@ -253,7 +257,7 @@ export function AdminModerationHistory({
             Approved
           </p>
         </div>
-        <div className="rounded-lg border border-border/60 bg-card p-3 text-center">
+        <div className="  border border-border/60 bg-card p-3 text-center">
           <p className="text-lg font-semibold tracking-tight text-amber-600">
             {changesCount}
           </p>
@@ -261,7 +265,7 @@ export function AdminModerationHistory({
             Changes requested
           </p>
         </div>
-        <div className="rounded-lg border border-border/60 bg-card p-3 text-center">
+        <div className="  border border-border/60 bg-card p-3 text-center">
           <p className="text-lg font-semibold tracking-tight text-destructive">
             {archivedCount}
           </p>
@@ -301,7 +305,7 @@ function HistoryCard({ entry }: { entry: ModerationEntry }) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">
             <div
-              className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${config.className}`}
+              className={`flex size-9 shrink-0 items-center justify-center   ${config.className}`}
             >
               <DecisionIcon className="size-4" />
             </div>
@@ -316,7 +320,7 @@ function HistoryCard({ entry }: { entry: ModerationEntry }) {
               </CardTitle>
               <CardDescription className="flex flex-wrap items-center gap-x-1.5 text-[10px]">
                 <span
-                  className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-px font-medium ${config.className}`}
+                  className={`inline-flex items-center gap-0.5    px-1.5 py-px font-medium ${config.className}`}
                 >
                   {config.label}
                 </span>
@@ -340,7 +344,7 @@ function HistoryCard({ entry }: { entry: ModerationEntry }) {
 
       {entry.comment && (
         <CardContent>
-          <div className="flex gap-2 rounded-md bg-muted/40 px-3 py-2">
+          <div className="flex gap-2     bg-muted/40 px-3 py-2">
             <MessageSquare className="mt-0.5 size-3 shrink-0 text-muted-foreground" />
             <p className="text-xs leading-relaxed text-muted-foreground">
               {entry.comment}

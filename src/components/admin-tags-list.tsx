@@ -22,6 +22,7 @@ import {
   deleteTagAction,
   updateTagAction,
 } from "@/lib/actions/admin";
+import { useLocalCache } from "@/hooks/use-local-cache";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -67,6 +68,7 @@ const CREATE_MESSAGES: Record<
 };
 
 export function AdminTagsList({ tags }: AdminTagsListProps) {
+  const { data: cachedTags } = useLocalCache("admin-tags:list", tags);
   const router = useRouter();
   const searchParams = useSearchParams();
   const createParam = searchParams.get("create") ?? searchParams.get("op");
@@ -80,17 +82,17 @@ export function AdminTagsList({ tags }: AdminTagsListProps) {
     router.replace("/admin/tags", { scroll: false });
   }, [createParam, router]);
 
-  const totalResearch = tags.reduce((sum, t) => sum + t.researchCount, 0);
+  const totalResearch = cachedTags.reduce((sum, t) => sum + t.researchCount, 0);
 
   return (
     <div className="space-y-6">
       {/* Summary stats */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-lg border border-border/60 bg-card p-3 text-center">
-          <p className="text-lg font-semibold tracking-tight">{tags.length}</p>
+        <div className="  border border-border/60 bg-card p-3 text-center">
+            <p className="text-lg font-semibold tracking-tight">{cachedTags.length}</p>
           <p className="text-[10px] font-medium text-muted-foreground">Tags</p>
         </div>
-        <div className="rounded-lg border border-border/60 bg-card p-3 text-center">
+        <div className="  border border-border/60 bg-card p-3 text-center">
           <p className="text-lg font-semibold tracking-tight">
             {totalResearch}
           </p>
@@ -108,10 +110,10 @@ export function AdminTagsList({ tags }: AdminTagsListProps) {
         <h2 className="text-lg font-semibold tracking-tight text-foreground">
           All tags
         </h2>
-        {tags.length === 0 ? (
+        {cachedTags.length === 0 ? (
           <Card className="border-border/60">
             <CardContent className="py-8 text-center">
-              <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-muted">
+              <div className="mx-auto mb-3 flex size-10 items-center justify-center   bg-muted">
                 <Tag className="size-5 text-muted-foreground" />
               </div>
               <p className="text-sm font-medium">No tags yet</p>
@@ -122,7 +124,7 @@ export function AdminTagsList({ tags }: AdminTagsListProps) {
           </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
-            {tags.map((tag, idx) => (
+            {cachedTags.map((tag, idx) => (
               <motion.div
                 key={tag.id}
                 initial={{ opacity: 0, y: 8 }}
@@ -184,7 +186,7 @@ function TagCard({ tag }: { tag: TagStat }) {
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+            <div className="flex size-9 shrink-0 items-center justify-center   bg-primary/10">
               <Tag className="size-4 text-primary" />
             </div>
             <div className="min-w-0">
@@ -195,14 +197,14 @@ function TagCard({ tag }: { tag: TagStat }) {
                 /{tag.slug}
               </CardDescription>
               {tag.archivedAt && (
-                <p className="mt-1 inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                <p className="mt-1 inline-flex    bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
                   Archived
                 </p>
               )}
             </div>
           </div>
 
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/60 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+          <span className="inline-flex shrink-0 items-center gap-1    border border-border/60 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
             <BookOpen className="size-3" />
             {tag.researchCount}
           </span>

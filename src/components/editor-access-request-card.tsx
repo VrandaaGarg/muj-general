@@ -94,7 +94,7 @@ export function EditorAccessRequestCard({
       <Card className="border-emerald-600/20 bg-emerald-600/[0.02]">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-600/10">
+            <div className="flex size-9 items-center justify-center   bg-emerald-600/10">
               <CheckCircle2 className="size-4 text-emerald-600" />
             </div>
             <div>
@@ -130,7 +130,7 @@ export function EditorAccessRequestCard({
       <Card className="border-amber-600/20 bg-amber-600/[0.02]">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-amber-600/10">
+            <div className="flex size-9 items-center justify-center   bg-amber-600/10">
               <Clock className="size-4 text-amber-600" />
             </div>
             <div>
@@ -151,7 +151,7 @@ export function EditorAccessRequestCard({
             You&apos;ll be notified once a decision is made.
           </p>
           {requestMessage && (
-            <div className="mt-3 rounded-lg border border-border/40 bg-muted/30 px-3 py-2">
+            <div className="mt-3   border border-border/40 bg-muted/30 px-3 py-2">
               <p className="text-xs font-medium text-muted-foreground mb-0.5">
                 Your message
               </p>
@@ -168,7 +168,7 @@ export function EditorAccessRequestCard({
       <Card className="border-destructive/20 bg-destructive/[0.02]">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-destructive/10">
+            <div className="flex size-9 items-center justify-center   bg-destructive/10">
               <XCircle className="size-4 text-destructive" />
             </div>
             <div>
@@ -185,7 +185,7 @@ export function EditorAccessRequestCard({
         </CardHeader>
         <CardContent className="space-y-3">
           {rejectionReason && (
-            <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2">
+            <div className="  border border-destructive/20 bg-destructive/5 px-3 py-2">
               <p className="text-xs font-medium text-destructive mb-0.5">
                 Reason
               </p>
@@ -232,7 +232,7 @@ export function EditorAccessRequestCard({
     <Card className="border-border/60">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
+          <div className="flex size-9 items-center justify-center   bg-primary/10">
             <PenTool className="size-4 text-primary" />
           </div>
           <div>
@@ -247,7 +247,7 @@ export function EditorAccessRequestCard({
       </CardHeader>
       <CardContent className="space-y-3">
         {!emailVerified ? (
-          <div className="rounded-lg border border-amber-600/20 bg-amber-600/5 px-3 py-2">
+          <div className="  border border-amber-600/20 bg-amber-600/5 px-3 py-2">
             <p className="text-xs font-medium text-amber-600 mb-0.5">
               Email verification required
             </p>

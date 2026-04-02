@@ -130,7 +130,7 @@ export function DepartmentContributorsList({
         {/* Grid */}
         <div className="mt-6">
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-card/30 py-16 text-center">
+            <div className="flex flex-col items-center justify-center    border border-dashed border-border/60 bg-card/30 py-16 text-center">
               <p className="font-sans text-lg text-foreground">
                 No contributors found
               </p>
@@ -150,9 +150,9 @@ export function DepartmentContributorsList({
                 >
                   <Link
                     href={`/authors/${contributor.id}`}
-                    className="group flex flex-col items-center rounded-xl border border-border/60 bg-card/50 px-4 py-5 text-center transition-all hover:border-primary/30 hover:bg-primary/[0.03] hover:shadow-sm"
+                    className="group flex flex-col items-center    border border-border/60 bg-card/50 px-4 py-5 text-center transition-all hover:border-primary/30 hover:bg-primary/[0.03] hover:shadow-sm"
                   >
-                    <div className="flex size-10 items-center justify-center rounded-full border border-border/80 bg-muted/60 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.08]">
+                    <div className="flex size-10 items-center justify-center    border border-border/80 bg-muted/60 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.08]">
                       <User className="size-4.5 text-muted-foreground/70 transition-colors group-hover:text-primary" />
                     </div>
 

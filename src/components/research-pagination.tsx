@@ -50,7 +50,7 @@ export function ResearchPagination({
   }
 
   const linkClasses =
-    "flex size-8 items-center justify-center rounded-lg text-xs font-medium transition-colors";
+    "flex size-8 items-center justify-center   text-xs font-medium transition-colors";
 
   return (
     <motion.nav

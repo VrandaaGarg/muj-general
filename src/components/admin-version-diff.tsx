@@ -68,7 +68,7 @@ function formatDate(date: Date | null) {
 function DiffBadge({ changed }: { changed: boolean }) {
   if (!changed) return null;
   return (
-    <span className="ml-1.5 rounded bg-amber-600/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-700">
+    <span className="ml-1.5 bg-amber-600/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-700">
       changed
     </span>
   );
@@ -90,7 +90,7 @@ function FieldDiff({
   const changed = currentVal !== previousVal;
 
   return (
-    <div className="rounded-lg border border-border/50 overflow-hidden">
+    <div className="  border border-border/50 overflow-hidden">
       <div className="flex items-center gap-2 border-b border-border/50 bg-muted/30 px-3 py-1.5">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           {label}
@@ -168,7 +168,7 @@ function FileDiff({
   const previousUrl = previous?.publicUrl ?? null;
 
   return (
-    <div className="rounded-lg border border-border/50 overflow-hidden">
+    <div className="  border border-border/50 overflow-hidden">
       <div className="flex items-center gap-2 border-b border-border/50 bg-muted/30 px-3 py-1.5">
         <Icon className="size-3 text-muted-foreground" />
         <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -278,7 +278,7 @@ export function AdminVersionDiff({ current, previous }: AdminVersionDiffProps) {
     ((currentCover?.objectKey !== previousCover?.objectKey || currentCover?.sizeBytes !== previousCover?.sizeBytes) ? 1 : 0);
 
   return (
-    <div className="rounded-xl border border-amber-600/25 bg-amber-600/[0.03]">
+    <div className="   border border-amber-600/25 bg-amber-600/[0.03]">
       {/* Header */}
       <button
         type="button"
@@ -286,7 +286,7 @@ export function AdminVersionDiff({ current, previous }: AdminVersionDiffProps) {
         className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left"
       >
         <div className="flex items-center gap-2.5">
-          <div className="flex size-7 items-center justify-center rounded-lg bg-amber-600/10">
+          <div className="flex size-7 items-center justify-center   bg-amber-600/10">
             <GitCompare className="size-3.5 text-amber-700" />
           </div>
           <div>
@@ -306,7 +306,7 @@ export function AdminVersionDiff({ current, previous }: AdminVersionDiffProps) {
             </p>
           </div>
         </div>
-        <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted">
+        <span className="inline-flex size-7 shrink-0 items-center justify-center     text-muted-foreground transition-colors hover:bg-muted">
           {open ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
         </span>
       </button>
@@ -324,7 +324,7 @@ export function AdminVersionDiff({ current, previous }: AdminVersionDiffProps) {
 
               {/* Change summary from editor */}
               {current.changeSummary && (
-                <div className="rounded-lg border border-amber-600/20 bg-amber-600/5 px-4 py-3">
+                <div className="  border border-amber-600/20 bg-amber-600/5 px-4 py-3">
                   <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
                     Change summary from editor (v{current.versionNumber})
                   </p>
@@ -372,7 +372,7 @@ export function AdminVersionDiff({ current, previous }: AdminVersionDiffProps) {
 
               {/* Authors (current state) */}
               {current.authors && current.authors.length > 0 && (
-                <div className="rounded-lg border border-border/50 overflow-hidden">
+                <div className="  border border-border/50 overflow-hidden">
                   <div className="border-b border-border/50 bg-muted/30 px-3 py-1.5">
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       Authors (current)
@@ -383,7 +383,7 @@ export function AdminVersionDiff({ current, previous }: AdminVersionDiffProps) {
                       <div key={author.id} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 py-2 text-xs">
                         <span className="font-medium">{author.displayName}</span>
                         {author.isCorresponding && (
-                          <span className="rounded bg-amber-600/10 px-1.5 py-0.5 text-[9px] font-medium text-amber-700">
+                          <span className=" bg-amber-600/10 px-1.5 py-0.5 text-[9px] font-medium text-amber-700">
                             Corresponding
                           </span>
                         )}

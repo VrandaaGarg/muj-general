@@ -103,6 +103,7 @@ export default async function ResearchDetailPage({
       <main className="relative z-10 pt-4 md:pt-8">
         <ResearchDetailHero
           title={item.title}
+          slug={item.slug}
           abstract={item.abstract}
           itemType={item.itemType}
           publicationYear={item.publicationYear}

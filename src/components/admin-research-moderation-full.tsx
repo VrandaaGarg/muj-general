@@ -13,11 +13,17 @@ import {
   ChevronDown,
   Clock,
   Eye,
+  FileText,
   Loader2,
+  Lock,
   Mail,
   MessageSquareWarning,
   Search,
+  ShieldAlert,
+  ThumbsDown,
+  ThumbsUp,
   User,
+  UserPlus,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -26,6 +32,7 @@ import { reviewResearchSubmissionAction } from "@/lib/actions/research";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { AnimatedSelect } from "@/components/ui/animated-select";
 import { Input } from "@/components/ui/input";
 import {
   Card,
@@ -52,9 +59,58 @@ interface PendingResearchItem {
   currentVersionId: string | null;
 }
 
+interface PeerInvite {
+  id: string;
+  researchItemId: string;
+  status: string;
+  inviteeEmail: string;
+  inviteeName: string | null;
+  recommendation: string | null;
+  reviewComment: string | null;
+  confidentialComment: string | null;
+  createdAt: Date;
+  reviewSubmittedAt: Date | null;
+}
+
 interface AdminResearchModerationFullProps {
   items: PendingResearchItem[];
+  peerInvitesMap?: Record<string, PeerInvite[]>;
 }
+
+const PEER_REC_CONFIG: Record<
+  string,
+  { label: string; className: string; icon: React.ReactNode }
+> = {
+  accept: {
+    label: "Accept",
+    className: "bg-emerald-600/10 text-emerald-600",
+    icon: <ThumbsUp className="size-3" />,
+  },
+  minor_revision: {
+    label: "Minor Revision",
+    className: "bg-blue-600/10 text-blue-600",
+    icon: <FileText className="size-3" />,
+  },
+  major_revision: {
+    label: "Major Revision",
+    className: "bg-amber-600/10 text-amber-600",
+    icon: <ShieldAlert className="size-3" />,
+  },
+  reject: {
+    label: "Reject",
+    className: "bg-red-600/10 text-red-600",
+    icon: <ThumbsDown className="size-3" />,
+  },
+};
+
+const PEER_STATUS_CFG: Record<string, { label: string; className: string }> = {
+  pending: { label: "Pending", className: "bg-amber-600/10 text-amber-600" },
+  accepted: { label: "Accepted", className: "bg-primary/10 text-primary" },
+  declined: { label: "Declined", className: "bg-muted text-muted-foreground" },
+  completed: { label: "Completed", className: "bg-emerald-600/10 text-emerald-600" },
+  expired: { label: "Expired", className: "bg-muted text-muted-foreground" },
+  revoked: { label: "Revoked", className: "bg-muted text-muted-foreground" },
+};
 
 const TYPE_LABELS: Record<string, string> = {
   research_paper: "Research Paper",
@@ -179,7 +235,7 @@ function CheckboxDropdown({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition-colors ${
+        className={`inline-flex h-8 items-center gap-1.5   border px-3 text-xs font-medium transition-colors ${
           selected.length > 0
             ? "border-primary/30 bg-primary/5 text-primary"
             : "border-input bg-transparent text-foreground hover:bg-muted/50"
@@ -197,7 +253,7 @@ function CheckboxDropdown({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
             transition={{ duration: 0.15 }}
-            className="absolute left-0 z-50 mt-1.5 min-w-[200px] overflow-hidden rounded-lg border border-border/60 bg-background shadow-lg"
+            className="absolute left-0 z-50 mt-1.5 min-w-[200px] overflow-hidden   border border-border/60 bg-background shadow-lg"
           >
             <div className="max-h-56 overflow-y-auto p-1">
               {options.length === 0 ? (
@@ -212,10 +268,10 @@ function CheckboxDropdown({
                       key={option}
                       type="button"
                       onClick={() => toggle(option)}
-                      className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-muted/60"
+                      className="flex w-full items-center gap-2     px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-muted/60"
                     >
                       <span
-                        className={`flex size-4 shrink-0 items-center justify-center rounded border transition-colors ${
+                        className={`flex size-4 shrink-0 items-center justify-center border transition-colors ${
                           isSelected
                             ? "border-primary bg-primary text-white"
                             : "border-input bg-transparent"
@@ -236,7 +292,7 @@ function CheckboxDropdown({
                 <button
                   type="button"
                   onClick={() => onSelectionChange([])}
-                  className="w-full rounded-md px-2.5 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                  className="w-full     px-2.5 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                 >
                   Clear all
                 </button>
@@ -251,6 +307,7 @@ function CheckboxDropdown({
 
 export function AdminResearchModerationFull({
   items,
+  peerInvitesMap,
 }: AdminResearchModerationFullProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -418,17 +475,15 @@ export function AdminResearchModerationFull({
               selected={activeSelectedYears}
               onSelectionChange={handleYearsChange}
             />
-            <div className="ml-auto">
-              <select
+            <div className="ml-auto w-36">
+              <AnimatedSelect
                 value={sortBy}
-                onChange={(event) =>
-                  setSortBy(event.target.value as "newest" | "oldest")
-                }
-                className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-xs"
-              >
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-              </select>
+                onChange={(v) => setSortBy(v as "newest" | "oldest")}
+                options={[
+                  { value: "newest", label: "Newest first" },
+                  { value: "oldest", label: "Oldest first" },
+                ]}
+              />
             </div>
           </div>
         </CardContent>
@@ -439,7 +494,7 @@ export function AdminResearchModerationFull({
           Research submissions
         </h2>
         {filteredItems.length > 0 && (
-          <span className="flex items-center gap-1.5 rounded-full bg-amber-600/10 px-2.5 py-0.5 text-xs font-medium text-amber-600">
+          <span className="flex items-center gap-1.5    bg-amber-600/10 px-2.5 py-0.5 text-xs font-medium text-amber-600">
             <Clock className="size-3" />
             {filteredItems.length} pending
           </span>
@@ -449,7 +504,7 @@ export function AdminResearchModerationFull({
       {filteredItems.length === 0 ? (
         <Card className="border-border/60">
           <CardContent className="py-8 text-center">
-            <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-muted">
+            <div className="mx-auto mb-3 flex size-10 items-center justify-center   bg-muted">
               <BookCheck className="size-5 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium">All caught up</p>
@@ -467,7 +522,7 @@ export function AdminResearchModerationFull({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05, duration: 0.3 }}
             >
-              <ModerationReviewCard item={item} />
+              <ModerationReviewCard item={item} peerInvites={peerInvitesMap?.[item.id] ?? []} />
             </motion.div>
           ))}
         </div>
@@ -476,7 +531,7 @@ export function AdminResearchModerationFull({
   );
 }
 
-function ModerationReviewCard({ item }: { item: PendingResearchItem }) {
+function ModerationReviewCard({ item, peerInvites }: { item: PendingResearchItem; peerInvites: PeerInvite[] }) {
   const [showRequestChanges, setShowRequestChanges] = useState(false);
   const [showConfirmationRequest, setShowConfirmationRequest] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -559,12 +614,16 @@ function ModerationReviewCard({ item }: { item: PendingResearchItem }) {
         </div>
 
         {item.notesToAdmin && (
-          <div className="rounded-lg border border-border/40 bg-muted/30 px-3 py-2">
+          <div className="  border border-border/40 bg-muted/30 px-3 py-2">
             <p className="mb-0.5 text-xs font-medium text-muted-foreground">
-              Notes from editor
+              Notes from submitter
             </p>
             <p className="text-sm text-foreground">{item.notesToAdmin}</p>
           </div>
+        )}
+
+        {peerInvites.length > 0 && (
+          <PeerReviewSummaryBlockFull invites={peerInvites} />
         )}
 
         <div className="flex items-center gap-2 pt-1">
@@ -723,5 +782,125 @@ function ModerationReviewCard({ item }: { item: PendingResearchItem }) {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function PeerReviewSummaryBlockFull({ invites }: { invites: PeerInvite[] }) {
+  const completedCount = invites.filter((i) => i.status === "completed").length;
+  const pendingCount = invites.filter(
+    (i) => i.status === "pending" || i.status === "accepted",
+  ).length;
+
+  return (
+    <div className="   border border-border/60 bg-card/50">
+      <div className="flex items-center gap-2.5 px-4 py-2.5">
+        <div className="flex size-6 shrink-0 items-center justify-center     bg-primary/10">
+          <UserPlus className="size-3 text-primary" />
+        </div>
+        <span className="text-xs font-semibold text-foreground">
+          Peer Reviews
+        </span>
+        <span className="    bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
+          {invites.length}
+        </span>
+        {completedCount > 0 && (
+          <span className="    bg-emerald-600/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600">
+            {completedCount} completed
+          </span>
+        )}
+        {pendingCount > 0 && (
+          <span className="    bg-amber-600/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600">
+            {pendingCount} awaiting
+          </span>
+        )}
+      </div>
+      <div className="space-y-2 border-t border-border/60 p-3">
+        {invites.map((invite) => {
+          const statusCfg =
+            PEER_STATUS_CFG[invite.status] ?? PEER_STATUS_CFG.pending;
+          const recCfg = invite.recommendation
+            ? (PEER_REC_CONFIG[invite.recommendation] ?? null)
+            : null;
+
+          return (
+            <div
+              key={invite.id}
+              className="  border border-border/50 bg-background p-3"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex size-6 shrink-0 items-center justify-center    bg-muted">
+                    <User className="size-3 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-foreground">
+                      {invite.inviteeName || invite.inviteeEmail}
+                    </p>
+                    {invite.inviteeName && (
+                      <p className="text-[10px] text-muted-foreground">
+                        {invite.inviteeEmail}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <span
+                  className={`shrink-0     px-1.5 py-0.5 text-[10px] font-semibold ${statusCfg.className}`}
+                >
+                  {statusCfg.label}
+                </span>
+              </div>
+
+              {recCfg && (
+                <div className="mt-2 flex items-center gap-2">
+                  <span
+                    className={`inline-flex items-center gap-1     px-2 py-0.5 text-[10px] font-bold ${recCfg.className}`}
+                  >
+                    {recCfg.icon}
+                    {recCfg.label}
+                  </span>
+                  {invite.reviewSubmittedAt && (
+                    <span className="text-[10px] text-muted-foreground">
+                      {formatDate(invite.reviewSubmittedAt)}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {invite.reviewComment && (
+                <div className="mt-2     border border-border/40 bg-muted/20 px-2.5 py-2">
+                  <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Review feedback
+                  </p>
+                  <p className="text-xs leading-relaxed text-foreground/90">
+                    {invite.reviewComment}
+                  </p>
+                </div>
+              )}
+
+              {invite.confidentialComment && (
+                <div className="mt-2     border border-amber-600/20 bg-amber-600/5 px-2.5 py-2">
+                  <p className="mb-0.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
+                    <Lock className="size-2.5" />
+                    Confidential note
+                  </p>
+                  <p className="text-xs leading-relaxed text-foreground/90">
+                    {invite.confidentialComment}
+                  </p>
+                </div>
+              )}
+
+              {!recCfg && !invite.reviewComment && !invite.reviewSubmittedAt && (
+                <div className="mt-2 flex items-center gap-1.5     border border-dashed border-border/60 px-2.5 py-1.5">
+                  <Clock className="size-2.5 text-muted-foreground/60" />
+                  <p className="text-[10px] text-muted-foreground/70">
+                    Awaiting review
+                  </p>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

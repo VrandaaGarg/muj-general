@@ -16,6 +16,7 @@ import { AdminReviewActions } from "@/components/admin-review-actions";
 import { AdminVersionDiff } from "@/components/admin-version-diff";
 import { ResearchThumbnail } from "@/components/pdf-thumbnail-viewer";
 import { SiteHeader } from "@/components/site-header";
+import { SubmissionSidebarNav } from "@/components/submission-sidebar-nav";
 import { SubmitterConfirmationForm } from "@/components/submitter-confirmation-form";
 import { buttonVariants } from "@/components/ui/button-variants";
 import {
@@ -103,7 +104,7 @@ type PeerInviteRow = Awaited<
 
 function PeerReviewSummary({ invites }: { invites: PeerInviteRow[] }) {
   return (
-    <section className="rounded-xl border border-border/60 bg-card/50 p-5">
+    <section className="   border border-border/60 bg-card/50 p-5">
       <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
         <UserPlus className="size-4 text-primary" />
         Peer Reviews
@@ -116,7 +117,7 @@ function PeerReviewSummary({ invites }: { invites: PeerInviteRow[] }) {
           return (
             <div
               key={invite.id}
-              className="rounded-xl border border-border/40 bg-background px-4 py-3"
+              className="   border border-border/40 bg-background px-4 py-3"
             >
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
                 <span className="font-medium text-foreground">
@@ -128,7 +129,7 @@ function PeerReviewSummary({ invites }: { invites: PeerInviteRow[] }) {
                   </span>
                 )}
                 <span
-                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${statusCfg.className}`}
+                  className={`   px-1.5 py-0.5 text-[10px] font-medium ${statusCfg.className}`}
                 >
                   {statusCfg.label}
                 </span>
@@ -150,7 +151,7 @@ function PeerReviewSummary({ invites }: { invites: PeerInviteRow[] }) {
                 </p>
               )}
               {invite.confidentialComment && (
-                <div className="mt-2 rounded-lg border border-amber-600/20 bg-amber-600/5 px-3 py-2">
+                <div className="mt-2   border border-amber-600/20 bg-amber-600/5 px-3 py-2">
                   <p className="text-[10px] font-medium uppercase tracking-wider text-amber-700">
                     Confidential note
                   </p>
@@ -228,7 +229,7 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
         <section className="relative">
           <div className="pointer-events-none absolute inset-0 -top-20 bg-linear-to-b from-primary/3 via-transparent to-transparent" />
 
-          <div className="relative mx-auto max-w-6xl px-6 pt-4 pb-12 md:px-12 lg:px-20">
+          <div className="relative mx-auto max-w-7xl px-6 pt-4 pb-12 md:px-12 lg:px-20">
             <nav
               aria-label="Breadcrumb"
               className="flex items-center gap-1.5 text-sm text-muted-foreground"
@@ -250,11 +251,11 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
                     {getTypeLabel(item.itemType)}
                   </span>
                   {item.departmentName && (
-                    <span className="rounded-md bg-muted/60 px-2 py-0.5 text-sm font-medium text-muted-foreground">
+                    <span className="    bg-muted/60 px-2 py-0.5 text-sm font-medium text-muted-foreground">
                       {item.departmentName}
                     </span>
                   )}
-                  <span className="rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5 text-sm font-medium text-primary">
+                  <span className="    border border-primary/20 bg-primary/5 px-2 py-0.5 text-sm font-medium text-primary">
                     {actorType === "reviewer" ? "Peer review" : stageLabel}
                   </span>
                 </div>
@@ -281,7 +282,7 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
                     {item.tags.map((tag) => (
                       <span
                         key={tag.id}
-                        className="rounded-full border border-primary/30 px-3 py-1 text-sm font-medium text-primary"
+                        className="   border border-primary/30 px-3 py-1 text-sm font-medium text-primary"
                       >
                         {tag.name}
                       </span>
@@ -368,7 +369,7 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
                     <h2 className="mb-3 text-lg font-semibold tracking-tight text-foreground">
                       Additional details
                     </h2>
-                    <div className="grid gap-3 rounded-xl border border-border/60 bg-card/50 p-5 sm:grid-cols-2 md:grid-cols-3">
+                    <div className="grid gap-3    border border-border/60 bg-card/50 p-5 sm:grid-cols-2 md:grid-cols-3">
                       {item.supervisorName && (
                         <div>
                           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -508,7 +509,7 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
                 </section>
 
                 {showChangeSummary && item.changeSummary && (
-                  <section className="rounded-xl border border-border/60 bg-card/50 p-5">
+                  <section className="   border border-border/60 bg-card/50 p-5">
                     <h2 className="text-lg font-semibold tracking-tight text-foreground">
                       Change summary
                     </h2>
@@ -519,7 +520,7 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
                 )}
 
                 {showSubmitterNotes && item.notesToAdmin && (
-                  <section className="rounded-xl border border-border/60 bg-card/50 p-5">
+                  <section className="   border border-border/60 bg-card/50 p-5">
                     <h2 className="text-lg font-semibold tracking-tight text-foreground">
                       Notes from submitter
                     </h2>
@@ -530,7 +531,7 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
                 )}
 
                 {actorType === "submitter" && item.submitterConfirmationRequestedAt && (
-                  <section className="rounded-xl border border-primary/20 bg-primary/[0.03] p-5">
+                  <section className="   border border-primary/20 bg-primary/[0.03] p-5">
                     <h2 className="text-lg font-semibold tracking-tight text-foreground">
                       Publication confirmation
                     </h2>
@@ -542,7 +543,7 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
                         {item.submitterConfirmationNote}
                       </p>
                     )}
-                    <div className="mt-5 rounded-xl border border-border/60 bg-background p-5">
+                    <div className="mt-5    border border-border/60 bg-background p-5">
                       {canRespondConfirmation ? (
                         <SubmitterConfirmationForm researchItemId={item.id} />
                       ) : (
@@ -589,24 +590,10 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
                 )}
               </div>
 
-              <aside className="hidden w-64 shrink-0 lg:block">
-                <div className="sticky top-8 space-y-6">
-                  <div>
-                    <p className="mb-3 text-sm font-semibold text-foreground">Sections</p>
-                    <nav className="space-y-0.5 border-l border-border/60">
-                      {sections.map((section) => (
-                        <a
-                          key={section.id}
-                          href={`#${section.id}`}
-                          className="block border-l-2 border-transparent py-2 pl-4 text-sm text-primary underline-offset-2 transition-colors hover:border-primary hover:underline"
-                        >
-                          {section.label}
-                        </a>
-                      ))}
-                    </nav>
-                  </div>
-                </div>
-              </aside>
+              <SubmissionSidebarNav
+                sections={sections}
+                references={item.references}
+              />
             </div>
           </div>
         </section>

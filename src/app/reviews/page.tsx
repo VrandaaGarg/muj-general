@@ -29,7 +29,7 @@ export default async function ReviewsPage() {
 
       <SiteHeader role={appUser.role} />
 
-      <main className="relative z-10 mx-auto max-w-6xl px-6 pt-8 pb-24 md:px-12 md:pt-12 lg:px-20">
+      <main className="relative z-10 mx-auto max-w-7xl px-6 pt-8 pb-24 md:px-12 md:pt-12 lg:px-20">
         {/* Breadcrumb */}
         <nav className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
           <Link
@@ -44,7 +44,7 @@ export default async function ReviewsPage() {
 
         <div className="mb-10">
           {/* <div className="mb-4 flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+            <div className="flex size-8 items-center justify-center   bg-primary/10">
               <FileSearch className="size-4 text-primary" />
             </div>
           </div> */}
@@ -59,7 +59,7 @@ export default async function ReviewsPage() {
 
         <Suspense
           fallback={
-            <div className="h-32 animate-pulse rounded-xl border border-border/60 bg-muted/20" />
+            <div className="h-32 animate-pulse    border border-border/60 bg-muted/20" />
           }
         >
           <PeerReviewDashboard invites={invites} />

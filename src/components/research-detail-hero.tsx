@@ -13,6 +13,7 @@ import {
 
 import { trackDownload } from "@/lib/actions/research";
 import { ResearchThumbnail } from "@/components/pdf-thumbnail-viewer";
+import { SaveResearchButton } from "@/components/save-research-button";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
 import { getTypeLabel } from "@/lib/research-types";
@@ -33,6 +34,7 @@ const fadeUp: Variants = {
 
 interface ResearchDetailHeroProps {
   title: string;
+  slug: string;
   abstract: string;
   itemType: string;
   publicationYear: number;
@@ -59,6 +61,7 @@ interface ResearchDetailHeroProps {
 
 export function ResearchDetailHero({
   title,
+  slug,
   abstract,
   itemType,
   publicationYear,
@@ -86,7 +89,7 @@ export function ResearchDetailHero({
     <section className="relative">
       <div className="pointer-events-none absolute inset-0 -top-20 bg-linear-to-b from-primary/3 via-transparent to-transparent" />
 
-      <div className="relative mx-auto max-w-6xl px-6 pt-4 pb-12 md:px-12 lg:px-20">
+      <div className="relative mx-auto max-w-7xl px-6 pt-4 pb-12 md:px-12 lg:px-20">
         {/* Breadcrumb */}
         <motion.nav
           custom={0}
@@ -133,7 +136,7 @@ export function ResearchDetailHero({
               {departmentName && departmentSlug && (
                 <Link
                   href={`/departments/${departmentSlug}`}
-                  className="rounded-md bg-muted/60 px-2 py-0.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  className="    bg-muted/60 px-2 py-0.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   {departmentName}
                 </Link>
@@ -189,7 +192,7 @@ export function ResearchDetailHero({
                   <Link
                     key={tag.id}
                     href={`/research?tag=${tag.slug}`}
-                    className="rounded-full border border-primary/30 px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-primary/5"
+                    className="   border border-primary/30 px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-primary/5"
                   >
                     {tag.name}
                   </Link>
@@ -244,6 +247,18 @@ export function ResearchDetailHero({
                   DOI: {doi}
                 </a>
               )}
+              <SaveResearchButton
+                item={{
+                  id: researchItemId,
+                  slug,
+                  title,
+                  itemType,
+                  publicationYear,
+                  departmentName,
+                  authors: authors.map((a) => a.name),
+                  coverImageUrl,
+                }}
+              />
             </motion.div>
 
             {/* Published date + views */}
@@ -317,7 +332,7 @@ export function ResearchDetailHero({
                 <h2 className="mb-3 text-lg font-bold text-primary">
                   Additional Details
                 </h2>
-                <div className="grid gap-3 rounded-xl border border-border/60 bg-card/50 p-5 sm:grid-cols-2 md:grid-cols-3">
+                <div className="grid gap-3    border border-border/60 bg-card/50 p-5 sm:grid-cols-2 md:grid-cols-3">
                   {supervisorName && (
                     <div>
                       <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -460,7 +475,7 @@ export function ResearchDetailHero({
                       <Link
                         key={tag.id}
                         href={`/research?tag=${tag.slug}`}
-                        className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+                        className="   border border-primary/30 bg-primary/5 px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
                       >
                         {tag.name}
                       </Link>
@@ -482,7 +497,7 @@ export function ResearchDetailHero({
               </p>
               <Link
                 href="/editor"
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                className="inline-flex items-center gap-2   bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
               >
                 Get started
               </Link>
@@ -529,11 +544,11 @@ function SidebarNav({
     <aside className="hidden w-64 shrink-0 lg:block">
       <div className="sticky top-8">
         {/* Tab switcher */}
-        <div className="flex rounded-lg border border-border/60 text-sm font-medium">
+        <div className="flex   border border-border/60 text-sm font-medium">
           <button
             onClick={() => setActiveTab("sections")}
             className={cn(
-              "flex-1 rounded-l-lg px-4 py-2.5 transition-colors",
+              "flex-1 px-4 py-2.5 transition-colors",
               activeTab === "sections"
                 ? "bg-muted text-foreground"
                 : "text-muted-foreground hover:text-foreground",
@@ -544,7 +559,7 @@ function SidebarNav({
           <button
             onClick={() => setActiveTab("references")}
             className={cn(
-              "flex-1 rounded-r-lg border-l border-border/60 px-4 py-2.5 transition-colors",
+              "flex-1 border-l border-border/60 px-4 py-2.5 transition-colors",
               activeTab === "references"
                 ? "bg-muted text-foreground"
                 : "text-muted-foreground hover:text-foreground",

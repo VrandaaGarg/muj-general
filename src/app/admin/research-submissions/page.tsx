@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 import { requireRole } from "@/lib/auth/session";
-import { listPendingResearchModerationItems } from "@/lib/db/queries";
+import { listPendingResearchModerationItems, listPeerReviewInvitesForResearchItems } from "@/lib/db/queries";
 import { SiteHeader } from "@/components/site-header";
 import { AdminResearchModerationFull } from "@/components/admin-research-moderation-full";
 
@@ -14,12 +14,15 @@ export default async function ResearchSubmissionsPage() {
   const { appUser } = session;
 
   const items = await listPendingResearchModerationItems();
+  const peerInvitesMap = await listPeerReviewInvitesForResearchItems(
+    items.map((item) => item.id),
+  );
 
   return (
     <div className="relative min-h-screen bg-background">
       <SiteHeader role={appUser.role} />
 
-      <main className="relative z-10 mx-auto max-w-6xl px-6 pt-8 pb-24 md:px-12 md:pt-12 lg:px-20">
+      <main className="relative z-10 mx-auto max-w-7xl px-6 pt-8 pb-24 md:px-12 md:pt-12 lg:px-20">
         <nav className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
           <Link
             href="/"
@@ -51,10 +54,10 @@ export default async function ResearchSubmissionsPage() {
 
         <Suspense
           fallback={
-            <div className="h-64 animate-pulse rounded-xl border border-border/60 bg-muted/20" />
+            <div className="h-64 animate-pulse    border border-border/60 bg-muted/20" />
           }
         >
-          <AdminResearchModerationFull items={items} />
+          <AdminResearchModerationFull items={items} peerInvitesMap={peerInvitesMap} />
         </Suspense>
       </main>
     </div>

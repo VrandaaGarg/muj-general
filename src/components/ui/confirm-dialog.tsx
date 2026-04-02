@@ -66,7 +66,7 @@ export function ConfirmDialog({
                   transition={{ duration: 0.15 }}
                   className={cn(
                     "fixed top-1/2 left-1/2 z-50 w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2",
-                    "rounded-xl border border-border/60 bg-card p-5 shadow-lg ring-1 ring-foreground/5",
+                    "   border border-border/60 bg-card p-5 shadow-lg ring-1 ring-foreground/5",
                   )}
                 />
               }

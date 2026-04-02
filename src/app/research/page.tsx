@@ -90,7 +90,7 @@ export default async function ResearchPage({ searchParams }: ResearchPageProps) 
           <aside className="w-full shrink-0 lg:w-64 xl:w-72">
             <Suspense
               fallback={
-                <div className="h-96 animate-pulse rounded-xl border border-border/60 bg-muted/30" />
+                <div className="h-96 animate-pulse    border border-border/60 bg-muted/30" />
               }
             >
               <ResearchFilters options={filterOptions} />

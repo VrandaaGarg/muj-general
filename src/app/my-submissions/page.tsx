@@ -22,7 +22,7 @@ export default async function MySubmissionsPage() {
     <div className="relative min-h-screen bg-background">
       <SiteHeader role={session.appUser.role} />
 
-      <main className="relative z-10 mx-auto max-w-6xl px-6 pb-24 pt-8 md:px-12 md:pt-12 lg:px-20">
+      <main className="relative z-10 mx-auto max-w-7xl px-6 pb-24 pt-8 md:px-12 md:pt-12 lg:px-20">
         <nav className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
           <Link
             href="/"
@@ -42,7 +42,7 @@ export default async function MySubmissionsPage() {
         </nav>
 
         <div className="mb-8">
-          {/* <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+          {/* <div className="mb-3 inline-flex items-center gap-2    bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
             <FileText className="size-3.5" />
             Submission Tracker
           </div> */}
