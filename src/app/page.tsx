@@ -1,11 +1,15 @@
-import { listPublicJournals, listPublishedResearchItems, listDepartments } from "@/lib/db/queries";
+import { listDepartments } from "@/lib/db/queries";
+import {
+  getCachedPublicJournals,
+  getCachedPublishedResearchItems,
+} from "@/lib/db/public-cache";
 import { getPublicFileUrl } from "@/lib/storage/r2";
 import { HomeLanding } from "@/components/home-landing";
 
 export default async function Home() {
   const [journals, recentItems, departments] = await Promise.all([
-    listPublicJournals(),
-    listPublishedResearchItems({ page: 1, pageSize: 6 }),
+    getCachedPublicJournals(),
+    getCachedPublishedResearchItems({ page: 1, pageSize: 6 }),
     listDepartments(),
   ]);
 

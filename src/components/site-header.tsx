@@ -29,6 +29,27 @@ interface SiteHeaderProps {
   role?: "reader" | "editor" | "admin";
 }
 
+const ROLE_CACHE_KEY_PREFIX = "muj-app-role:";
+
+function getCachedRole(userId: string): AppRole | undefined {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+
+  const cachedValue = window.localStorage.getItem(`${ROLE_CACHE_KEY_PREFIX}${userId}`);
+  return cachedValue === "reader" || cachedValue === "editor" || cachedValue === "admin"
+    ? cachedValue
+    : undefined;
+}
+
+function setCachedRole(userId: string, role: AppRole) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(`${ROLE_CACHE_KEY_PREFIX}${userId}`, role);
+}
+
 const secondaryNavLinks = [
   { label: "Research", href: "/research" },
   { label: "Journals", href: "/journals" },
@@ -81,6 +102,12 @@ export function SiteHeader({ role }: SiteHeaderProps) {
         return;
       }
 
+      const cachedRole = getCachedRole(session.user.id);
+      if (cachedRole && !isCancelled) {
+        setResolvedRole(cachedRole);
+        return;
+      }
+
       try {
         const response = await fetch("/api/auth/app-role", {
           method: "GET",
@@ -95,6 +122,10 @@ export function SiteHeader({ role }: SiteHeaderProps) {
 
         if (!isCancelled) {
           setResolvedRole(data.role ?? undefined);
+        }
+
+        if (data.role) {
+          setCachedRole(session.user.id, data.role);
         }
       } catch {
         if (!isCancelled) {

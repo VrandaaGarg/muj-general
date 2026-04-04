@@ -1,15 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ChevronRight, Library, ScrollText } from "lucide-react";
+import { ArrowRight, ChevronRight, ScrollText } from "lucide-react";
 
-import { listPublicJournals } from "@/lib/db/queries";
+import { getCachedPublicJournals } from "@/lib/db/public-cache";
 import { getPublicFileUrl } from "@/lib/storage/r2";
 import { SiteHeader } from "@/components/site-header";
 import { MarkdownContent } from "@/components/ui/markdown-content";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function JournalsPage() {
-  const journals = (await listPublicJournals()).map((journal) => ({
+  const journals = (await getCachedPublicJournals()).map((journal) => ({
     ...journal,
     coverImageUrl: journal.coverImageKey ? getPublicFileUrl(journal.coverImageKey) : null,
   }));

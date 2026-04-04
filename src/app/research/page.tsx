@@ -9,10 +9,10 @@ import { ResearchFilters } from "@/components/research-filters";
 import { ResearchResults } from "@/components/research-results";
 import { ResearchPagination } from "@/components/research-pagination";
 import {
-  listPublishedResearchItems,
-  countPublishedResearchItems,
-  listPublishedFilterOptions,
-} from "@/lib/db/queries";
+  getCachedPublishedResearchCount,
+  getCachedPublishedResearchFilterOptions,
+  getCachedPublishedResearchItems,
+} from "@/lib/db/public-cache";
 import { getPublicFileUrl } from "@/lib/storage/r2";
 
 export const metadata: Metadata = {
@@ -49,9 +49,9 @@ export default async function ResearchPage({ searchParams }: ResearchPageProps) 
   };
 
   const [items, totalCount, filterOptions] = await Promise.all([
-    listPublishedResearchItems(filters),
-    countPublishedResearchItems(filters),
-    listPublishedFilterOptions(),
+    getCachedPublishedResearchItems(filters),
+    getCachedPublishedResearchCount(filters),
+    getCachedPublishedResearchFilterOptions(),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
