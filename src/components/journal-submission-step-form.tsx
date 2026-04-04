@@ -797,7 +797,7 @@ export function JournalSubmissionStepForm({
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: "easeOut" }}
-        className="mx-auto max-w-lg"
+        className="max-w-lg"
       >
         <div className="   border border-border/60 bg-card p-6 ring-1 ring-foreground/5 sm:p-8">
           <div className="flex items-center gap-3 mb-6">

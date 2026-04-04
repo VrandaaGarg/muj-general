@@ -6,7 +6,6 @@ This file is a practical overview of the live schema: what tables exist, what fi
 
 ## Related schema docs in this repo
 
-- `docs/database.md` - detailed reference-style schema notes
 - `docs/journal.md` - journal-domain schema/design details
 - `changesSchema.md` - schema change planning/history
 

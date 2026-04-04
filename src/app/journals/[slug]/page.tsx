@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { getPublicJournalBySlug } from "@/lib/db/queries";
+import { getCachedPublicJournalBySlug } from "@/lib/db/public-cache";
 import { getPublicFileUrl } from "@/lib/storage/r2";
 import { SiteHeader } from "@/components/site-header";
 import { JournalDetailClient } from "./journal-detail-client";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const journal = await getPublicJournalBySlug(slug);
+  const journal = await getCachedPublicJournalBySlug(slug);
   if (!journal) return { title: "Journal not found - MUJ General" };
   return {
     title: `${journal.name} - Journals - MUJ General`,
@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function JournalDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const journal = await getPublicJournalBySlug(slug);
+  const journal = await getCachedPublicJournalBySlug(slug);
 
   if (!journal) notFound();
 

@@ -5,11 +5,13 @@ import { SiteHeader } from "@/components/site-header";
 import { ResearchDetailHero } from "@/components/research-detail-hero";
 import { ResearchRelated } from "@/components/research-related";
 import {
-  getPublishedResearchItemBySlug,
   incrementViewCount,
-  listMoreFromSameAuthors,
-  listRelatedPublishedResearchItems,
 } from "@/lib/db/queries";
+import {
+  getCachedMoreFromSameAuthors,
+  getCachedPublishedResearchItemBySlug,
+  getCachedRelatedPublishedResearchItems,
+} from "@/lib/db/public-cache";
 import { getPublicFileUrl } from "@/lib/storage/r2";
 
 interface ResearchDetailPageProps {
@@ -20,7 +22,7 @@ export async function generateMetadata({
   params,
 }: ResearchDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const item = await getPublishedResearchItemBySlug(slug);
+  const item = await getCachedPublishedResearchItemBySlug(slug);
 
   if (!item) {
     return { title: "Not Found — MUJ General" };
@@ -41,7 +43,7 @@ export default async function ResearchDetailPage({
   params,
 }: ResearchDetailPageProps) {
   const { slug } = await params;
-  const item = await getPublishedResearchItemBySlug(slug);
+  const item = await getCachedPublishedResearchItemBySlug(slug);
 
   if (!item) {
     notFound();
@@ -53,12 +55,12 @@ export default async function ResearchDetailPage({
   const authorIds = item.authors.map((a) => a.id);
 
   const [{ related, more }, sameAuthorItems] = await Promise.all([
-    listRelatedPublishedResearchItems({
+    getCachedRelatedPublishedResearchItems({
       researchItemId: item.id,
       departmentSlug: item.departmentSlug,
       itemType: item.itemType,
     }),
-    listMoreFromSameAuthors({
+    getCachedMoreFromSameAuthors({
       researchItemId: item.id,
       authorIds,
     }),

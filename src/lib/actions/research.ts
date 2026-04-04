@@ -34,6 +34,10 @@ import {
   reviewResearchSubmission,
   submitPeerReview,
 } from "@/lib/db/queries";
+import {
+  revalidatePublicJournalCache,
+  revalidatePublicResearchCache,
+} from "@/lib/db/public-cache";
 import { createResearchItemSlug } from "@/lib/research/slug";
 import {
   deleteResearchObject,
@@ -712,6 +716,8 @@ export async function reviewResearchSubmissionAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/settings");
   revalidatePath(`/research/${reviewedItem.slug}`);
+  revalidatePublicResearchCache(reviewedItem.slug);
+  revalidatePublicJournalCache();
   redirect(
     `/admin?moderation=${
       parsed.data.decision === "publish"
@@ -821,6 +827,8 @@ export async function submitPublicationConfirmationAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/editor");
   revalidatePath(`/research/${item.slug}`);
+  revalidatePublicResearchCache(item.slug);
+  revalidatePublicJournalCache();
   redirect("/settings?confirmation=updated");
 }
 

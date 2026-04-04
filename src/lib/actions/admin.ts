@@ -20,6 +20,10 @@ import {
 import { requireRole } from "@/lib/auth/session";
 import { assertRoleAssignment } from "@/lib/auth/permissions";
 import {
+  revalidatePublicJournalCache,
+  revalidatePublicResearchCache,
+} from "@/lib/db/public-cache";
+import {
   createDepartmentSchema,
   archiveDepartmentSchema,
   archiveTagSchema,
@@ -178,6 +182,7 @@ export async function createDepartmentAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/admin/departments");
   revalidatePath("/research");
+  revalidatePublicResearchCache();
   redirect("/admin/departments?create=success");
 }
 
@@ -223,6 +228,7 @@ export async function updateDepartmentAction(formData: FormData) {
   revalidatePath("/admin/departments");
   revalidatePath("/research");
   revalidatePath("/editor");
+  revalidatePublicResearchCache();
   redirect("/admin/departments?op=updated");
 }
 
@@ -264,6 +270,7 @@ export async function archiveDepartmentAction(formData: FormData) {
   revalidatePath("/admin/departments");
   revalidatePath("/research");
   revalidatePath("/editor");
+  revalidatePublicResearchCache();
   redirect(`/admin/departments?op=${parsed.data.mode === "archive" ? "archived" : "restored"}`);
 }
 
@@ -308,6 +315,7 @@ export async function deleteDepartmentAction(formData: FormData) {
   revalidatePath("/admin/departments");
   revalidatePath("/research");
   revalidatePath("/editor");
+  revalidatePublicResearchCache();
   redirect("/admin/departments?op=deleted");
 }
 
@@ -345,6 +353,7 @@ export async function createTagAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/admin/tags");
   revalidatePath("/research");
+  revalidatePublicResearchCache();
   redirect("/admin/tags?create=success");
 }
 
@@ -388,6 +397,7 @@ export async function updateTagAction(formData: FormData) {
   revalidatePath("/admin/tags");
   revalidatePath("/research");
   revalidatePath("/editor");
+  revalidatePublicResearchCache();
   redirect("/admin/tags?op=updated");
 }
 
@@ -425,6 +435,7 @@ export async function archiveTagAction(formData: FormData) {
   revalidatePath("/admin/tags");
   revalidatePath("/research");
   revalidatePath("/editor");
+  revalidatePublicResearchCache();
   redirect(`/admin/tags?op=${parsed.data.mode === "archive" ? "archived" : "restored"}`);
 }
 
@@ -466,6 +477,7 @@ export async function deleteTagAction(formData: FormData) {
   revalidatePath("/admin/tags");
   revalidatePath("/research");
   revalidatePath("/editor");
+  revalidatePublicResearchCache();
   redirect("/admin/tags?op=deleted");
 }
 
@@ -571,6 +583,7 @@ export async function createJournalAction(formData: FormData) {
   revalidatePath("/admin/journals");
   revalidatePath("/journals");
   revalidatePath("/editor");
+  revalidatePublicJournalCache(journal.slug);
   redirect("/admin/journals?op=created");
 }
 
@@ -661,6 +674,8 @@ export async function updateJournalAction(formData: FormData) {
   revalidatePath("/admin/journals");
   revalidatePath("/journals");
   revalidatePath("/editor");
+  revalidatePublicJournalCache(parsed.data.slug);
+  revalidatePublicResearchCache();
   redirect("/admin/journals?op=updated");
 }
 
@@ -700,6 +715,7 @@ export async function createJournalVolumeAction(formData: FormData) {
   });
 
   revalidatePath("/admin/journals");
+  revalidatePublicJournalCache();
   redirect("/admin/journals?op=volume-created");
 }
 
@@ -752,6 +768,7 @@ export async function createJournalIssueAction(formData: FormData) {
 
   revalidatePath("/admin/journals");
   revalidatePath("/journals");
+  revalidatePublicJournalCache();
   redirect("/admin/journals?op=issue-created");
 }
 
@@ -802,6 +819,7 @@ export async function createJournalEditorialBoardAction(formData: FormData) {
 
   revalidatePath("/admin/journals");
   revalidatePath("/journals");
+  revalidatePublicJournalCache();
   redirect("/admin/journals?op=board-created");
 }
 
@@ -853,6 +871,7 @@ export async function updateJournalEditorialBoardAction(formData: FormData) {
 
   revalidatePath("/admin/journals");
   revalidatePath("/journals");
+  revalidatePublicJournalCache();
   redirect("/admin/journals?op=board-updated");
 }
 
@@ -895,5 +914,6 @@ export async function deleteJournalEditorialBoardAction(formData: FormData) {
 
   revalidatePath("/admin/journals");
   revalidatePath("/journals");
+  revalidatePublicJournalCache();
   redirect("/admin/journals?op=board-deleted");
 }

@@ -194,10 +194,16 @@ function buildPublishedResearchWhere(filters: PublishedResearchFilters) {
 
   if (filters.tag) {
     const tagSlugs = filters.tag.split(",").filter(Boolean);
-    if (tagSlugs.length === 1) {
-      conditions.push(eq(tags.slug, tagSlugs[0]));
-    } else if (tagSlugs.length > 1) {
-      conditions.push(inArray(tags.slug, tagSlugs));
+    if (tagSlugs.length > 0) {
+      conditions.push(sql`
+        exists (
+          select 1
+          from ${researchItemTags}
+          inner join ${tags} on ${tags.id} = ${researchItemTags.tagId}
+          where ${researchItemTags.researchItemId} = ${researchItems.id}
+            and ${inArray(tags.slug, tagSlugs)}
+        )
+      `);
     }
   }
 
@@ -2080,14 +2086,7 @@ export async function listPublishedResearchItems(filters: PublishedResearchFilte
     })
     .from(researchItems)
     .leftJoin(departments, eq(departments.id, researchItems.departmentId))
-    .leftJoin(researchItemTags, eq(researchItemTags.researchItemId, researchItems.id))
-    .leftJoin(tags, eq(tags.id, researchItemTags.tagId))
     .where(buildPublishedResearchWhere(filters))
-    .groupBy(
-      researchItems.id,
-      departments.name,
-      departments.slug,
-    )
     .orderBy(desc(researchItems.publishedAt), desc(researchItems.updatedAt))
     .limit(pageSize)
     .offset((page - 1) * pageSize);
@@ -2107,8 +2106,6 @@ export async function countPublishedResearchItems(filters: PublishedResearchFilt
     .select({ count: sql<number>`count(distinct ${researchItems.id})` })
     .from(researchItems)
     .leftJoin(departments, eq(departments.id, researchItems.departmentId))
-    .leftJoin(researchItemTags, eq(researchItemTags.researchItemId, researchItems.id))
-    .leftJoin(tags, eq(tags.id, researchItemTags.tagId))
     .where(buildPublishedResearchWhere(filters));
 
   return Number(result?.count ?? 0);
