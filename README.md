@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MUJ General
 
-## Getting Started
+![MUJ General preview](https://res.cloudinary.com/dyetf2h9n/image/upload/v1775342146/Untitled_design_18_tvyrou.png)
 
-First, run the development server:
+MUJ General is the research repository and journal website for Manipal University Jaipur.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+It is designed to help the university publish, organize, and discover academic work in one place.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## What The Website Does
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Show published research items in a public repository
+- Organize academic work by department, type, year, and tags
+- Publish university journals with dedicated journal pages
+- Let readers explore research details, authors, and related work
+- Allow verified users to sign in and manage their submissions
+- Support editor and admin moderation workflows for publishing
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Main User Areas
 
-## Learn More
+### Public website
 
-To learn more about Next.js, take a look at the following resources:
+- Home page with research and journal discovery
+- Research listing and research detail pages
+- Journals listing and journal detail pages
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Reader account
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Sign in and sign up
+- Save and manage personal submissions
+- Request editor access
 
-## Deploy on Vercel
+### Editor and admin area
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Review submissions
+- Moderate research items
+- Manage journals, departments, tags, and users
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Website Goals
+
+- Make MUJ research easy to discover
+- Give journals a proper publication layer
+- Keep submission and moderation workflows structured
+- Maintain a clean public archive of published academic work
